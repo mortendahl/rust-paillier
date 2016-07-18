@@ -1,0 +1,12 @@
+[package]
+name = "paillier"
+version = "0.1.0"
+authors = ["Morten Dahl <douglas.botley@gmail.com>"]
+description = ""
+keywords = ["Paillier","homomorphic encryption","cryptography"]
+homepage = "https://github.com/mortendahl/rust-paillier"
+repository = "https://github.com/mortendahl/rust-paillier"
+
+[dependencies]
+num = "0.1.33"
+rand = "0.3.14"
