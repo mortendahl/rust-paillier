@@ -8,14 +8,14 @@ use numtheory::*;
 pub type Plaintext = BigUint;
 pub type Ciphertext = BigUint;
 
-#[derive(Debug)]
+#[derive(Debug,Copy,Clone)]
 pub struct PublicKey {
     pub n: BigUint,  // the modulus
     nn: BigUint,     // the modulus squared
     g: BigUint,      // the generator, fixed at g = n + 1
 }
 
-#[derive(Debug)]
+#[derive(Debug,Copy,Clone)]
 pub struct PrivateKey {
     pub p: BigUint,  // first prime
     pub q: BigUint,  // second prime
