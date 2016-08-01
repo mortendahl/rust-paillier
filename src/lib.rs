@@ -1,5 +1,7 @@
 
-extern crate rand;
 extern crate num;
+extern crate rand;
+
+mod numtheory;
 
 pub mod plain;
