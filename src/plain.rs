@@ -1,7 +1,7 @@
 
 use rand;
-use num::bigint::{BigUint, ToBigInt, RandBigInt};
 use num::One;
+use num::bigint::{BigUint, ToBigInt, RandBigInt};
 
 use numtheory::*;
 
@@ -113,10 +113,12 @@ pub fn mult(ek: &PublicKey, c1: &Ciphertext, m2: &Plaintext) -> Ciphertext {
 }
 
 pub fn rerandomise(ek: &PublicKey, c: &Ciphertext) -> Ciphertext {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::thread_rng(); // TODO OsRng
     let ref r = rng.gen_biguint_below(&ek.n);
-    use num::Integer;
-    debug_assert_eq!(r.gcd(&ek.n), BigUint::one());
+    {
+        use num::Integer;
+        debug_assert_eq!(r.gcd(&ek.n), BigUint::one());
+    }
     (c * modpow(r, &ek.n, &ek.nn)) % &ek.nn
 }
 
@@ -157,6 +159,7 @@ mod tests {
 
         let m = BigUint::from(10 as usize);
         let c = encrypt(&ek, &m);
+        
         let recovered_m = decrypt(&dk, &c);
         assert_eq!(recovered_m, m);
     }

@@ -3,7 +3,7 @@ name = "paillier"
 version = "0.1.0"
 authors = ["Morten Dahl"]
 description = ""
-keywords = ["Paillier", "homomorphic encryption", "secure computation", "cryptography"]
+keywords = ["Paillier", "homomorphic encryption", "secure computation", "cryptography", "crypto"]
 homepage = "https://github.com/mortendahl/rust-paillier"
 repository = "https://github.com/mortendahl/rust-paillier"
 
