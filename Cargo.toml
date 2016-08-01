@@ -1,9 +1,9 @@
 [package]
 name = "paillier"
 version = "0.1.0"
-authors = ["Morten Dahl <douglas.botley@gmail.com>"]
+authors = ["Morten Dahl"]
 description = ""
-keywords = ["Paillier","homomorphic encryption","cryptography"]
+keywords = ["Paillier", "homomorphic encryption", "secure computation", "cryptography"]
 homepage = "https://github.com/mortendahl/rust-paillier"
 repository = "https://github.com/mortendahl/rust-paillier"
 
