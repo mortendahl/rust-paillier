@@ -1,4 +1,3 @@
-
 use rand;
 use num::One;
 use num::bigint::{BigUint, ToBigInt, RandBigInt};
@@ -6,20 +5,21 @@ use num::bigint::{BigUint, ToBigInt, RandBigInt};
 use numtheory::*;
 
 pub type Plaintext = BigUint;
+
 pub type Ciphertext = BigUint;
 
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug,Clone)]
 pub struct PublicKey {
     pub n: BigUint,  // the modulus
     nn: BigUint,     // the modulus squared
     g: BigUint,      // the generator, fixed at g = n + 1
 }
 
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug,Clone)]
 pub struct PrivateKey {
     pub p: BigUint,  // first prime
     pub q: BigUint,  // second prime
-    n: BigUint,      // the modulus (also in public key)
+    pub n: BigUint,      // the modulus (also in public key)
     nn: BigUint,     // the modulus squared
     lambda: BigUint, // fixed at lambda = (p-1)*(q-1)
     mu: BigUint,     // fixed at lambda^{-1}
@@ -53,8 +53,8 @@ impl PrivateKey {
     }
 }
 
-// fn find_prime(bit_length: usize) -> BigUint {
-//     let mut rng = rand::thread_rng(); // TODO OsRng
+// fn find_strong_prime(bit_length: usize) -> BigUint {
+//     let mut rng = rand::OsRng::new().unwrap();
 //     loop {
 //         let p = rng.gen_biguint(bit_length);
 //         if p.bits() == bit_length && is_prime(&p) {
@@ -76,7 +76,7 @@ impl PrivateKey {
 //         }
 //     }
 // }
-
+//
 // #[test]
 // fn test_find_primes() {
     // let (p, q) = find_primes(128);
@@ -85,7 +85,7 @@ impl PrivateKey {
     // assert_eq!(p.bits(), 128/2);
     // assert_eq!(q.bits(), 128/2);
 // }
-
+//
 // pub fn generate_keypair(modulus_bit_length: usize) -> (PublicKey, PrivateKey) {
 //     let (ref p, ref q) = find_primes(modulus_bit_length);
 //     let ref n = p * q;
@@ -93,8 +93,34 @@ impl PrivateKey {
 //     let ek = PublicKey::from(n);
 //     (ek, dk)
 // }
+//
+// pub fn generate_keypair(modulus_bit_length: usize) -> (PublicKey, PrivateKey) {
+//     let (ref p, ref q) = (BigUint::from(1061u32), BigUint::from(1063u32));
+//     let ref n = p * q;
+//     let dk = PrivateKey::from(p, q);
+//     let ek = PublicKey::from(n);
+//     (ek, dk)
+// }
 
-pub fn encrypt(ek: &PublicKey, m: &BigUint) -> Ciphertext {
+pub fn fake_key_pair() -> (PublicKey, PrivateKey) {
+    let p = BigUint::from(1061u32);
+    let q = BigUint::from(1063u32);
+    let n = &p * &q;
+    let ek = PublicKey::from(&n);
+    let dk = PrivateKey::from(&p, &q);
+    (ek, dk)
+}
+
+pub fn large_fake_key_pair() -> (PublicKey, PrivateKey) {
+    let p = BigUint::parse_bytes(b"148677972634832330983979593310074301486537017973460461278300587514468301043894574906886127642530475786889672304776052879927627556769456140664043088700743909632312483413393134504352834240399191134336344285483935856491230340093391784574980688823380828143810804684752914935441384845195613674104960646037368551517", 10).unwrap();
+    let q = BigUint::parse_bytes(b"158741574437007245654463598139927898730476924736461654463975966787719309357536545869203069369466212089132653564188443272208127277664424448947476335413293018778018615899291704693105620242763173357203898195318179150836424196645745308205164116144020613415407736216097185962171301808761138424668335445923774195463", 10).unwrap();
+    let n = &p * &q;
+    let ek = PublicKey::from(&n);
+    let dk = PrivateKey::from(&p, &q);
+    (ek, dk)
+}
+
+pub fn encrypt(ek: &PublicKey, m: &Plaintext) -> Ciphertext {
     let ref gx = modpow(&ek.g, &m, &ek.nn);
     rerandomise(ek, gx)
 }
@@ -113,12 +139,9 @@ pub fn mult(ek: &PublicKey, c1: &Ciphertext, m2: &Plaintext) -> Ciphertext {
 }
 
 pub fn rerandomise(ek: &PublicKey, c: &Ciphertext) -> Ciphertext {
-    let mut rng = rand::thread_rng(); // TODO OsRng
+    let mut rng = rand::OsRng::new().unwrap();
     let ref r = rng.gen_biguint_below(&ek.n);
-    {
-        use num::Integer;
-        debug_assert_eq!(r.gcd(&ek.n), BigUint::one());
-    }
+    { use num::Integer; debug_assert_eq!(r.gcd(&ek.n), BigUint::one()); }
     (c * modpow(r, &ek.n, &ek.nn)) % &ek.nn
 }
 
@@ -130,28 +153,8 @@ mod tests {
     use num::bigint::BigUint;
 
     fn key_pair() -> (PublicKey, PrivateKey) {
-        let p = BigUint::from(1061u32);
-        let q = BigUint::from(1063u32);
-        let n = &p * &q;
-        let dk = PrivateKey::from(&p, &q);
-        let ek = PublicKey::from(&n);
-        (ek, dk)
+        fake_key_pair()
     }
-
-    // fn key_pair() -> (PublicKey, PrivateKey) {
-    //     let p = BigUint::from(23u32);
-    //     let q = BigUint::from(31u32);
-    //     let n = &p * &q;
-    //     let dk = PrivateKey::from(&p, &q);
-    //     let ek = PublicKey::from(&n);
-    //     (ek, dk)
-    // }
-
-    // #[test]
-    // fn key_generation() {
-    //     let (ek, dk) = generate_keypair(1024);
-    //     assert_eq!(ek.n, dk.p * dk.q);
-    // }
 
     #[test]
     fn correct_encryption_decryption() {
@@ -159,7 +162,7 @@ mod tests {
 
         let m = BigUint::from(10 as usize);
         let c = encrypt(&ek, &m);
-        
+
         let recovered_m = decrypt(&dk, &c);
         assert_eq!(recovered_m, m);
     }
