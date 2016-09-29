@@ -1,0 +1,72 @@
+
+use rand;
+use ramp;
+
+use phe::*;
+
+impl Int for ramp::Int {}
+
+impl Samplable for ramp::Int {
+    fn sample(upper: &Self) -> Self {
+        use ramp::RandomInt;
+        let mut rng = rand::OsRng::new().unwrap();
+        rng.gen_uint_below(upper)
+    }
+}
+
+impl ModularArithmetic for ramp::Int {
+
+    // TODO much of this code could be moved into trait for re-use
+
+    fn zero() -> Self { Self::zero() }
+
+    fn one() -> Self { Self::one() }
+
+    fn modpow(x: &Self, e: &Self, prime: &Self) -> Self {
+        let mut mx = x.clone();
+        let mut me = e.clone();
+        let mut acc = Self::one();
+        while me != 0 {
+            if me.is_even() {
+                // even
+                // no-op
+            }
+            else {
+                // odd
+                acc = (&acc * &mx) % prime;
+            }
+            mx = (&mx * &mx) % prime;  // waste one of these by having it here but code is simpler (tiny bit)
+            me = me >> 1;
+        }
+        acc
+    }
+
+    fn egcd(a: &Self, b: &Self) -> (Self, Self, Self) {
+        if b == &Self::zero() {
+            (a.clone(), Self::one(), Self::zero())
+        } else {
+            let q = a / b;
+            let r = a % b;
+            let (d, s, t) = Self::egcd(b, &r);
+            let new_t = s - &t * q;
+            (d, t, new_t)
+        }
+    }
+
+    fn modinv(a: &Self, prime: &Self) -> Self {
+        use std::ops::Neg;
+
+        let r = a % prime;
+        let d = if r < 0 {
+            let r = r.neg();
+            -Self::egcd(prime, &r).2
+        } else {
+            Self::egcd(prime, &r).2
+        };
+        (prime + d) % prime
+    }
+
+}
+
+use super::abstractimpl::AbstractPlainPaillier;
+pub type RampPlainPaillier = AbstractPlainPaillier<ramp::Int>;
