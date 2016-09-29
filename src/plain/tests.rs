@@ -21,7 +21,7 @@ fn test_correct_encryption_decryption() {
 #[bench]
 #[cfg(test)]
 fn bench_encryption(b: &mut Bencher) {
-    let (ek, dk) = large_fake_key_pair();
+    let (ek, _) = large_fake_key_pair();
 
     let m = Plaintext::from(10 as usize);
 

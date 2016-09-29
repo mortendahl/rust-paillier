@@ -1,6 +1,7 @@
-use plain;
+
 use packed::*;
 
+#[allow(dead_code)]
 fn key_pair() -> (PublicKey, PrivateKey) {
     use plain;
     let (plain_ek, plain_dk) = plain::fake_key_pair();

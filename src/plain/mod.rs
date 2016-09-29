@@ -3,19 +3,71 @@ use rand;
 
 mod tests;
 
-// use num::One;
-// pub use num::bigint::BigInt;
-// use num::bigint::{ToBigInt, RandBigInt};
-
-use ramp::{Int, RandomInt};
-use std::str::FromStr;
-type Ring = Int;
-
 pub trait ModularArithmetic {
     fn modpow(x: &Self, exponent: &Self, modulus: &Self) -> Self;
     fn modinv(a: &Self, modulus: &Self) -> Self;
     fn egcd(a: &Self, b: &Self) -> (Self, Self, Self) where Self: Sized;
 }
+
+
+
+// use num::{One, Zero, Integer};
+// pub use num::bigint::BigInt;
+// use num::bigint::{ToBigInt, RandBigInt};
+//
+// impl ModularArithmetic for BigInt {
+//
+//     fn modpow(x: &Self, e: &Self, prime: &Self) -> Self {
+//         let mut mx = x.clone();
+//         let mut me = e.clone();
+//         let mut acc = Self::one();
+//         while !me.is_zero() {
+//             if me.is_even() {
+//                 // even
+//                 // no-op
+//             }
+//             else {
+//                 // odd
+//                 acc = (&acc * &mx) % prime;
+//             }
+//             mx = (&mx * &mx) % prime;  // waste one of these by having it here but code is simpler (tiny bit)
+//             me = me >> 1;
+//         }
+//         acc
+//     }
+//
+//     fn egcd(a: &Self, b: &Self) -> (Self, Self, Self) {
+//         if b == &Self::zero() {
+//             (a.clone(), Self::one(), Self::zero())
+//         } else {
+//             let q = a / b;
+//             let r = a % b;
+//             let (d, s, t) = Self::egcd(b, &r);
+//             let new_t = s - &t * q;
+//             (d, t, new_t)
+//         }
+//     }
+//
+//     fn modinv(a: &Self, prime: &Self) -> Self {
+//         use num::Signed;
+//         use std::ops::Neg;
+//
+//         let r = a % prime;
+//         let d = if r.is_negative() {
+//             let r = r.neg();
+//             -Self::egcd(prime, &r).2
+//         } else {
+//             Self::egcd(prime, &r).2
+//         };
+//         (prime + d) % prime
+//     }
+//
+// }
+//
+// type Ring = BigInt;
+
+
+use ramp::{Int, RandomInt};
 
 impl ModularArithmetic for Int {
 
@@ -66,8 +118,7 @@ impl ModularArithmetic for Int {
 
 }
 
-
-
+type Ring = Int;
 
 
 
@@ -186,8 +237,8 @@ pub fn fake_key_pair() -> (PublicKey, PrivateKey) {
 pub fn large_fake_key_pair() -> (PublicKey, PrivateKey) {
     // let p = BigInt::parse_bytes(b"148677972634832330983979593310074301486537017973460461278300587514468301043894574906886127642530475786889672304776052879927627556769456140664043088700743909632312483413393134504352834240399191134336344285483935856491230340093391784574980688823380828143810804684752914935441384845195613674104960646037368551517", 10).unwrap();
     // let q = BigInt::parse_bytes(b"158741574437007245654463598139927898730476924736461654463975966787719309357536545869203069369466212089132653564188443272208127277664424448947476335413293018778018615899291704693105620242763173357203898195318179150836424196645745308205164116144020613415407736216097185962171301808761138424668335445923774195463", 10).unwrap();
-    let p = Int::from_str("148677972634832330983979593310074301486537017973460461278300587514468301043894574906886127642530475786889672304776052879927627556769456140664043088700743909632312483413393134504352834240399191134336344285483935856491230340093391784574980688823380828143810804684752914935441384845195613674104960646037368551517").unwrap();
-    let q = Int::from_str("158741574437007245654463598139927898730476924736461654463975966787719309357536545869203069369466212089132653564188443272208127277664424448947476335413293018778018615899291704693105620242763173357203898195318179150836424196645745308205164116144020613415407736216097185962171301808761138424668335445923774195463").unwrap();
+    let p = str::parse("148677972634832330983979593310074301486537017973460461278300587514468301043894574906886127642530475786889672304776052879927627556769456140664043088700743909632312483413393134504352834240399191134336344285483935856491230340093391784574980688823380828143810804684752914935441384845195613674104960646037368551517").unwrap();
+    let q = str::parse("158741574437007245654463598139927898730476924736461654463975966787719309357536545869203069369466212089132653564188443272208127277664424448947476335413293018778018615899291704693105620242763173357203898195318179150836424196645745308205164116144020613415407736216097185962171301808761138424668335445923774195463").unwrap();
     let n = &p * &q;
     let ek = PublicKey::from(&n);
     let dk = PrivateKey::from(&p, &q);

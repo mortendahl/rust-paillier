@@ -3,7 +3,7 @@
 extern crate test;
 extern crate rand;
 
-// extern crate num;
+extern crate num;
 extern crate ramp;
 
 // mod numtheory;

@@ -21,10 +21,6 @@ pub struct PrivateKey {
 }
 
 impl PublicKey {
-    // pub fn from(modulus: &plain::Ring, component_count: usize, component_size: usize) -> PublicKey {
-    //     PublicKey::from_plain(plain::PublicKey::from(modulus), component_count, component_size)
-    // }
-
     pub fn from_plain(plain_ek: plain::PublicKey, component_count: usize, component_size: usize) -> PublicKey {
         // assert!(component_size * component_count <= plain_ek.n.bits());
         assert!(component_size * component_count <= plain_ek.n.bit_length() as usize);
@@ -38,10 +34,6 @@ impl PublicKey {
 }
 
 impl PrivateKey {
-    // pub fn from(p: &plain::Ring, q: &plain::Ring, component_count: usize, component_size: usize) -> PrivateKey {
-    //     PrivateKey::from_plain(plain::PrivateKey::from(p, q), component_count, component_size)
-    // }
-
     pub fn from_plain(plain_dk: plain::PrivateKey, component_count: usize, component_size: usize) -> PrivateKey {
         assert!(component_size <= 64);
         PrivateKey {
