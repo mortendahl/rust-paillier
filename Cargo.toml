@@ -15,5 +15,6 @@ repository = "https://github.com/mortendahl/rust-paillier"
 license = "MIT"
 
 [dependencies]
-num = "0.1"
 rand = "0.3"
+num = "0.1"
+ramp = "0.3"
