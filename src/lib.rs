@@ -4,8 +4,8 @@ extern crate test;
 extern crate rand;
 extern crate ramp;
 
-//#[cfg(feature="inclnum")]
-// extern crate num;
+#[cfg(feature="inclnum")]
+extern crate num;
 
 mod phe;
 pub use phe::{KeyGeneration, PartiallyHomomorphicScheme};
