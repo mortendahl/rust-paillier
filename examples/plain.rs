@@ -2,15 +2,15 @@ extern crate paillier;
 
 use paillier::PartiallyHomomorphicScheme as PHE;
 use paillier::KeyGeneration;
-use paillier::PlainPaillier;
+use paillier::plain::RampPlainPaillier as PlainPaillier;
 
 fn main() {
     // let (ek, dk) = plain::generate_keypair(1024);
-    let (ek, dk) = <PlainPaillier as KeyGeneration>::keypair(10); // TODO
+    let (ek, dk) = PlainPaillier::keypair(10); // TODO
 
     let m1 = <PlainPaillier as PHE>::Plaintext::from(10);
     // let m1 = PlainPaillier::Plaintext::from(10);
-    let c1 = <PlainPaillier as PHE>::encrypt(&ek, &m1);
+    let c1 = PlainPaillier::encrypt(&ek, &m1);
 
     // let m2 = BigUint::from(20u32);
     // let c2 = plain::encrypt(&ek, &m2);

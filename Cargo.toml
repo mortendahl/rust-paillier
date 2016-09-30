@@ -12,7 +12,7 @@ keywords = [
 ]
 homepage = "https://github.com/snips/rust-paillier"
 repository = "https://github.com/snips/rust-paillier"
-license = "MIT"
+license = "MIT/Apache-2.0"
 
 [features]
 default = ["ramp", "keygen"]

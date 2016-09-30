@@ -109,10 +109,11 @@ where
 
 }
 
-#[cfg(any(feature="keygen", test))]
+#[cfg(feature="keygen")]
 impl <I> KeyGeneration for AbstractPlainPaillier<I>
 where
     I: From<u64>,
+    I: ::std::str::FromStr, <I as ::std::str::FromStr>::Err: ::std::fmt::Debug,
     I: Clone,
     I: Samplable,
     I: Identities,
@@ -132,22 +133,26 @@ where
     type DecryptionKey = PlainDecryptionKey<I>;
 
     fn keypair(bit_length: usize) -> (Self::EncryptionKey, Self::DecryptionKey) {
-        let ref p = I::from(1061u64);
-        let ref q = I::from(1063u64);
-        let ref n = p * q;
-        let ek = PlainEncryptionKey::from(n);
-        let dk = PlainDecryptionKey::from(p, q);
-        (ek, dk)
+
+        // TODO: don't use fixed primes.........
+
+        if bit_length < 42 {
+            let ref p = I::from(1061u64);
+            let ref q = I::from(1063u64);
+            let ref n = p * q;
+            let ek = PlainEncryptionKey::from(n);
+            let dk = PlainDecryptionKey::from(p, q);
+            (ek, dk)
+        } else {
+            let p = str::parse("148677972634832330983979593310074301486537017973460461278300587514468301043894574906886127642530475786889672304776052879927627556769456140664043088700743909632312483413393134504352834240399191134336344285483935856491230340093391784574980688823380828143810804684752914935441384845195613674104960646037368551517").unwrap();
+            let q = str::parse("158741574437007245654463598139927898730476924736461654463975966787719309357536545869203069369466212089132653564188443272208127277664424448947476335413293018778018615899291704693105620242763173357203898195318179150836424196645745308205164116144020613415407736216097185962171301808761138424668335445923774195463").unwrap();
+            let n = &p * &q;
+            let ek = PlainEncryptionKey::from(&n);
+            let dk = PlainDecryptionKey::from(&p, &q);
+            (ek, dk)
+        }
     }
 
-    // fn keypair(bit_length: usize) -> (Self::EncryptionKey, Self::DecryptionKey) {
-    //     let p = str::parse("148677972634832330983979593310074301486537017973460461278300587514468301043894574906886127642530475786889672304776052879927627556769456140664043088700743909632312483413393134504352834240399191134336344285483935856491230340093391784574980688823380828143810804684752914935441384845195613674104960646037368551517").unwrap();
-    //     let q = str::parse("158741574437007245654463598139927898730476924736461654463975966787719309357536545869203069369466212089132653564188443272208127277664424448947476335413293018778018615899291704693105620242763173357203898195318179150836424196645745308205164116144020613415407736216097185962171301808761138424668335445923774195463").unwrap();
-    //     let n = &p * &q;
-    //     let ek = PlainEncryptionKey::from(&n);
-    //     let dk = PlainDecryptionKey::from(&p, &q);
-    //     (ek, dk)
-    // }
 
 
         // fn find_strong_prime(bit_length: usize) -> BigUint {
