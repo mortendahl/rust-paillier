@@ -43,10 +43,18 @@ pub struct AbstractPackedPaillier<BasePHE : PHE> {
     junk: ::std::marker::PhantomData<BasePHE>
 }
 
+pub struct PackedPlaintext(Vec<usize>);
+
+impl From<usize> for PackedPlaintext {
+    fn from(x: usize) -> Self {
+        PackedPlaintext(vec![x])
+    }
+}
+
 use std::ops::{Add, Shl, Shr, Rem};
 impl <BasePHE : PHE> PHE for AbstractPackedPaillier<BasePHE>
 where
-    BasePHE::Plaintext: From<u64> + Into<u64>,
+    BasePHE::Plaintext: From<usize> + Into<usize>,
     BasePHE::Plaintext: Shl<usize, Output=BasePHE::Plaintext>,
     BasePHE::Plaintext: Shr<usize, Output=BasePHE::Plaintext>,
     for<'a> &'a BasePHE::Plaintext: Shr<usize, Output=BasePHE::Plaintext>,
@@ -55,15 +63,15 @@ where
     for<'a, 'b> &'a BasePHE::Plaintext: Rem<&'b BasePHE::Plaintext, Output=BasePHE::Plaintext>
 {
 
-    type Plaintext = Vec<u64>;
+    type Plaintext = PackedPlaintext;
     type Ciphertext = BasePHE::Ciphertext;
     type EncryptionKey = PackedEncryptionKey<BasePHE>;
     type DecryptionKey = PackedDecryptionKey<BasePHE>;
 
     fn encrypt(ek: &Self::EncryptionKey, ms: &Self::Plaintext) -> Self::Ciphertext {
-        assert!(ms.len() == ek.component_count);
-        let mut packed_plaintext = BasePHE::Plaintext::from(ms[0]);
-        for &m in &ms[1..] {
+        assert!(ms.0.len() == ek.component_count);
+        let mut packed_plaintext = BasePHE::Plaintext::from(ms.0[0]);
+        for &m in &ms.0[1..] {
             packed_plaintext = packed_plaintext << ek.component_size;
             packed_plaintext = packed_plaintext + BasePHE::Plaintext::from(m);
         }
@@ -72,7 +80,7 @@ where
 
     fn decrypt(dk: &Self::DecryptionKey, c: &Self::Ciphertext) -> Self::Plaintext {
         let mut packed_plaintext = BasePHE::decrypt(&dk.underlying_dk, c);
-        let mask = BasePHE::Plaintext::from(1u64 << dk.component_size);
+        let mask = BasePHE::Plaintext::from(1usize << dk.component_size);
         let mut result = vec![];
         for _ in 0..dk.component_count {
             let slot_value = &packed_plaintext % &mask;
@@ -80,7 +88,7 @@ where
             result.push(slot_value.into());
         }
         result.reverse();
-        result
+        PackedPlaintext(result)
     }
 
     fn add(ek: &Self::EncryptionKey, c1: &Self::Ciphertext, c2: &Self::Ciphertext) -> Self::Ciphertext {
@@ -88,7 +96,7 @@ where
     }
 
     fn mult(ek: &Self::EncryptionKey, c1: &Self::Ciphertext, m2: &Self::Plaintext) -> Self::Ciphertext {
-        let ref expanded_m2 = BasePHE::Plaintext::from(m2[0]); // TODO have separate type for scalar?
+        let ref expanded_m2 = BasePHE::Plaintext::from(m2.0[0]); // TODO have separate type for scalar?
         BasePHE::mult(&ek.underlying_ek, c1, expanded_m2)
     }
 

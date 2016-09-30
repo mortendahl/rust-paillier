@@ -16,11 +16,11 @@ where
     for<'a, 'b> &'a I: Mul<&'b I, Output=I>,
     for<'a, 'b> &'a I: Add<&'b I, Output=I>
 {
-    pub fn from(modulus: I) -> PlainEncryptionKey<I> {
+    pub fn from(modulus: &I) -> PlainEncryptionKey<I> {
         PlainEncryptionKey {
             n: modulus.clone(),
-            nn: &modulus * &modulus,
-            g: &modulus + &I::_one()
+            nn: modulus * modulus,
+            g: modulus + &I::_one()
         }
     }
 }
@@ -67,13 +67,14 @@ pub struct AbstractPlainPaillier<I> {
 
 impl <I> PartiallyHomomorphicScheme for AbstractPlainPaillier<I>
 where
+    I: From<usize>,
     I: Samplable,
     I: Identities,
     I: ModularArithmetic,
     for<'a> &'a I: Sub<I, Output=I>,
-    for<'a> &'a I: Mul<I, Output=I>,
-    for<'b> I: Mul<&'b I, Output=I>,
-    for<'a, 'b> &'a I: Mul<&'b I, Output=I>,
+    for<'a>    &'a I: Mul<I, Output=I>,
+    for<'b>        I: Mul<&'b I, Output=I>,
+    for<'a,'b> &'a I: Mul<&'b I, Output=I>,
     for<'b> I: Div<&'b I, Output=I>,
     for<'a> I: Rem<&'a I, Output=I>,
 {
@@ -108,19 +109,32 @@ where
 
 }
 
-#[cfg(feature="keygen")]
+#[cfg(any(feature="keygen", test))]
 impl <I> KeyGeneration for AbstractPlainPaillier<I>
 where
-    I: From<u64>
+    I: From<u64>,
+    I: Clone,
+    I: Samplable,
+    I: Identities,
+    I: ModularArithmetic,
+                   I: Mul<Output=I>,
+    for<'a>    &'a I: Mul<I, Output=I>,
+    for<'b>        I: Mul<&'b I, Output=I>,
+    for<'a,'b> &'a I: Mul<&'b I, Output=I>,
+    for<'a,'b> &'a I: Add<&'b I, Output=I>,
+    for<'a>    &'a I: Sub<I, Output=I>,
+    for<'a,'b> &'a I: Sub<&'b I, Output=I>,
+    for<'b>        I: Div<&'b I, Output=I>,
+    for<'a>        I: Rem<&'a I, Output=I>,
 {
 
     type EncryptionKey = PlainEncryptionKey<I>;
     type DecryptionKey = PlainDecryptionKey<I>;
 
     fn keypair(bit_length: usize) -> (Self::EncryptionKey, Self::DecryptionKey) {
-        let p = I::from(1061u64);
-        let q = I::from(1063u64);
-        let n = &p * &q;
+        let ref p = I::from(1061u64);
+        let ref q = I::from(1063u64);
+        let ref n = p * q;
         let ek = PlainEncryptionKey::from(n);
         let dk = PlainDecryptionKey::from(p, q);
         (ek, dk)

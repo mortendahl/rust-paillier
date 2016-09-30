@@ -37,7 +37,7 @@ pub trait Samplable {
 }
 
 pub trait PartiallyHomomorphicScheme {
-    type Plaintext;
+    type Plaintext : From<usize>;
     type Ciphertext;
     type EncryptionKey;
     type DecryptionKey;

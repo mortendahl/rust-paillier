@@ -1,12 +1,11 @@
 
 mod abstractimpl;
-
 mod rampimpl;
-pub use self::rampimpl::RampPlainPaillier;
-
 mod numimpl;
-pub use self::numimpl::NumPlainPaillier;
 
-pub type PlainPaillier = RampPlainPaillier;
+pub use self::rampimpl::RampPlainPaillier as PlainPaillier;
+
+#[cfg(feature="inclnum")]
+pub use self::numimpl::NumPlainPaillier;
 
 mod tests;

@@ -15,8 +15,9 @@ repository = "https://github.com/snips/rust-paillier"
 license = "MIT"
 
 [features]
-default = ["ramp", "num"]
+default = ["ramp", "keygen"]
 keygen = ["primal"]
+inclnum = ["num"]
 
 [dependencies]
 rand = "0.3"

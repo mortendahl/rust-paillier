@@ -3,30 +3,30 @@
 use plain::*;
 use test::Bencher;
 
-use phe::PartiallyHomomorphicScheme;
+use phe::PartiallyHomomorphicScheme as PHE;
 use phe::KeyGeneration;
-use PlainPaillier as PHE;
+use PlainPaillier as Plain;
 
 #[test]
 fn test_correct_encryption_decryption() {
-    let (ek, dk) = PHE::keypair(10);
+    let (ek, dk) = Plain::keypair(10);
 
-    let m = PHE::Plaintext::from(10 as usize);
-    let c = PHE::encrypt(&ek, &m);
+    let m = <Plain as PHE>::Plaintext::from(10usize);
+    let c = Plain::encrypt(&ek, &m);
 
-    let recovered_m = PHE::decrypt(&dk, &c);
+    let recovered_m = Plain::decrypt(&dk, &c);
     assert_eq!(recovered_m, m);
 }
 
 #[bench]
 #[cfg(test)]
 fn bench_encryption(b: &mut Bencher) {
-    let (ek, _) = PHE::keypair(10);
+    let (ek, _) = Plain::keypair(10);
 
-    let m = PHE::Plaintext::from(10 as usize);
+    let m = <Plain as PHE>::Plaintext::from(10 as usize);
 
     b.iter(|| {
-        let _ = PHE::encrypt(&ek, &m);
+        let _ = Plain::encrypt(&ek, &m);
     });
 }
 

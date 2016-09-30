@@ -1,13 +1,16 @@
 extern crate paillier;
 
-use paillier::plain;
+use paillier::PartiallyHomomorphicScheme as PHE;
+use paillier::KeyGeneration;
+use paillier::PlainPaillier;
 
 fn main() {
     // let (ek, dk) = plain::generate_keypair(1024);
-    let (ek, dk) = plain::large_fake_key_pair(); // TODO
+    let (ek, dk) = <PlainPaillier as KeyGeneration>::keypair(10); // TODO
 
-    let m1 = plain::Plaintext::from(10u32);
-    let c1 = plain::encrypt(&ek, &m1);
+    let m1 = <PlainPaillier as PHE>::Plaintext::from(10);
+    // let m1 = PlainPaillier::Plaintext::from(10);
+    let c1 = <PlainPaillier as PHE>::encrypt(&ek, &m1);
 
     // let m2 = BigUint::from(20u32);
     // let c2 = plain::encrypt(&ek, &m2);
@@ -28,7 +31,7 @@ fn main() {
     //  - note that this could just as well be done after decrypting!
     // let d = plain::div(&ek, &c, &BigUint::from(4u32));
 
-    let m = plain::decrypt(&dk, &c1);
+    let m = PlainPaillier::decrypt(&dk, &c1);
     // let n = plain::decrypt(&dk, &d);
     println!("decrypted total sum is {}", m);
     // println!("... and after dividing {}", n);

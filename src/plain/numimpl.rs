@@ -1,3 +1,4 @@
+#![cfg(feature="inclnum")]
 
 use rand;
 use num;
