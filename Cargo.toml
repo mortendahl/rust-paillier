@@ -10,8 +10,8 @@ keywords = [
   "multi-party computation", "MPC",
   "cryptography", "crypto"
 ]
-homepage = "https://github.com/mortendahl/rust-paillier"
-repository = "https://github.com/mortendahl/rust-paillier"
+homepage = "https://github.com/snips/rust-paillier"
+repository = "https://github.com/snips/rust-paillier"
 license = "MIT"
 
 [features]
