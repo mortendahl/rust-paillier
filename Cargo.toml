@@ -14,7 +14,12 @@ homepage = "https://github.com/mortendahl/rust-paillier"
 repository = "https://github.com/mortendahl/rust-paillier"
 license = "MIT"
 
+[features]
+default = ["ramp", "num"]
+keygen = ["primal"]
+
 [dependencies]
 rand = "0.3"
-num = "0.1"
-ramp = "0.3"
+ramp = { version = "0.3", optional = true }
+num = { version = "0.1", optional = true }
+primal = { version = "0.2", optional = true }
