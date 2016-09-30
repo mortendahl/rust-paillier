@@ -1,5 +1,4 @@
 
-use phe;
 use phe::PartiallyHomomorphicScheme as PHE;
 
 #[derive(Debug,Clone)]
@@ -44,13 +43,17 @@ pub struct AbstractPackedPaillier<BasePHE : PHE> {
     junk: ::std::marker::PhantomData<BasePHE>
 }
 
+use std::ops::{Add, Shl, Shr, Rem};
 impl <BasePHE : PHE> PHE for AbstractPackedPaillier<BasePHE>
-    where BasePHE::Plaintext:
-        From<u64> + Into<u64>
-        + ::std::ops::Shl<usize, Output=BasePHE::Plaintext>
-        + ::std::ops::Shr<usize, Output=BasePHE::Plaintext>
-        + ::std::ops::Add<Output=BasePHE::Plaintext>
-        + ::std::ops::Rem<Output=BasePHE::Plaintext> {
+where
+    BasePHE::Plaintext: From<u64> + Into<u64>,
+    BasePHE::Plaintext: Shl<usize, Output=BasePHE::Plaintext>,
+    BasePHE::Plaintext: Shr<usize, Output=BasePHE::Plaintext>,
+    for<'a> &'a BasePHE::Plaintext: Shr<usize, Output=BasePHE::Plaintext>,
+    BasePHE::Plaintext: Add<Output=BasePHE::Plaintext>,
+    BasePHE::Plaintext: Rem<Output=BasePHE::Plaintext>,
+    for<'a, 'b> &'a BasePHE::Plaintext: Rem<&'b BasePHE::Plaintext, Output=BasePHE::Plaintext>
+{
 
     type Plaintext = Vec<u64>;
     type Ciphertext = BasePHE::Ciphertext;
@@ -72,8 +75,8 @@ impl <BasePHE : PHE> PHE for AbstractPackedPaillier<BasePHE>
         let mask = BasePHE::Plaintext::from(1u64 << dk.component_size);
         let mut result = vec![];
         for _ in 0..dk.component_count {
-            let slot_value = packed_plaintext % mask;
-            packed_plaintext = packed_plaintext >> dk.component_size;
+            let slot_value = &packed_plaintext % &mask;
+            packed_plaintext = &packed_plaintext >> dk.component_size;
             result.push(slot_value.into());
         }
         result.reverse();

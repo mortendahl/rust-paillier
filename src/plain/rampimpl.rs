@@ -14,13 +14,14 @@ impl Samplable for ramp::Int {
     }
 }
 
+impl Identities for ramp::Int {
+    fn _zero() -> Self { Self::zero() }
+    fn _one() -> Self { Self::one() }
+}
+
 impl ModularArithmetic for ramp::Int {
 
     // TODO much of this code could be moved into trait for re-use
-
-    fn zero() -> Self { Self::zero() }
-
-    fn one() -> Self { Self::one() }
 
     fn modpow(x: &Self, e: &Self, prime: &Self) -> Self {
         let mut mx = x.clone();

@@ -10,17 +10,19 @@ impl Samplable for num::bigint::BigInt {
     fn sample(upper: &Self) -> Self {
         use num::bigint::{ToBigInt, RandBigInt};
         let mut rng = rand::OsRng::new().unwrap();
-        rng.gen_biguint_below(&upper.to_biguint().unwrap()).to_bigint().unwrap();
+        rng.gen_biguint_below(&upper.to_biguint().unwrap()).to_bigint().unwrap()
     }
+}
+
+use num::{Zero, One};
+impl Identities for num::bigint::BigInt {
+    fn _zero() -> Self { Self::zero() }
+    fn _one() -> Self { Self::one() }
 }
 
 impl ModularArithmetic for num::bigint::BigInt {
 
     // TODO much of this code could be moved into trait for re-use
-
-    fn zero() -> Self { Self::zero() }
-
-    fn one() -> Self { Self::one() }
 
     fn modpow(x: &Self, e: &Self, prime: &Self) -> Self {
         use num::{Zero, Integer};

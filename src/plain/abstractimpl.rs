@@ -3,28 +3,7 @@ use std::ops::{Add, Sub, Mul, Div, Rem};
 use phe::*;
 
 #[derive(Debug,Clone)]
-pub struct PlainEncryptionKey<I> 
-where
-    I: Add<I, Output=I>,
-
-    I: Sub<I, Output=I>,
-    for<'a> &'a I: Sub<I, Output=I>,
-    for<'a> I: Sub<&'a I, Output=I>,
-
-    I: Mul<Output=I>,
-    for<'a> &'a I: Mul<I, Output=I>,
-    for<'b> I: Mul<&'b I, Output=I>,
-    // for<'a> &'a I: Mul<I, Output=I>,
-    // for<'a, 'b> &'a I: Mul<&'b I, Output=I>,
-
-    I: Div<Output=I>,
-
-    I: Rem<Output=I>,
-    for<'a> I: Rem<&'a I, Output=I>,
-
-    I: ModularArithmetic,
-    I: Clone
-{
+pub struct PlainEncryptionKey<I> {
     pub n: I,  // the modulus
     nn: I,     // the modulus squared
     g: I,      // the generator, fixed at g = n + 1
@@ -32,58 +11,22 @@ where
 
 impl<I> PlainEncryptionKey<I>
 where
-    I: Add<I, Output=I>,
-
-    I: Sub<I, Output=I>,
-    for<'a> &'a I: Sub<I, Output=I>,
-    for<'a> I: Sub<&'a I, Output=I>,
-
-    I: Mul<Output=I>,
-    for<'a> &'a I: Mul<I, Output=I>,
-    for<'b> I: Mul<&'b I, Output=I>,
-    for<'a> &'a I: Mul<I, Output=I>,
-    // for<'a, 'b> &'a I: Mul<&'b I, Output=I>,
-
-    I: Div<Output=I>,
-
-    I: Rem<Output=I>,
-    for<'a> I: Rem<&'a I, Output=I>,
-
-    I: ModularArithmetic,
-    I: Clone
+    I: Clone,
+    I: Identities,
+    for<'a, 'b> &'a I: Mul<&'b I, Output=I>,
+    for<'a, 'b> &'a I: Add<&'b I, Output=I>
 {
     pub fn from(modulus: I) -> PlainEncryptionKey<I> {
         PlainEncryptionKey {
             n: modulus.clone(),
-            nn: modulus * &modulus,
-            g: modulus + I::one()
+            nn: &modulus * &modulus,
+            g: &modulus + &I::_one()
         }
     }
 }
 
 #[derive(Debug,Clone)]
-pub struct PlainDecryptionKey<I>
-where
-    I: Add<I, Output=I>,
-
-    I: Sub<I, Output=I>,
-    for<'a> &'a I: Sub<I, Output=I>,
-    for<'a> I: Sub<&'a I, Output=I>,
-
-    I: Mul<Output=I>,
-    for<'a> &'a I: Mul<I, Output=I>,
-    for<'b> I: Mul<&'b I, Output=I>,
-    for<'a> &'a I: Mul<I, Output=I>,
-    // for<'a, 'b> &'a I: Mul<&'b I, Output=I>,
-
-    I: Div<Output=I>,
-
-    I: Rem<Output=I>,
-    for<'a> I: Rem<&'a I, Output=I>,
-
-    I: ModularArithmetic,
-    I: Clone
-{
+pub struct PlainDecryptionKey<I> {
     pub p: I,  // first prime
     pub q: I,  // second prime
     pub n: I,  // the modulus (also in public key)
@@ -94,30 +37,17 @@ where
 
 impl<I> PlainDecryptionKey<I>
 where
-    I: Add<I, Output=I>,
-
-    I: Sub<I, Output=I>,
-    for<'a> &'a I: Sub<I, Output=I>,
-    for<'a> I: Sub<&'a I, Output=I>,
-
-    I: Mul<Output=I>,
-    for<'a> &'a I: Mul<I, Output=I>,
-    for<'b> I: Mul<&'b I, Output=I>,
-    for<'a> &'a I: Mul<I, Output=I>,
-    // for<'a, 'b> &'a I: Mul<&'b I, Output=I>,
-
-    I: Div<Output=I>,
-
-    I: Rem<Output=I>,
-    for<'a> I: Rem<&'a I, Output=I>,
-
+    I: Clone,
+    I: Identities,
     I: ModularArithmetic,
-    I: Clone
+    I: Mul<Output=I>,
+    for<'a, 'b> &'a I: Mul<&'b I, Output=I>,
+    for<'a, 'b> &'a I: Sub<&'b I, Output=I>
 {
-    pub fn from(p: I, q: I) -> PlainDecryptionKey<I> {
-        let one = I::one();
-        let modulus = p * &q;
-        let nn = modulus * &modulus;
+    pub fn from(p: &I, q: &I) -> PlainDecryptionKey<I> {
+        let ref one = I::_one();
+        let modulus = p * q;
+        let nn = &modulus * &modulus;
         let lambda = (p - one) * (q - one);
         let mu = I::modinv(&lambda, &modulus);
         PlainDecryptionKey {
@@ -131,54 +61,21 @@ where
     }
 }
 
-pub struct AbstractPlainPaillier<I>
-where
-    I: Add<I, Output=I>,
-
-    I: Sub<I, Output=I>,
-    for<'a> &'a I: Sub<I, Output=I>,
-    for<'a> I: Sub<&'a I, Output=I>,
-
-    I: Mul<Output=I>,
-    for<'a> &'a I: Mul<I, Output=I>,
-    for<'b> I: Mul<&'b I, Output=I>,
-    for<'a> &'a I: Mul<I, Output=I>,
-    // for<'a, 'b> &'a I: Mul<&'b I, Output=I>,
-
-    I: Div<Output=I>,
-
-    I: Rem<Output=I>,
-    for<'a> I: Rem<&'a I, Output=I>,
-
-    I: ModularArithmetic,
-    I: Clone
-{
+pub struct AbstractPlainPaillier<I> {
     junk: ::std::marker::PhantomData<I>
 }
 
 impl <I> PartiallyHomomorphicScheme for AbstractPlainPaillier<I>
 where
-    I: Add<I, Output=I>,
-
-    I: Sub<I, Output=I>,
+    I: Samplable,
+    I: Identities,
+    I: ModularArithmetic,
     for<'a> &'a I: Sub<I, Output=I>,
-    for<'b> I: Sub<&'b I, Output=I>,
-
-    I: Mul<Output=I>,
     for<'a> &'a I: Mul<I, Output=I>,
     for<'b> I: Mul<&'b I, Output=I>,
-    for<'a> &'a I: Mul<I, Output=I>,
-    // for<'a, 'b> &'a I: Mul<&'b I, Output=I>,
-
-    I: Div<Output=I>,
+    for<'a, 'b> &'a I: Mul<&'b I, Output=I>,
     for<'b> I: Div<&'b I, Output=I>,
-
-    I: Rem<Output=I>,
     for<'a> I: Rem<&'a I, Output=I>,
-
-    I: ModularArithmetic,
-    I: Clone,
-    I: Samplable
 {
 
     type Plaintext = I;
@@ -193,11 +90,11 @@ where
 
     fn decrypt(dk: &Self::DecryptionKey, c: &Self::Ciphertext) -> Self::Plaintext {
         let ref u = I::modpow(&c, &dk.lambda, &dk.nn);
-        ((u - I::one()) / &dk.n * &dk.mu) % &dk.n
+        ((u - I::_one()) / &dk.n * &dk.mu) % &dk.n
     }
 
     fn add(ek: &Self::EncryptionKey, c1: &Self::Ciphertext, c2: &Self::Ciphertext) -> Self::Ciphertext {
-        (c1 * *c2) % &ek.nn
+        (c1 * c2) % &ek.nn
     }
 
     fn mult(ek: &Self::EncryptionKey, c1: &Self::Ciphertext, m2: &Self::Plaintext) -> Self::Ciphertext {
@@ -212,7 +109,10 @@ where
 }
 
 #[cfg(feature="keygen")]
-impl <I : Int + From<u64>> KeyGeneration for AbstractPlainPaillier<I> {
+impl <I> KeyGeneration for AbstractPlainPaillier<I>
+where
+    I: From<u64>
+{
 
     type EncryptionKey = PlainEncryptionKey<I>;
     type DecryptionKey = PlainDecryptionKey<I>;

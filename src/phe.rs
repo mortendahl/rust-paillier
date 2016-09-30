@@ -1,8 +1,10 @@
 
-pub trait ModularArithmetic {
-    fn zero() -> Self;
-    fn one() -> Self;
+pub trait Identities {
+    fn _zero() -> Self;
+    fn _one() -> Self;
+}
 
+pub trait ModularArithmetic {
     fn modpow(x: &Self, exponent: &Self, modulus: &Self) -> Self;
     fn modinv(a: &Self, modulus: &Self) -> Self;
     fn egcd(a: &Self, b: &Self) -> (Self, Self, Self) where Self: Sized;

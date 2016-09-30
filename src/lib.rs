@@ -8,8 +8,7 @@ extern crate ramp;
 
 mod phe;
 pub mod plain;
-pub mod packed;
+pub use plain::PlainPaillier;
 
-// default implementations
-pub type PlainPaillier = plain::RampPlainPaillier;
-pub type PackedPaillier = packed::AbstractPackedPaillier<PlainPaillier>;
+pub mod packed;
+pub use packed::PackedPaillier;

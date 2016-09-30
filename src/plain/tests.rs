@@ -1,32 +1,32 @@
+#[cfg(test)]
+
 use plain::*;
 use test::Bencher;
 
-#[cfg(test)]
-
-fn key_pair() -> (PublicKey, PrivateKey) {
-    fake_key_pair()
-}
+use phe::PartiallyHomomorphicScheme;
+use phe::KeyGeneration;
+use PlainPaillier as PHE;
 
 #[test]
 fn test_correct_encryption_decryption() {
-    let (ek, dk) = key_pair();
+    let (ek, dk) = PHE::keypair(10);
 
-    let m = Plaintext::from(10 as usize);
-    let c = encrypt(&ek, &m);
+    let m = PHE::Plaintext::from(10 as usize);
+    let c = PHE::encrypt(&ek, &m);
 
-    let recovered_m = decrypt(&dk, &c);
+    let recovered_m = PHE::decrypt(&dk, &c);
     assert_eq!(recovered_m, m);
 }
 
 #[bench]
 #[cfg(test)]
 fn bench_encryption(b: &mut Bencher) {
-    let (ek, _) = large_fake_key_pair();
+    let (ek, _) = PHE::keypair(10);
 
-    let m = Plaintext::from(10 as usize);
+    let m = PHE::Plaintext::from(10 as usize);
 
     b.iter(|| {
-        let _ = encrypt(&ek, &m);
+        let _ = PHE::encrypt(&ek, &m);
     });
 }
 
