@@ -45,6 +45,7 @@ where
     for<'a>    &'a I: Mul<I, Output=I>,
     for<'a,'b> &'a I: Mul<&'b I, Output=I>,
     for<'a,'b> &'a I: Div<&'b I, Output=I>,
+    for<'a,'b> &'a I: Add<&'b I, Output=I>,
     for<'a,'b> &'a I: Sub<&'b I, Output=I>,
     for<'a,'b> &'a I: Rem<&'b I, Output=I>
 {
@@ -75,6 +76,7 @@ where
     I: Samplable,
     I: num::One,
     I: ModularArithmetic,
+    for<'a,'b> &'a I: Add<&'b I, Output=I>,
     for<'a>    &'a I: Sub<I, Output=I>,
     for<'a,'b> &'a I: Sub<&'b I, Output=I>,
     for<'a>    &'a I: Mul<I, Output=I>,

@@ -1,6 +1,6 @@
 
 //use std::ops::{Add, Sub, Mul, Div, Rem, Shl, Shr};
-use std::ops::{Sub, Mul, Div, Rem, Shr};
+use std::ops::{Add, Sub, Mul, Div, Rem, Shr, Neg};
 use std::marker::Sized;
 use num_traits as num;
 
@@ -21,19 +21,29 @@ pub trait NumberTests {
 pub trait ModularArithmetic
 where
     Self: Clone + Sized,
-    Self: num::Zero + num::One + NumberTests,
+    Self: num::Zero + num::One + NumberTests + Neg<Output=Self>,
     for<'a>    &'a Self: Mul<Self, Output=Self>,
     for<'a,'b> &'a Self: Mul<&'b Self, Output=Self>,
     for<'a,'b> &'a Self: Div<&'b Self, Output=Self>,
     for<'a>        Self: Rem<&'a Self, Output=Self>,
     for<'a,'b> &'a Self: Rem<&'b Self, Output=Self>,
+    for<'a,'b> &'a Self: Add<&'b Self, Output=Self>,
                    Self: Sub<Self, Output=Self>,
     for<'b>        Self: Sub<&'b Self, Output=Self>,
     for<'a,'b> &'a Self: Sub<&'b Self, Output=Self>,
     Self: Shr<usize, Output=Self>,
 {
 
-    fn modinv(a: &Self, modulus: &Self) -> Self;
+    fn modinv(a: &Self, prime: &Self) -> Self {
+        let r = a % prime;
+        let ref d = if NumberTests::is_negative(&r) {
+            let r = r.neg();
+            -Self::egcd(prime, &r).2
+        } else {
+            Self::egcd(prime, &r).2
+        };
+        (prime + d) % prime
+    }
 
     fn modpow(x: &Self, e: &Self, prime: &Self) -> Self {
         let mut mx = x.clone();
