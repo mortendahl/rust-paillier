@@ -1,9 +1,16 @@
+
 extern crate paillier;
 
 use paillier::PartiallyHomomorphicScheme as PHE;
 use paillier::KeyGeneration;
-use paillier::plain::RampPlainPaillier as PlainPaillier;
+use paillier::PlainPaillier;
 
+#[cfg(not(feature="keygen"))]
+fn main() {
+    println!("*** please run with 'keygen' feature ***")
+}
+
+#[cfg(feature="keygen")]
 fn main() {
     // let (ek, dk) = plain::generate_keypair(1024);
     let (ek, dk) = PlainPaillier::keypair(10); // TODO

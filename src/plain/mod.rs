@@ -8,5 +8,3 @@ pub type PlainPaillier = RampPlainPaillier;
 
 #[cfg(feature="inclnum")]
 pub use self::numimpl::NumPlainPaillier;
-
-mod tests;

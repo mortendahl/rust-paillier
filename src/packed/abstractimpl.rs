@@ -43,6 +43,7 @@ pub struct AbstractPackedPaillier<BasePHE : PHE> {
     junk: ::std::marker::PhantomData<BasePHE>
 }
 
+#[derive(Debug, Clone, PartialEq)]
 pub struct PackedPlaintext(Vec<usize>);
 
 impl From<usize> for PackedPlaintext {
@@ -51,10 +52,17 @@ impl From<usize> for PackedPlaintext {
     }
 }
 
+impl From<Vec<usize>> for PackedPlaintext {
+    fn from(x: Vec<usize>) -> Self {
+        PackedPlaintext(x.clone())
+    }
+}
+
 use std::ops::{Add, Shl, Shr, Rem};
 impl <BasePHE : PHE> PHE for AbstractPackedPaillier<BasePHE>
 where
     BasePHE::Plaintext: From<usize> + Into<usize>,
+    BasePHE::Plaintext: ::std::fmt::Debug,
     BasePHE::Plaintext: Shl<usize, Output=BasePHE::Plaintext>,
     BasePHE::Plaintext: Shr<usize, Output=BasePHE::Plaintext>,
     for<'a> &'a BasePHE::Plaintext: Shr<usize, Output=BasePHE::Plaintext>,
@@ -80,7 +88,7 @@ where
 
     fn decrypt(dk: &Self::DecryptionKey, c: &Self::Ciphertext) -> Self::Plaintext {
         let mut packed_plaintext = BasePHE::decrypt(&dk.underlying_dk, c);
-        let mask = BasePHE::Plaintext::from(1usize << dk.component_size);
+        let mask = BasePHE::Plaintext::from(1 << dk.component_size);
         let mut result = vec![];
         for _ in 0..dk.component_count {
             let slot_value = &packed_plaintext % &mask;
@@ -102,6 +110,66 @@ where
 
     fn rerandomise(ek: &Self::EncryptionKey, c: &Self::Ciphertext) -> Self::Ciphertext {
         BasePHE::rerandomise(&ek.underlying_ek, c)
+    }
+
+}
+
+#[cfg(test)]
+mod tests {
+
+    use PlainPaillier;
+    use PackedPaillier;
+    use phe::PartiallyHomomorphicScheme as PHE;
+
+    fn test_keypair() -> (<PackedPaillier as PHE>::EncryptionKey, <PackedPaillier as PHE>::DecryptionKey) {
+        let p = str::parse("148677972634832330983979593310074301486537017973460461278300587514468301043894574906886127642530475786889672304776052879927627556769456140664043088700743909632312483413393134504352834240399191134336344285483935856491230340093391784574980688823380828143810804684752914935441384845195613674104960646037368551517").unwrap();
+        let q = str::parse("158741574437007245654463598139927898730476924736461654463975966787719309357536545869203069369466212089132653564188443272208127277664424448947476335413293018778018615899291704693105620242763173357203898195318179150836424196645745308205164116144020613415407736216097185962171301808761138424668335445923774195463").unwrap();
+        let n = &p * &q;
+        let plain_ek = <PlainPaillier as PHE>::EncryptionKey::from(&n);
+        let plain_dk = <PlainPaillier as PHE>::DecryptionKey::from(&p, &q);
+
+        let ek = <PackedPaillier as PHE>::EncryptionKey::from(plain_ek, 3, 10);
+        let dk = <PackedPaillier as PHE>::DecryptionKey::from(plain_dk, 3, 10);
+
+        (ek, dk)
+    }
+
+    #[test]
+    fn test_correct_encryption_decryption() {
+        let (ek, dk) = test_keypair();
+
+        let m = <PackedPaillier as PHE>::Plaintext::from(vec![10]);
+        let c = PackedPaillier::encrypt(&ek, &m);
+
+        let recovered_m = PackedPaillier::decrypt(&dk, &c);
+        assert_eq!(recovered_m, m);
+    }
+
+    #[test]
+    fn test_correct_addition() {
+        let (ek, dk) = test_keypair();
+
+        let m1 = <PackedPaillier as PHE>::Plaintext::from(vec![1, 2, 3]);
+        let c1 = PackedPaillier::encrypt(&ek, &m1);
+        let m2 = <PackedPaillier as PHE>::Plaintext::from(vec![1, 2, 3]);
+        let c2 = PackedPaillier::encrypt(&ek, &m2);
+
+        let c = PackedPaillier::add(&ek, &c1, &c2);
+        let m = PackedPaillier::decrypt(&dk, &c);
+        assert_eq!(m.0, vec![2, 4, 6]);
+    }
+
+    #[test]
+    fn test_correct_multiplication() {
+        let (ek, dk) = test_keypair();
+
+        let m1 = <PackedPaillier as PHE>::Plaintext::from(vec![1, 2, 3]);
+        let c1 = PackedPaillier::encrypt(&ek, &m1);
+        let m2 = <PackedPaillier as PHE>::Plaintext::from(vec![1, 2, 3]);
+
+        let c = PackedPaillier::mult(&ek, &c1, &m2);
+        let m = PackedPaillier::decrypt(&dk, &c);
+        assert_eq!(m.0, vec![1, 4, 9]);
     }
 
 }
