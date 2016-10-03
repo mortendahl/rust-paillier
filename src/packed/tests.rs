@@ -1,10 +1,15 @@
+#[cfg(test)]
 
 use packed::*;
+use test::Bencher;
+
+use phe::PartiallyHomomorphicScheme as PHE;
+use phe::KeyGeneration;
 
 #[allow(dead_code)]
 fn key_pair() -> (PublicKey, PrivateKey) {
-    use plain;
     let (plain_ek, plain_dk) = plain::fake_key_pair();
+    
     let ek = PublicKey::from_plain(plain_ek, 3, 6);
     let dk = PrivateKey::from_plain(plain_dk, 3, 6);
     (ek, dk)

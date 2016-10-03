@@ -3,8 +3,10 @@ use rand;
 use ramp;
 
 use phe::*;
+use num_traits as num;
 
-impl Int for ramp::Int {}
+#[derive(Debug,Clone)]
+pub struct RampBigInteger(pub ramp::Int);
 
 impl Samplable for ramp::Int {
     fn sample(upper: &Self) -> Self {
@@ -14,45 +16,19 @@ impl Samplable for ramp::Int {
     }
 }
 
-impl Identities for ramp::Int {
-    fn _zero() -> Self { Self::zero() }
-    fn _one() -> Self { Self::one() }
+impl NumberTests for ramp::Int {
+    fn is_zero(me: &Self) -> bool { me == &0_usize }
+    fn is_even(me: &Self) -> bool { me.is_even() }
+    fn is_negative(me: &Self) -> bool { me < &0_usize }
 }
+
+// impl num::Zero for RampBigInteger {
+//
+// }
 
 impl ModularArithmetic for ramp::Int {
 
     // TODO much of this code could be moved into trait for re-use
-
-    fn modpow(x: &Self, e: &Self, prime: &Self) -> Self {
-        let mut mx = x.clone();
-        let mut me = e.clone();
-        let mut acc = Self::one();
-        while me != 0 {
-            if me.is_even() {
-                // even
-                // no-op
-            }
-            else {
-                // odd
-                acc = (&acc * &mx) % prime;
-            }
-            mx = (&mx * &mx) % prime;  // waste one of these by having it here but code is simpler (tiny bit)
-            me = me >> 1;
-        }
-        acc
-    }
-
-    fn egcd(a: &Self, b: &Self) -> (Self, Self, Self) {
-        if b == &Self::zero() {
-            (a.clone(), Self::one(), Self::zero())
-        } else {
-            let q = a / b;
-            let r = a % b;
-            let (d, s, t) = Self::egcd(b, &r);
-            let new_t = s - &t * q;
-            (d, t, new_t)
-        }
-    }
 
     fn modinv(a: &Self, prime: &Self) -> Self {
         use std::ops::Neg;

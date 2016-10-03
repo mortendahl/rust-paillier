@@ -21,6 +21,7 @@ inclnum = ["num"]
 
 [dependencies]
 rand = "0.3"
+num-traits = "0.1"
 ramp = { version = "0.3", optional = true }
 num = { version = "0.1", optional = true }
 primal = { version = "0.2", optional = true }

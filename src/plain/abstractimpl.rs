@@ -1,6 +1,7 @@
 
 use std::ops::{Add, Sub, Mul, Div, Rem};
 use phe::*;
+use num_traits as num;
 
 #[derive(Debug,Clone)]
 pub struct PlainEncryptionKey<I> {
@@ -12,7 +13,7 @@ pub struct PlainEncryptionKey<I> {
 impl<I> PlainEncryptionKey<I>
 where
     I: Clone,
-    I: Identities,
+    I: num::One,
     for<'a, 'b> &'a I: Mul<&'b I, Output=I>,
     for<'a, 'b> &'a I: Add<&'b I, Output=I>
 {
@@ -20,7 +21,7 @@ where
         PlainEncryptionKey {
             n: modulus.clone(),
             nn: modulus * modulus,
-            g: modulus + &I::_one()
+            g: modulus + &I::one()
         }
     }
 }
@@ -38,14 +39,17 @@ pub struct PlainDecryptionKey<I> {
 impl<I> PlainDecryptionKey<I>
 where
     I: Clone,
-    I: Identities,
+    I: num::One,
     I: ModularArithmetic,
     I: Mul<Output=I>,
-    for<'a, 'b> &'a I: Mul<&'b I, Output=I>,
-    for<'a, 'b> &'a I: Sub<&'b I, Output=I>
+    for<'a>    &'a I: Mul<I, Output=I>,
+    for<'a,'b> &'a I: Mul<&'b I, Output=I>,
+    for<'a,'b> &'a I: Div<&'b I, Output=I>,
+    for<'a,'b> &'a I: Sub<&'b I, Output=I>,
+    for<'a,'b> &'a I: Rem<&'b I, Output=I>
 {
     pub fn from(p: &I, q: &I) -> PlainDecryptionKey<I> {
-        let ref one = I::_one();
+        let ref one = I::one();
         let modulus = p * q;
         let nn = &modulus * &modulus;
         let lambda = (p - one) * (q - one);
@@ -69,14 +73,17 @@ impl <I> PartiallyHomomorphicScheme for AbstractPlainPaillier<I>
 where
     I: From<usize>,
     I: Samplable,
-    I: Identities,
+    I: num::One,
     I: ModularArithmetic,
-    for<'a> &'a I: Sub<I, Output=I>,
+    for<'a>    &'a I: Sub<I, Output=I>,
+    for<'a,'b> &'a I: Sub<&'b I, Output=I>,
     for<'a>    &'a I: Mul<I, Output=I>,
     for<'b>        I: Mul<&'b I, Output=I>,
     for<'a,'b> &'a I: Mul<&'b I, Output=I>,
     for<'b> I: Div<&'b I, Output=I>,
+    for<'a,'b> &'a I: Div<&'b I, Output=I>,
     for<'a> I: Rem<&'a I, Output=I>,
+    for<'a,'b> &'a I: Rem<&'b I, Output=I>
 {
 
     type Plaintext = I;
@@ -91,7 +98,7 @@ where
 
     fn decrypt(dk: &Self::DecryptionKey, c: &Self::Ciphertext) -> Self::Plaintext {
         let ref u = I::modpow(&c, &dk.lambda, &dk.nn);
-        ((u - I::_one()) / &dk.n * &dk.mu) % &dk.n
+        ((u - I::one()) / &dk.n * &dk.mu) % &dk.n
     }
 
     fn add(ek: &Self::EncryptionKey, c1: &Self::Ciphertext, c2: &Self::Ciphertext) -> Self::Ciphertext {
@@ -116,7 +123,7 @@ where
     I: ::std::str::FromStr, <I as ::std::str::FromStr>::Err: ::std::fmt::Debug,
     I: Clone,
     I: Samplable,
-    I: Identities,
+    //I: Identities,
     I: ModularArithmetic,
                    I: Mul<Output=I>,
     for<'a>    &'a I: Mul<I, Output=I>,
@@ -126,7 +133,9 @@ where
     for<'a>    &'a I: Sub<I, Output=I>,
     for<'a,'b> &'a I: Sub<&'b I, Output=I>,
     for<'b>        I: Div<&'b I, Output=I>,
+    for<'a,'b> &'a I: Div<&'b I, Output=I>,
     for<'a>        I: Rem<&'a I, Output=I>,
+    for<'a,'b> &'a I: Rem<&'b I, Output=I>
 {
 
     type EncryptionKey = PlainEncryptionKey<I>;
