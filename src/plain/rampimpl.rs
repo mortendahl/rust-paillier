@@ -2,11 +2,7 @@
 use rand;
 use ramp;
 
-use phe::*;
-
-// use num_traits as num;
-// #[derive(Debug,Clone)]
-// pub struct RampBigInteger(pub ramp::Int);
+use numtheory::*;
 
 impl Samplable for ramp::Int {
     fn sample(upper: &Self) -> Self {

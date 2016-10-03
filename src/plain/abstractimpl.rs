@@ -1,7 +1,8 @@
 
 use std::ops::{Add, Sub, Mul, Div, Rem};
+use num_traits::{One};
+use numtheory::*;
 use phe::*;
-use num_traits as num;
 
 #[derive(Debug,Clone)]
 pub struct PlainEncryptionKey<I> {
@@ -13,7 +14,7 @@ pub struct PlainEncryptionKey<I> {
 impl<I> PlainEncryptionKey<I>
 where
     I: Clone,
-    I: num::One,
+    I: One,
     for<'a, 'b> &'a I: Mul<&'b I, Output=I>,
     for<'a, 'b> &'a I: Add<&'b I, Output=I>
 {
@@ -39,9 +40,7 @@ pub struct PlainDecryptionKey<I> {
 impl<I> PlainDecryptionKey<I>
 where
     I: Clone,
-    I: num::One,
-    I: ModularArithmetic,
-    I: Mul<Output=I>,
+    I: One + ModularArithmetic + Mul<Output=I>,
     for<'a>    &'a I: Mul<I, Output=I>,
     for<'a,'b> &'a I: Mul<&'b I, Output=I>,
     for<'a,'b> &'a I: Div<&'b I, Output=I>,
@@ -74,8 +73,7 @@ impl <I> PartiallyHomomorphicScheme for AbstractPlainPaillier<I>
 where
     I: From<usize>,
     I: Samplable,
-    I: num::One,
-    I: ModularArithmetic,
+    I: One + ModularArithmetic,
     for<'a,'b> &'a I: Add<&'b I, Output=I>,
     for<'a>    &'a I: Sub<I, Output=I>,
     for<'a,'b> &'a I: Sub<&'b I, Output=I>,
@@ -125,7 +123,6 @@ where
     I: ::std::str::FromStr, <I as ::std::str::FromStr>::Err: ::std::fmt::Debug,
     I: Clone,
     I: Samplable,
-    //I: Identities,
     I: ModularArithmetic,
                    I: Mul<Output=I>,
     for<'a>    &'a I: Mul<I, Output=I>,

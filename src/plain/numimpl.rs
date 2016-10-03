@@ -3,9 +3,7 @@
 use rand;
 use num;
 
-use phe::*;
-
-// impl Int for num::bigint::BigInt {}
+use numtheory::*;
 
 impl Samplable for num::bigint::BigInt {
     fn sample(upper: &Self) -> Self {

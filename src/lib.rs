@@ -9,6 +9,7 @@ extern crate num_traits;
 #[cfg(feature="inclnum")]
 extern crate num;
 
+mod numtheory;
 mod phe;
 pub use phe::{KeyGeneration, PartiallyHomomorphicScheme};
 
