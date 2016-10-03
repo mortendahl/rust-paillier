@@ -61,8 +61,8 @@ impl From<Vec<usize>> for PackedPlaintext {
 use std::ops::{Add, Shl, Shr, Rem};
 impl <BasePHE : PHE> PHE for AbstractPackedPaillier<BasePHE>
 where
-    BasePHE::Plaintext: From<usize> + Into<usize>,
-    BasePHE::Plaintext: ::std::fmt::Debug,
+    for<'a> usize: From<&'a BasePHE::Plaintext>,
+    BasePHE::Plaintext: From<usize>,
     BasePHE::Plaintext: Shl<usize, Output=BasePHE::Plaintext>,
     BasePHE::Plaintext: Shr<usize, Output=BasePHE::Plaintext>,
     for<'a> &'a BasePHE::Plaintext: Shr<usize, Output=BasePHE::Plaintext>,
@@ -92,8 +92,9 @@ where
         let mut result = vec![];
         for _ in 0..dk.component_count {
             let slot_value = &packed_plaintext % &mask;
+            let converted_slot_value = usize::from(&slot_value);
+            result.push(converted_slot_value);
             packed_plaintext = &packed_plaintext >> dk.component_size;
-            result.push(slot_value.into());
         }
         result.reverse();
         PackedPlaintext(result)
@@ -138,10 +139,11 @@ mod tests {
     fn test_correct_encryption_decryption() {
         let (ek, dk) = test_keypair();
 
-        let m = <PackedPaillier as PHE>::Plaintext::from(vec![10]);
+        let m = <PackedPaillier as PHE>::Plaintext::from(vec![1, 2, 3]);
         let c = PackedPaillier::encrypt(&ek, &m);
 
         let recovered_m = PackedPaillier::decrypt(&dk, &c);
+        println!("{:?}", recovered_m);
         assert_eq!(recovered_m, m);
     }
 
@@ -165,11 +167,11 @@ mod tests {
 
         let m1 = <PackedPaillier as PHE>::Plaintext::from(vec![1, 2, 3]);
         let c1 = PackedPaillier::encrypt(&ek, &m1);
-        let m2 = <PackedPaillier as PHE>::Plaintext::from(vec![1, 2, 3]);
+        let m2 = <PackedPaillier as PHE>::Plaintext::from(vec![4]);
 
         let c = PackedPaillier::mult(&ek, &c1, &m2);
         let m = PackedPaillier::decrypt(&dk, &c);
-        assert_eq!(m.0, vec![1, 4, 9]);
+        assert_eq!(m.0, vec![4, 8, 12]);
     }
 
 }
