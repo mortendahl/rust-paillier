@@ -9,7 +9,7 @@ mod phe;
 pub use phe::{KeyGeneration, PartiallyHomomorphicScheme};
 
 pub mod plain;
-pub use plain::*;
+pub use plain::PlainPaillier;
 
 pub mod packed;
-pub use packed::*;
+pub use packed::PackedPaillier;
