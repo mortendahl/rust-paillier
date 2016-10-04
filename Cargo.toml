@@ -15,9 +15,10 @@ repository = "https://github.com/snips/rust-paillier"
 license = "MIT/Apache-2.0"
 
 [features]
-default = ["ramp"]
+default = []
 keygen = ["primal"]
-inclnum = ["num"]
+usenum = ["num"]
+useramp = ["ramp"]
 
 [dependencies]
 rand = "0.3"

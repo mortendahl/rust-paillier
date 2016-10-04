@@ -1,8 +1,8 @@
 
-#[cfg(not(feature="inclnum"))]
+#[cfg(feature="useramp")]
 use arithimpl::rampimpl::BigInteger as BigInteger;
 
-#[cfg(feature="inclnum")]
+#[cfg(feature="usenum")]
 use arithimpl::numimpl::BigInteger as BigInteger;
 
 mod abstractimpl;
