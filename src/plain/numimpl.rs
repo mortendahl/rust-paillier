@@ -9,7 +9,7 @@ impl Samplable for num::bigint::BigInt {
     fn sample(upper: &Self) -> Self {
         use num::bigint::{ToBigInt, RandBigInt};
         let mut rng = rand::OsRng::new().unwrap();
-        rng.gen_biguint_below(&upper.to_biguint().unwrap()).to_bigint().unwrap()
+        rng.gen_biguint_below(&upper.to_biguint().unwrap()).to_bigint().unwrap()  // TODO this is really ugly
     }
 }
 
