@@ -1,19 +1,22 @@
 #![cfg(feature="inclnum")]
 
-use rand;
-use num;
+extern crate num;
 
-use numtheory::*;
+use rand;
+// use num;
+// use self::num;
+
+use super::traits::*;
 
 impl Samplable for num::bigint::BigInt {
     fn sample(upper: &Self) -> Self {
-        use num::bigint::{ToBigInt, RandBigInt};
+        use self::num::bigint::{ToBigInt, RandBigInt};
         let mut rng = rand::OsRng::new().unwrap();
         rng.gen_biguint_below(&upper.to_biguint().unwrap()).to_bigint().unwrap()  // TODO this is really ugly
     }
 }
 
-use num::{Zero, Integer, Signed};
+use self::num::{Zero, Integer, Signed};
 impl NumberTests for num::bigint::BigInt {
     fn is_zero(me: &Self) -> bool { me.is_zero() }
     fn is_even(me: &Self) -> bool { me.is_even() }
@@ -22,5 +25,11 @@ impl NumberTests for num::bigint::BigInt {
 
 impl ModularArithmetic for num::bigint::BigInt {}
 
-use super::abstractimpl::AbstractPlainPaillier;
-pub type NumPlainPaillier = AbstractPlainPaillier<num::bigint::BigInt>;
+use self::num::ToPrimitive;
+impl ConvertFrom<num::bigint::BigInt> for u64 {
+    fn _from(x: &num::bigint::BigInt) -> u64 {
+        x.to_u64().unwrap()
+    }
+}
+
+pub type BigInteger = num::bigint::BigInt;

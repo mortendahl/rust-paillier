@@ -1,12 +1,14 @@
+#![cfg(not(feature="inclnum"))]
+
+extern crate ramp;
 
 use rand;
-use ramp;
 
-use numtheory::*;
+use super::traits::*;
 
 impl Samplable for ramp::Int {
     fn sample(upper: &Self) -> Self {
-        use ramp::RandomInt;
+        use self::ramp::RandomInt;
         let mut rng = rand::OsRng::new().unwrap();
         rng.gen_uint_below(upper)
     }
@@ -20,5 +22,10 @@ impl NumberTests for ramp::Int {
 
 impl ModularArithmetic for ramp::Int {}
 
-use super::abstractimpl::AbstractPlainPaillier;
-pub type RampPlainPaillier = AbstractPlainPaillier<ramp::Int>;
+impl ConvertFrom<ramp::Int> for u64 {
+    fn _from(x: &ramp::Int) -> u64 {
+        u64::from(x)
+    }
+}
+
+pub type BigInteger = ramp::Int;

@@ -1,11 +1,9 @@
 
-mod abstractimpl;
-mod rampimpl;
-mod numimpl;
-
-pub use self::rampimpl::RampPlainPaillier;
-pub type PlainPaillier = RampPlainPaillier;
+#[cfg(not(feature="inclnum"))]
+use arithimpl::rampimpl::BigInteger as BigInteger;
 
 #[cfg(feature="inclnum")]
-pub use self::numimpl::NumPlainPaillier;
-// pub type PlainPaillier = NumPlainPaillier;
+use arithimpl::numimpl::BigInteger as BigInteger;
+
+mod abstractimpl;
+pub type PlainPaillier = self::abstractimpl::AbstractPlainPaillier<BigInteger>;

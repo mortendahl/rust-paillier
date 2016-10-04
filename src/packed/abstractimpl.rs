@@ -39,61 +39,71 @@ impl<UnderlyingScheme: PHE> PackedDecryptionKey<UnderlyingScheme> {
     }
 }
 
-pub struct AbstractPackedPaillier<BasePHE : PHE> {
-    junk: ::std::marker::PhantomData<BasePHE>
+pub struct AbstractPackedPaillier<T, BasePHE : PHE> {
+    junk: ::std::marker::PhantomData<(T, BasePHE)>
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct PackedPlaintext(Vec<usize>);
+#[derive(Debug,Clone,PartialEq)]
+pub struct PackedPlaintext<ComponentType>(Vec<ComponentType>);
 
-impl From<usize> for PackedPlaintext {
-    fn from(x: usize) -> Self {
-        PackedPlaintext(vec![x])
+impl <T : Clone> From<T> for PackedPlaintext<T> {
+    fn from(x: T) -> Self {
+        PackedPlaintext(vec![x.clone()])
     }
 }
 
-impl From<Vec<usize>> for PackedPlaintext {
-    fn from(x: Vec<usize>) -> Self {
+impl <T : Clone> From<Vec<T>> for PackedPlaintext<T> {
+    fn from(x: Vec<T>) -> Self {
         PackedPlaintext(x.clone())
     }
 }
 
-use std::ops::{Add, Shl, Shr, Rem};
-impl <BasePHE : PHE> PHE for AbstractPackedPaillier<BasePHE>
+use std::ops::{Add, Shl, ShlAssign, Shr, Rem};
+use num_traits::{One};
+use arithimpl::traits::*;
+impl <ComponentType, BasePHE> PHE for AbstractPackedPaillier<ComponentType, BasePHE>
 where
-    for<'a> usize: From<&'a BasePHE::Plaintext>,
-    BasePHE::Plaintext: From<usize>,
+    // regarding ComponentType
+    ComponentType: Clone,
+    ComponentType: One,
+    ComponentType: Shl<usize, Output=ComponentType>,
+    for<'b> ComponentType: ConvertFrom<BasePHE::Plaintext>,
+    // regarding BasePHE
+    BasePHE: PHE,
+    BasePHE::Plaintext: From<ComponentType>,
     BasePHE::Plaintext: Shl<usize, Output=BasePHE::Plaintext>,
+    // BasePHE::Plaintext: ShlAssign<usize>,
     BasePHE::Plaintext: Shr<usize, Output=BasePHE::Plaintext>,
     for<'a> &'a BasePHE::Plaintext: Shr<usize, Output=BasePHE::Plaintext>,
     BasePHE::Plaintext: Add<Output=BasePHE::Plaintext>,
     BasePHE::Plaintext: Rem<Output=BasePHE::Plaintext>,
-    for<'a, 'b> &'a BasePHE::Plaintext: Rem<&'b BasePHE::Plaintext, Output=BasePHE::Plaintext>
+    for<'a,'b> &'a BasePHE::Plaintext: Rem<&'b BasePHE::Plaintext, Output=BasePHE::Plaintext>
 {
 
-    type Plaintext = PackedPlaintext;
+    type Plaintext = PackedPlaintext<ComponentType>;
     type Ciphertext = BasePHE::Ciphertext;
     type EncryptionKey = PackedEncryptionKey<BasePHE>;
     type DecryptionKey = PackedDecryptionKey<BasePHE>;
 
     fn encrypt(ek: &Self::EncryptionKey, ms: &Self::Plaintext) -> Self::Ciphertext {
         assert!(ms.0.len() == ek.component_count);
-        let mut packed_plaintext = BasePHE::Plaintext::from(ms.0[0]);
-        for &m in &ms.0[1..] {
+        let mut packed_plaintext = BasePHE::Plaintext::from(ms.0[0].clone());
+        for m in &ms.0[1..] {
             packed_plaintext = packed_plaintext << ek.component_size;
-            packed_plaintext = packed_plaintext + BasePHE::Plaintext::from(m);
+            packed_plaintext = packed_plaintext + BasePHE::Plaintext::from(m.clone());
         }
         BasePHE::encrypt(&ek.underlying_ek, &packed_plaintext)
     }
 
     fn decrypt(dk: &Self::DecryptionKey, c: &Self::Ciphertext) -> Self::Plaintext {
         let mut packed_plaintext = BasePHE::decrypt(&dk.underlying_dk, c);
-        let mask = BasePHE::Plaintext::from(1 << dk.component_size);
+        let raw_mask = ComponentType::one() << dk.component_size;
+        let mask = BasePHE::Plaintext::from(raw_mask);
         let mut result = vec![];
         for _ in 0..dk.component_count {
             let slot_value = &packed_plaintext % &mask;
-            let converted_slot_value = usize::from(&slot_value);
-            result.push(converted_slot_value);
+            let foo = ComponentType::_from(&slot_value);
+            result.push(foo);
             packed_plaintext = &packed_plaintext >> dk.component_size;
         }
         result.reverse();
@@ -105,7 +115,7 @@ where
     }
 
     fn mult(ek: &Self::EncryptionKey, c1: &Self::Ciphertext, m2: &Self::Plaintext) -> Self::Ciphertext {
-        let ref expanded_m2 = BasePHE::Plaintext::from(m2.0[0]); // TODO have separate type for scalar?
+        let ref expanded_m2 = BasePHE::Plaintext::from(m2.0[0].clone()); // TODO have separate type for scalar?
         BasePHE::mult(&ek.underlying_ek, c1, expanded_m2)
     }
 

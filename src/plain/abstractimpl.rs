@@ -1,7 +1,7 @@
 
 use std::ops::{Add, Sub, Mul, Div, Rem};
 use num_traits::{One};
-use numtheory::*;
+use arithimpl::traits::*;
 use phe::*;
 
 #[derive(Debug,Clone)]
@@ -71,7 +71,7 @@ pub struct AbstractPlainPaillier<I> {
 
 impl <I> PartiallyHomomorphicScheme for AbstractPlainPaillier<I>
 where
-    I: From<usize>,
+    // I: From<usize>,
     I: Samplable,
     I: One + ModularArithmetic,
     for<'a,'b> &'a I: Add<&'b I, Output=I>,
@@ -80,9 +80,9 @@ where
     for<'a>    &'a I: Mul<I, Output=I>,
     for<'b>        I: Mul<&'b I, Output=I>,
     for<'a,'b> &'a I: Mul<&'b I, Output=I>,
-    for<'b> I: Div<&'b I, Output=I>,
+    for<'b>        I: Div<&'b I, Output=I>,
     for<'a,'b> &'a I: Div<&'b I, Output=I>,
-    for<'a> I: Rem<&'a I, Output=I>,
+    for<'a>        I: Rem<&'a I, Output=I>,
     for<'a,'b> &'a I: Rem<&'b I, Output=I>
 {
 

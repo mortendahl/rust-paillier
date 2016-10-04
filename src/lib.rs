@@ -1,15 +1,10 @@
 #![feature(test)]
 
 extern crate test;
-
 extern crate rand;
-extern crate ramp;
 extern crate num_traits;
 
-#[cfg(feature="inclnum")]
-extern crate num;
-
-mod numtheory;
+mod arithimpl;
 mod phe;
 pub use phe::{KeyGeneration, PartiallyHomomorphicScheme};
 

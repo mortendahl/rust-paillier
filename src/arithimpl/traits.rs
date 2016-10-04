@@ -12,7 +12,7 @@ pub trait NumberTests {
 pub trait ModularArithmetic
 where
     Self: Clone + Sized,
-    Self: Zero + One + NumberTests + Neg<Output=Self>,
+    Self: Zero + One + Neg<Output=Self> + NumberTests,
     for<'a>    &'a Self: Mul<Self, Output=Self>,
     for<'a,'b> &'a Self: Mul<&'b Self, Output=Self>,
     for<'a,'b> &'a Self: Div<&'b Self, Output=Self>,
@@ -68,28 +68,10 @@ where
     }
 }
 
-
-// pub trait Int where
-//     Self: Add<Self, Output=Self>,
-//
-//     Self: Sub<Self, Output=Self>,
-//     for<'a> Self: Sub<&'a Self, Output=Self>,
-//
-//     Self: Mul<Output=Self>,
-//     for<'a> &'a Self: Mul<Self, Output=Self>,
-//     for<'b> Self: Mul<&'b Self, Output=Self>,
-//     // for<'a> &'a Self: Mul<Self, Output=Self>,
-//     // for<'a, 'b> &'a Self: Mul<&'b Self, Output=Self>,
-//
-//     Self: Div<Output=Self>,
-//
-//     Self: Rem<Output=Self>,
-//     for<'a> Self: Rem<&'a Self, Output=Self>,
-//
-//     Self: ModularArithmetic,
-//     Self: Clone
-// {}
-
 pub trait Samplable {
     fn sample(upper: &Self) -> Self;
+}
+
+pub trait ConvertFrom<T> {
+    fn _from(&T) -> Self;
 }
