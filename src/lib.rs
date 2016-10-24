@@ -19,10 +19,11 @@ pub use phe::{KeyGeneration, PartiallyHomomorphicScheme};
 #[cfg(feature="inclramp")]
 mod rampinstance
 {
-    use arithimpl::rampimpl::BigInteger as BigInteger;
-    pub type RampPlainPaillier = ::plain::AbstractPlainPaillier<BigInteger>;
+    pub use arithimpl::rampimpl::BigInteger as RampBigInteger;
+    pub type RampPlainPaillier = ::plain::AbstractPlainPaillier<RampBigInteger>;
     pub type RampPackedPaillier = ::packed::AbstractPackedPaillier<u64, RampPlainPaillier>;
 
+    pub type BigInteger = RampBigInteger;
     pub type PlainPaillier = RampPlainPaillier;
     pub type PackedPaillier = RampPackedPaillier;
 }
@@ -37,10 +38,12 @@ pub use self::rampinstance::*;
 #[cfg(feature="inclnum")]
 mod numinstance
 {
-    use arithimpl::numimpl::BigInteger as BigInteger;
-    pub type NumPlainPaillier = ::plain::AbstractPlainPaillier<BigInteger>;
+    pub use arithimpl::numimpl::BigInteger as NumBigInteger;
+    pub type NumPlainPaillier = ::plain::AbstractPlainPaillier<NumBigInteger>;
     pub type NumPackedPaillier = ::packed::AbstractPackedPaillier<u64, NumPlainPaillier>;
 
+    #[cfg(not(feature="inclramp"))]
+    pub type BigInteger = NumBigInteger;
     #[cfg(not(feature="inclramp"))]
     pub type PlainPaillier = NumPlainPaillier;
     #[cfg(not(feature="inclramp"))]
