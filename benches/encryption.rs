@@ -8,7 +8,8 @@ use paillier::*;
 
 
 pub trait TestKeyGeneration
-where Self : PartiallyHomomorphicScheme
+where
+    Self : PartiallyHomomorphicScheme
 {
     fn test_keypair() -> (Self::EncryptionKey, Self::DecryptionKey);
 }
