@@ -58,7 +58,7 @@ impl <T : Clone> From<Vec<T>> for PackedPlaintext<T> {
     }
 }
 
-use std::ops::{Add, Shl, ShlAssign, Shr, Rem};
+use std::ops::{Add, Shl, Shr, Rem};
 use num_traits::{One};
 use arithimpl::traits::*;
 impl <ComponentType, BasePHE> PHE for AbstractPackedPaillier<ComponentType, BasePHE>
