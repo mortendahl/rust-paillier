@@ -24,7 +24,7 @@ along with implementations `PlainPaillier` and `PackedPaillier`.
 
 # Installation
 
-Note that some functionality such as **key generation** is *not* included by default. See the [Building](#Building) section for more details.
+Note that some functionality such as **key generation** is *not* included by default. See the [Building](#building) section for more details.
 
 ## GitHub
 ```bash
