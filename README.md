@@ -49,15 +49,15 @@ The library supports the use of different arithmetic libraries, currently defaul
 
 For [`ramp`](https://github.com/Aatch/ramp)-only compilation use `cargo build` or
 ```
-cargo build --features "useramp"
+cargo build --features "inclramp"
 ```
 for [`num`](https://github.com/rust-num/num)-only compilation use
 ```
-cargo build --no-default-features --features "usenum"
+cargo build --no-default-features --features "inclnum"
 ```
 and finally, use
 ```
-cargo build --features "useramp usenum"
+cargo build --features "inclramp inclnum"
 ```
 to have both available (useful for e.g. performance tests).
 
