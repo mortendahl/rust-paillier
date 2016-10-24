@@ -4,6 +4,23 @@ Efficient pure-Rust library for the [Paillier](https://en.wikipedia.org/wiki/Pai
 
 **Important**: while we have followed recommendations regarding the scheme itself, so far no particular efforts have been made to harden the library against non-cryptographic attacks, including side-channel attacks.
 
+The implementation exposes the usual operations through the `PartiallyHomomorphicScheme` interface:
+```rust
+pub trait PartiallyHomomorphicScheme {
+    type Plaintext;
+    type Ciphertext;
+    type EncryptionKey;
+    type DecryptionKey;
+    fn encrypt(&Self::EncryptionKey, &Self::Plaintext) -> Self::Ciphertext;
+    fn decrypt(&Self::DecryptionKey, &Self::Ciphertext) -> Self::Plaintext;
+    fn rerandomise(&Self::EncryptionKey, &Self::Ciphertext) -> Self::Ciphertext;
+    fn add(&Self::EncryptionKey, &Self::Ciphertext, &Self::Ciphertext) -> Self::Ciphertext;
+    fn mult(&Self::EncryptionKey, &Self::Ciphertext, &Self::Plaintext) -> Self::Ciphertext;
+}
+```
+along with implementations `PlainPaillier` and `PackedPaillier`.
+
+
 
 # Installation
 
@@ -17,16 +34,16 @@ cargo build --release
 ```
 
 
-# Building
+## Building
 
-## Key generation
+### Key generation
 
 Key generation is optional since it is not always needed yet adds several extra (heavy) dependencies. To include use
 ```
 cargo build --features "keygen"
 ```
 
-## Arithmetic
+### Arithmetic
 
 The library supports the use of different arithmetic libraries, currently defaulting to [`ramp`](https://github.com/Aatch/ramp) for efficiency.
 
