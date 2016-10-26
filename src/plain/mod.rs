@@ -3,6 +3,7 @@ use std::ops::{Add, Sub, Mul, Div, Rem};
 use num_traits::{One};
 use arithimpl::traits::*;
 use phe::*;
+use rand::OsRng;
 
 #[derive(Debug,Clone)]
 pub struct PlainEncryptionKey<I> {
@@ -110,7 +111,7 @@ where
     }
 
     fn rerandomise(ek: &Self::EncryptionKey, c: &Self::Ciphertext) -> Self::Ciphertext {
-        let ref r = I::sample(&ek.n);
+        let ref r = I::sample_below(&ek.n);
         (c * I::modpow(r, &ek.n, &ek.nn)) % &ek.nn
     }
 
@@ -121,10 +122,10 @@ mod tests {
 
     use phe::PartiallyHomomorphicScheme as PHE;
     use PlainPaillier as Plain;
+    use phe::KeyGeneration as KeyGen;
 
     fn test_keypair() -> (<Plain as PHE>::EncryptionKey, <Plain as PHE>::DecryptionKey) {
-        let p = str::parse("148677972634832330983979593310074301486537017973460461278300587514468301043894574906886127642530475786889672304776052879927627556769456140664043088700743909632312483413393134504352834240399191134336344285483935856491230340093391784574980688823380828143810804684752914935441384845195613674104960646037368551517").unwrap();
-        let q = str::parse("158741574437007245654463598139927898730476924736461654463975966787719309357536545869203069369466212089132653564188443272208127277664424448947476335413293018778018615899291704693105620242763173357203898195318179150836424196645745308205164116144020613415407736216097185962171301808761138424668335445923774195463").unwrap();
+        let (p,q) = KeyGen::keypair(128);
         let n = &p * &q;
         let ek = <Plain as PHE>::EncryptionKey::from(&n);
         let dk = <Plain as PHE>::DecryptionKey::from(&p, &q);
@@ -179,6 +180,7 @@ where
     I: Clone,
     I: Samplable,
     I: ModularArithmetic,
+    I: PrimeNumbers,
                    I: Mul<Output=I>,
     for<'a>    &'a I: Mul<I, Output=I>,
     for<'b>        I: Mul<&'b I, Output=I>,
@@ -197,7 +199,8 @@ where
 
     fn keypair(bit_length: usize) -> (Self::EncryptionKey, Self::DecryptionKey) {
 
-        // TODO: don't use fixed primes.........
+        //let mut rng = OsRng::new().unwrap();
+
 
         if bit_length < 42 {
             let ref p = I::from(1061u64);
@@ -207,14 +210,16 @@ where
             let dk = PlainDecryptionKey::from(p, q);
             (ek, dk)
         } else {
-            let p = str::parse("148677972634832330983979593310074301486537017973460461278300587514468301043894574906886127642530475786889672304776052879927627556769456140664043088700743909632312483413393134504352834240399191134336344285483935856491230340093391784574980688823380828143810804684752914935441384845195613674104960646037368551517").unwrap();
-            let q = str::parse("158741574437007245654463598139927898730476924736461654463975966787719309357536545869203069369466212089132653564188443272208127277664424448947476335413293018778018615899291704693105620242763173357203898195318179150836424196645745308205164116144020613415407736216097185962171301808761138424668335445923774195463").unwrap();
+            let p = I::sample_prime(bit_length);
+            let q = I::sample_prime(bit_length);
             let n = &p * &q;
             let ek = PlainEncryptionKey::from(&n);
             let dk = PlainDecryptionKey::from(&p, &q);
             (ek, dk)
         }
     }
+
+
 
 
 

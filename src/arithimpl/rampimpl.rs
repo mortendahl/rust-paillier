@@ -7,10 +7,16 @@ use rand;
 use super::traits::*;
 
 impl Samplable for ramp::Int {
-    fn sample(upper: &Self) -> Self {
+    fn sample_below(upper: &Self) -> Self {
         use self::ramp::RandomInt;
         let mut rng = rand::OsRng::new().unwrap();
         rng.gen_uint_below(upper)
+    }
+
+     fn sample(bitsize: usize) -> Self {
+        use self::ramp::RandomInt;
+        let mut rng = rand::OsRng::new().unwrap();
+        rng.gen_uint(bitsize)
     }
 }
 
@@ -27,5 +33,26 @@ impl ConvertFrom<ramp::Int> for u64 {
         u64::from(x)
     }
 }
+
+impl PrimeNumbers for ramp::Int {    
+
+    fn sample_prime(bitsize :usize) -> Self {
+        
+        loop {
+            let mut candidate = Self::sample(bitsize);
+
+            if Self::is_even(&candidate) {
+                candidate = candidate + Self::one();
+            }
+
+            // TRIAL 
+            // FERMAT
+            // MILLER_RABIN
+
+            return candidate
+        }
+    }
+}
+
 
 pub type BigInteger = ramp::Int;

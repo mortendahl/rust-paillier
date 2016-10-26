@@ -69,7 +69,12 @@ where
 }
 
 pub trait Samplable {
-    fn sample(upper: &Self) -> Self;
+    fn sample_below(upper: &Self) -> Self;
+    fn sample(bitsize: usize) -> Self;
+}
+
+pub trait PrimeNumbers {
+    fn sample_prime(bitsize: usize) -> Self;
 }
 
 pub trait ConvertFrom<T> {

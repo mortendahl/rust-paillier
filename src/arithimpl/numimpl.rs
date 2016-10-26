@@ -9,11 +9,18 @@ use rand;
 use super::traits::*;
 
 impl Samplable for num::bigint::BigInt {
-    fn sample(upper: &Self) -> Self {
+    fn sample_below(upper: &Self) -> Self {
         use self::num::bigint::{ToBigInt, RandBigInt};
-        let mut rng = rand::OsRng::new().unwrap();
-        rng.gen_biguint_below(&upper.to_biguint().unwrap()).to_bigint().unwrap()  // TODO this is really ugly
+        let mut rng = try!(rand::OsRng::new());
+        try!(rng.gen_biguint_below(try!(&upper.to_biguint()).to_bigint()))
     }
+
+    fn sample(bitsize: usize) -> Self {
+        use self::num::bigint::{ToBigInt, RandBigInt};
+        let mut rng = try!(rand::OsRng::new());
+        try!(rng.gen_biguint(bitsize).to_bigint())
+    }
+
 }
 
 use self::num::{Zero, Integer, Signed};
