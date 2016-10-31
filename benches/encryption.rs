@@ -11,8 +11,106 @@ pub trait TestKeyGeneration
 where
     Self : PartiallyHomomorphicScheme
 {
-    fn test_keypair() -> (Self::EncryptionKey, Self::DecryptionKey);
+    fn test_keypair(usize) -> (Self::EncryptionKey, Self::DecryptionKey);
+    fn test_keypair_safe(usize) -> (Self::EncryptionKey, Self::DecryptionKey);
 }
+
+
+pub fn bench_key_generation_512<PHE>(b: &mut Bencher)
+where
+    PHE : PartiallyHomomorphicScheme,
+    PHE : TestKeyGeneration,
+    PHE::Plaintext : From<usize>
+{
+    b.iter(|| {
+        PHE::test_keypair(512);
+    });
+}
+
+pub fn bench_key_generation_1024<PHE>(b: &mut Bencher)
+where
+    PHE : PartiallyHomomorphicScheme,
+    PHE : TestKeyGeneration,
+    PHE::Plaintext : From<usize>
+{
+    b.iter(|| {
+        PHE::test_keypair(1024);
+    });
+}
+
+pub fn bench_key_generation_2048<PHE>(b: &mut Bencher)
+where
+    PHE : PartiallyHomomorphicScheme,
+    PHE : TestKeyGeneration,
+    PHE::Plaintext : From<usize>
+{
+    b.iter(|| {
+        PHE::test_keypair(2048);
+    });
+}
+
+pub fn bench_key_generation_4096<PHE>(b: &mut Bencher)
+where
+    PHE : PartiallyHomomorphicScheme,
+    PHE : TestKeyGeneration,
+    PHE::Plaintext : From<usize>
+{
+    b.iter(|| {
+        PHE::test_keypair(4096);
+    });    
+}
+
+
+////////////// SAFE PRIMES  ////////////// 
+
+
+pub fn bench_key_generation_512_safe<PHE>(b: &mut Bencher)
+where
+    PHE : PartiallyHomomorphicScheme,
+    PHE : TestKeyGeneration,
+    PHE::Plaintext : From<usize>
+{
+    b.iter(|| {
+        PHE::test_keypair_safe(512);
+    });
+}
+
+pub fn bench_key_generation_1024_safe<PHE>(b: &mut Bencher)
+where
+    PHE : PartiallyHomomorphicScheme,
+    PHE : TestKeyGeneration,
+    PHE::Plaintext : From<usize>
+{
+    b.iter(|| {
+        PHE::test_keypair_safe(1024);
+    });
+}
+
+pub fn bench_key_generation_2048_safe<PHE>(b: &mut Bencher)
+where
+    PHE : PartiallyHomomorphicScheme,
+    PHE : TestKeyGeneration,
+    PHE::Plaintext : From<usize>
+{
+    b.iter(|| {
+        PHE::test_keypair_safe(2048);
+    });
+}
+
+pub fn bench_key_generation_4096_safe<PHE>(b: &mut Bencher)
+where
+    PHE : PartiallyHomomorphicScheme,
+    PHE : TestKeyGeneration,
+    PHE::Plaintext : From<usize>
+{
+    b.iter(|| {
+        PHE::test_keypair_safe(4096);
+    });    
+}
+
+
+
+
 
 pub fn bench_encryption<PHE>(b: &mut Bencher)
 where
@@ -20,7 +118,7 @@ where
     PHE : TestKeyGeneration,
     PHE::Plaintext : From<usize>
 {
-    let (ek, _) = PHE::test_keypair();
+    let (ek, _) = PHE::test_keypair(512);
     let m = PHE::Plaintext::from(10);
     b.iter(|| {
         let _ = PHE::encrypt(&ek, &m);
@@ -33,7 +131,7 @@ where
     PHE : TestKeyGeneration,
     PHE::Plaintext : From<usize>
 {
-    let (ek, dk) = PHE::test_keypair();
+    let (ek, dk) = PHE::test_keypair(512);
     let m = PHE::Plaintext::from(10);
     let c = PHE::encrypt(&ek, &m);
     b.iter(|| {
@@ -47,7 +145,7 @@ where
     PHE : TestKeyGeneration,
     PHE::Plaintext : From<usize>
 {
-    let (ek, _) = PHE::test_keypair();
+    let (ek, _) = PHE::test_keypair(512);
     let m = PHE::Plaintext::from(10);
     let c = PHE::encrypt(&ek, &m);
     b.iter(|| {
@@ -61,7 +159,7 @@ where
     PHE : TestKeyGeneration,
     PHE::Plaintext : From<usize>
 {
-    let (ek, _) = PHE::test_keypair();
+    let (ek, _) = PHE::test_keypair(512);
 
     let m1 = PHE::Plaintext::from(10);
     let c1 = PHE::encrypt(&ek, &m1);
@@ -80,7 +178,7 @@ where
     PHE : TestKeyGeneration,
     PHE::Plaintext : From<usize>
 {
-    let (ek, _) = PHE::test_keypair();
+    let (ek, _) = PHE::test_keypair(512);
 
     let m1 = PHE::Plaintext::from(10);
     let c1 = PHE::encrypt(&ek, &m1);
@@ -92,40 +190,46 @@ where
     });
 }
 
-static P: &'static str = "148677972634832330983979593310074301486537017973460461278300587514468301043894574906886127642530475786889672304776052879927627556769456140664043088700743909632312483413393134504352834240399191134336344285483935856491230340093391784574980688823380828143810804684752914935441384845195613674104960646037368551517";
-static Q: &'static str = "158741574437007245654463598139927898730476924736461654463975966787719309357536545869203069369466212089132653564188443272208127277664424448947476335413293018778018615899291704693105620242763173357203898195318179150836424196645745308205164116144020613415407736216097185962171301808761138424668335445923774195463";
+
 
 #[cfg(feature="inclramp")]
 impl TestKeyGeneration for RampPlainPaillier {
-    fn test_keypair() -> (<Self as PartiallyHomomorphicScheme>::EncryptionKey, <Self as PartiallyHomomorphicScheme>::DecryptionKey) {
-        let ref p = str::parse(P).unwrap();
-        let ref q = str::parse(Q).unwrap();
-        let ref n = p * q;
-        let ek = <Self as PartiallyHomomorphicScheme>::EncryptionKey::from(n);
-        let dk = <Self as PartiallyHomomorphicScheme>::DecryptionKey::from(p, q);
-        (ek, dk)
+    fn test_keypair(bitsize: usize) -> (<Self as PartiallyHomomorphicScheme>::EncryptionKey, <Self as PartiallyHomomorphicScheme>::DecryptionKey) {
+        <Self as KeyGeneration>::keypair(bitsize)
     }
+
+    fn test_keypair_safe(bitsize: usize) -> (<Self as PartiallyHomomorphicScheme>::EncryptionKey, <Self as PartiallyHomomorphicScheme>::DecryptionKey) {
+        <Self as KeyGeneration>::keypair_safe(bitsize)
+    }
+
 }
+
+
 
 #[cfg(feature="inclnum")]
 impl TestKeyGeneration for NumPlainPaillier {
-    fn test_keypair() -> (<Self as PartiallyHomomorphicScheme>::EncryptionKey, <Self as PartiallyHomomorphicScheme>::DecryptionKey) {
-        let ref p = str::parse(P).unwrap();
-        let ref q = str::parse(Q).unwrap();
-        let ref n = p * q;
-        let ek = <Self as PartiallyHomomorphicScheme>::EncryptionKey::from(n);
-        let dk = <Self as PartiallyHomomorphicScheme>::DecryptionKey::from(p, q);
-        (ek, dk)
+    fn test_keypair(bitsize: usize) -> (<Self as PartiallyHomomorphicScheme>::EncryptionKey, <Self as PartiallyHomomorphicScheme>::DecryptionKey) {
+      
+      <Self as KeyGeneration>::keypair(bitsize)
     }
 }
 
 #[cfg(feature="inclramp")]
 benchmark_group!(ramp,
-    self::bench_encryption<RampPlainPaillier>,
+    self::bench_key_generation_512<RampPlainPaillier>,
+    self::bench_key_generation_1024<RampPlainPaillier>,
+    self::bench_key_generation_2048<RampPlainPaillier>,
+    self::bench_key_generation_4096<RampPlainPaillier>
+//    self::bench_key_generation_512_safe<RampPlainPaillier>,
+//    self::bench_key_generation_1024_safe<RampPlainPaillier>,
+//    self::bench_key_generation_2048_safe<RampPlainPaillier>,
+//    self::bench_key_generation_4096_safe<RampPlainPaillier>
+/*    self::bench_encryption<RampPlainPaillier>,
     self::bench_decryption<RampPlainPaillier>,
     self::bench_rerandomisation<RampPlainPaillier>,
     self::bench_addition<RampPlainPaillier>,
     self::bench_multiplication<RampPlainPaillier>
+    */
 );
 
 #[cfg(feature="inclnum")]

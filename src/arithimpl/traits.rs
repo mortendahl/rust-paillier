@@ -36,23 +36,19 @@ where
         (prime + d) % prime
     }
 
-    fn modpow(x: &Self, e: &Self, prime: &Self) -> Self {
-        let mut mx = x.clone();
-        let mut me = e.clone();
-        let mut acc = Self::one();
-        while !NumberTests::is_zero(&me) {
-            if NumberTests::is_even(&me) {
-                // even
-                // no-op
+    fn modpow(base: &Self, exponent: &Self, modulus: &Self) -> Self {
+        let mut base = base.clone();
+        let mut exponent = exponent.clone();
+        let mut result = Self::one();
+
+        while !NumberTests::is_zero(&exponent) {
+            if !NumberTests::is_even(&exponent) {
+                result = (&result * &base) % modulus;
             }
-            else {
-                // odd
-                acc = (&acc * &mx) % prime;
-            }
-            mx = (&mx * &mx) % prime;  // waste one of these by having it here but code is simpler (tiny bit)
-            me = me >> 1;
+            base = (&base * &base) % modulus;  // waste one of these by having it here but code is simpler (tiny bit)
+            exponent = exponent >> 1;
         }
-        acc
+        result
     }
 
     fn egcd(a: &Self, b: &Self) -> (Self, Self, Self) {
@@ -75,6 +71,7 @@ pub trait Samplable {
 
 pub trait PrimeNumbers {
     fn sample_prime(bitsize: usize) -> Self;
+    fn sample_safe_prime(bitsize: usize) -> Self;
 }
 
 pub trait ConvertFrom<T> {

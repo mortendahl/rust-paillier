@@ -1,9 +1,10 @@
-
 use std::ops::{Add, Sub, Mul, Div, Rem};
 use num_traits::{One};
 use arithimpl::traits::*;
 use phe::*;
 use rand::OsRng;
+
+
 
 #[derive(Debug,Clone)]
 pub struct PlainEncryptionKey<I> {
@@ -120,17 +121,165 @@ where
 #[cfg(test)]
 mod tests {
 
+    use time::PreciseTime;
+
     use phe::PartiallyHomomorphicScheme as PHE;
     use PlainPaillier as Plain;
     use phe::KeyGeneration as KeyGen;
 
     fn test_keypair() -> (<Plain as PHE>::EncryptionKey, <Plain as PHE>::DecryptionKey) {
+        /*
         let (p,q) = KeyGen::keypair(128);
         let n = &p * &q;
         let ek = <Plain as PHE>::EncryptionKey::from(&n);
         let dk = <Plain as PHE>::DecryptionKey::from(&p, &q);
         (ek, dk)
+        */
+        <Plain as KeyGen>::keypair(2048)
     }
+
+    fn test_keypair_sized(bitsize: usize) -> (<Plain as PHE>::EncryptionKey, <Plain as PHE>::DecryptionKey) {
+        /*
+        let (p,q) = KeyGen::keypair(128);
+        let n = &p * &q;
+        let ek = <Plain as PHE>::EncryptionKey::from(&n);
+        let dk = <Plain as PHE>::DecryptionKey::from(&p, &q);
+        (ek, dk)
+        */
+        <Plain as KeyGen>::keypair(bitsize)
+    }
+
+
+        fn test_keypair_sized_safe(bitsize: usize) -> (<Plain as PHE>::EncryptionKey, <Plain as PHE>::DecryptionKey) {
+        /*
+        let (p,q) = KeyGen::keypair(128);
+        let n = &p * &q;
+        let ek = <Plain as PHE>::EncryptionKey::from(&n);
+        let dk = <Plain as PHE>::DecryptionKey::from(&p, &q);
+        (ek, dk)
+        */
+        <Plain as KeyGen>::keypair_safe(bitsize)
+    }
+
+    #[test]
+    fn test_correct_keygen_512() {
+        let start = ::time::PreciseTime::now();
+        let (ek, dk) = test_keypair_sized(512);
+        let end = PreciseTime::now();
+        println!("512 bits took {}.", start.to(end));
+        
+        let m = <Plain as PHE>::Plaintext::from(10);
+        let c = Plain::encrypt(&ek, &m);
+
+        let recovered_m = Plain::decrypt(&dk, &c);
+        assert_eq!(recovered_m, m);
+    }
+
+        #[test]
+    fn test_correct_keygen_1024() {
+        let start = PreciseTime::now();
+        let (ek, dk) = test_keypair_sized(1024);
+        let end = PreciseTime::now();
+        println!("1024 bits took {}.", start.to(end));
+        
+        let m = <Plain as PHE>::Plaintext::from(10);
+        let c = Plain::encrypt(&ek, &m);
+
+        let recovered_m = Plain::decrypt(&dk, &c);
+        assert_eq!(recovered_m, m);
+    }
+
+        #[test]
+    fn test_correct_keygen_2048() {
+        let start = PreciseTime::now();
+        let (ek, dk) = test_keypair_sized(2048);
+        let end = PreciseTime::now();
+        println!("2048 bits took {}.", start.to(end));
+        
+        let m = <Plain as PHE>::Plaintext::from(10);
+        let c = Plain::encrypt(&ek, &m);
+
+        let recovered_m = Plain::decrypt(&dk, &c);
+        assert_eq!(recovered_m, m);
+    }
+            
+            
+    #[test]
+    fn test_correct_keygen_4096() {
+        let start = PreciseTime::now();
+        let (ek, dk) = test_keypair_sized(4096);
+        let end = PreciseTime::now();
+        println!("4096 bits took {}.", start.to(end));
+        
+        let m = <Plain as PHE>::Plaintext::from(10);
+        let c = Plain::encrypt(&ek, &m);
+
+        let recovered_m = Plain::decrypt(&dk, &c);
+        assert_eq!(recovered_m, m);
+    }
+
+
+
+#[test]
+    fn test_correct_keygen_512_safe() {
+        let start = PreciseTime::now();
+        let (ek, dk) = test_keypair_sized_safe(512);
+        let end = PreciseTime::now();
+        println!("512 safe bits took {}.", start.to(end));
+        
+        let m = <Plain as PHE>::Plaintext::from(10);
+        let c = Plain::encrypt(&ek, &m);
+
+        let recovered_m = Plain::decrypt(&dk, &c);
+        assert_eq!(recovered_m, m);
+    }
+
+        #[test]
+    fn test_correct_keygen_1024_safe() {
+        let start = PreciseTime::now();
+        let (ek, dk) = test_keypair_sized_safe(1024);
+        let end = PreciseTime::now();
+        println!("1024 safe bits took {}.", start.to(end));
+        
+        let m = <Plain as PHE>::Plaintext::from(10);
+        let c = Plain::encrypt(&ek, &m);
+
+        let recovered_m = Plain::decrypt(&dk, &c);
+        assert_eq!(recovered_m, m);
+    }
+
+        #[test]
+    fn test_correct_keygen_2048_safe() {
+        let start = PreciseTime::now();
+        let (ek, dk) = test_keypair_sized_safe(2048);
+        let end = PreciseTime::now();
+        println!("2048 safe bits took {}.", start.to(end));
+        
+        let m = <Plain as PHE>::Plaintext::from(10);
+        let c = Plain::encrypt(&ek, &m);
+
+        let recovered_m = Plain::decrypt(&dk, &c);
+        assert_eq!(recovered_m, m);
+    }
+            
+            
+    #[test]
+    fn test_correct_keygen_4096_safe() {
+        let start = PreciseTime::now();
+        let (ek, dk) = test_keypair_sized_safe(4096);
+        let end = PreciseTime::now();
+        println!("4096 safe bits took {}.", start.to(end));
+        
+        let m = <Plain as PHE>::Plaintext::from(10);
+        let c = Plain::encrypt(&ek, &m);
+
+        let recovered_m = Plain::decrypt(&dk, &c);
+        assert_eq!(recovered_m, m);
+    }
+
+
+
+/*
 
     #[test]
     fn test_correct_encryption_decryption() {
@@ -169,7 +318,7 @@ mod tests {
         let m = Plain::decrypt(&dk, &c);
         assert_eq!(m, m1 * m2);
     }
-
+*/
 }
 
 #[cfg(feature="keygen")]
@@ -218,6 +367,31 @@ where
             (ek, dk)
         }
     }
+
+
+    fn keypair_safe(bit_length: usize) -> (Self::EncryptionKey, Self::DecryptionKey) {
+
+        //let mut rng = OsRng::new().unwrap();
+
+
+        if bit_length < 42 {
+            let ref p = I::from(1061u64);
+            let ref q = I::from(1063u64);
+            let ref n = p * q;
+            let ek = PlainEncryptionKey::from(n);
+            let dk = PlainDecryptionKey::from(p, q);
+            (ek, dk)
+        } else {
+            let p = I::sample_safe_prime(bit_length);
+            let q = I::sample_safe_prime(bit_length);
+            let n = &p * &q;
+            let ek = PlainEncryptionKey::from(&n);
+            let dk = PlainDecryptionKey::from(&p, &q);
+            (ek, dk)
+        }
+    }
+
+
 
 
 

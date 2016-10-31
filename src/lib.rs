@@ -3,6 +3,7 @@
 extern crate test;
 extern crate rand;
 extern crate num_traits;
+extern crate time;
 
 mod arithimpl;
 mod phe;
