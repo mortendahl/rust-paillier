@@ -66,12 +66,16 @@ where
 
 pub trait Samplable {
     fn sample_below(upper: &Self) -> Self;
+    fn sample_range(lower: &Self, upper: &Self) -> Self;
     fn sample(bitsize: usize) -> Self;
 }
 
-pub trait PrimeNumbers {
-    fn sample_prime(bitsize: usize) -> Self;
-    fn sample_safe_prime(bitsize: usize) -> Self;
+pub trait PrimeExtras where
+    Self: Sized
+    {
+    fn set_bit(self: &mut Self, bit: usize, bit_val: bool);
+    fn divmod(self: &Self, module: &Self) -> (Self, Self);
+    //fn trailing_zeros() -> usize;
 }
 
 pub trait ConvertFrom<T> {

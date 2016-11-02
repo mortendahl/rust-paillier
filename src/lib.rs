@@ -1,4 +1,5 @@
 #![feature(test)]
+#![feature(step_trait)]
 
 extern crate test;
 extern crate rand;

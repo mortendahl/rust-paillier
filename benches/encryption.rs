@@ -75,42 +75,7 @@ where
     });
 }
 
-pub fn bench_key_generation_1024_safe<PHE>(b: &mut Bencher)
-where
-    PHE : PartiallyHomomorphicScheme,
-    PHE : TestKeyGeneration,
-    PHE::Plaintext : From<usize>
-{
-    b.iter(|| {
-        PHE::test_keypair_safe(1024);
-    });
-}
-
-pub fn bench_key_generation_2048_safe<PHE>(b: &mut Bencher)
-where
-    PHE : PartiallyHomomorphicScheme,
-    PHE : TestKeyGeneration,
-    PHE::Plaintext : From<usize>
-{
-    b.iter(|| {
-        PHE::test_keypair_safe(2048);
-    });
-}
-
-pub fn bench_key_generation_4096_safe<PHE>(b: &mut Bencher)
-where
-    PHE : PartiallyHomomorphicScheme,
-    PHE : TestKeyGeneration,
-    PHE::Plaintext : From<usize>
-{
-    b.iter(|| {
-        PHE::test_keypair_safe(4096);
-    });    
-}
-
-
-
-
+////////////// END SAFE PRIMES  ////////////// 
 
 pub fn bench_encryption<PHE>(b: &mut Bencher)
 where
@@ -118,7 +83,7 @@ where
     PHE : TestKeyGeneration,
     PHE::Plaintext : From<usize>
 {
-    let (ek, _) = PHE::test_keypair(512);
+    let (ek, _) = PHE::test_keypair(2048);
     let m = PHE::Plaintext::from(10);
     b.iter(|| {
         let _ = PHE::encrypt(&ek, &m);
@@ -131,7 +96,7 @@ where
     PHE : TestKeyGeneration,
     PHE::Plaintext : From<usize>
 {
-    let (ek, dk) = PHE::test_keypair(512);
+    let (ek, dk) = PHE::test_keypair(2048);
     let m = PHE::Plaintext::from(10);
     let c = PHE::encrypt(&ek, &m);
     b.iter(|| {
@@ -145,7 +110,7 @@ where
     PHE : TestKeyGeneration,
     PHE::Plaintext : From<usize>
 {
-    let (ek, _) = PHE::test_keypair(512);
+    let (ek, _) = PHE::test_keypair(2048);
     let m = PHE::Plaintext::from(10);
     let c = PHE::encrypt(&ek, &m);
     b.iter(|| {
@@ -159,7 +124,7 @@ where
     PHE : TestKeyGeneration,
     PHE::Plaintext : From<usize>
 {
-    let (ek, _) = PHE::test_keypair(512);
+    let (ek, _) = PHE::test_keypair(2048);
 
     let m1 = PHE::Plaintext::from(10);
     let c1 = PHE::encrypt(&ek, &m1);
@@ -178,7 +143,7 @@ where
     PHE : TestKeyGeneration,
     PHE::Plaintext : From<usize>
 {
-    let (ek, _) = PHE::test_keypair(512);
+    let (ek, _) = PHE::test_keypair(2048);
 
     let m1 = PHE::Plaintext::from(10);
     let c1 = PHE::encrypt(&ek, &m1);
@@ -218,18 +183,14 @@ impl TestKeyGeneration for NumPlainPaillier {
 benchmark_group!(ramp,
     self::bench_key_generation_512<RampPlainPaillier>,
     self::bench_key_generation_1024<RampPlainPaillier>,
-    self::bench_key_generation_2048<RampPlainPaillier>,
-    self::bench_key_generation_4096<RampPlainPaillier>
-//    self::bench_key_generation_512_safe<RampPlainPaillier>,
-//    self::bench_key_generation_1024_safe<RampPlainPaillier>,
-//    self::bench_key_generation_2048_safe<RampPlainPaillier>,
-//    self::bench_key_generation_4096_safe<RampPlainPaillier>
-/*    self::bench_encryption<RampPlainPaillier>,
+//    self::bench_key_generation_2048<RampPlainPaillier>,    // THIS IS VERY SLOW
+//    self::bench_key_generation_4096<RampPlainPaillier>,    // THIS IS VERY SLOW 
+    self::bench_encryption<RampPlainPaillier>,
     self::bench_decryption<RampPlainPaillier>,
     self::bench_rerandomisation<RampPlainPaillier>,
     self::bench_addition<RampPlainPaillier>,
     self::bench_multiplication<RampPlainPaillier>
-    */
+
 );
 
 #[cfg(feature="inclnum")]

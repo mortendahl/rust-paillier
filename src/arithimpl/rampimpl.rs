@@ -1,11 +1,9 @@
 #![cfg(feature="inclramp")]
 
 extern crate ramp;
-
 use rand::{OsRng, thread_rng};
-
 use super::traits::*;
-use time::PreciseTime;
+
 
 impl Samplable for ramp::Int {
     fn sample_below(upper: &Self) -> Self {
@@ -18,6 +16,12 @@ impl Samplable for ramp::Int {
         use self::ramp::RandomInt;
         let mut rng = OsRng::new().unwrap();
         rng.gen_uint(bitsize)
+    }
+
+     fn sample_range(lower: &Self, upper: &Self) -> Self {
+        use self::ramp::RandomInt;
+        let mut rng = OsRng::new().unwrap();
+        rng.gen_int_range(lower, upper)
     }
 }
 
@@ -35,79 +39,21 @@ impl ConvertFrom<ramp::Int> for u64 {
     }
 }
 
-
-
-impl PrimeNumbers for ramp::Int {  
-
-    fn sample_prime(bitsize :usize) -> Self {
-        // See Practical Considerations section inside the section 11.5 "Prime Number Generation"
-        // Applied Cryptography, Bruce Schneier.
-        
-        loop {
-            let start = PreciseTime::now();
-            let mut candidate = Self::sample(bitsize);
-            let end = PreciseTime::now();
-            //println!("sampling {} bits took {}.", bitsize, start.to(end));
-
-            let mut counter = 0;
-            let mut found_prime = true;
-
-            // To ensure the appropiate size
-            // The two MSB of the candidate are set. 
-            candidate.set_bit(1, true);
-            //candidate.set_bit(2, true);
-
-            // We flip the LSB to make sure tue candidate is odd.
-            candidate.set_bit(bitsize as u32, true);
-
-            // In order to remove as much bias from the system as possible, test
-            // 500 potential candidates at a time before re-seeding the candidate
-            // with a new random number.
-            let start = PreciseTime::now();
-            while !ramp_helpers::is_prime(&candidate) {
-                candidate += 2_usize;
-                counter += 1;
-
-                if counter > 499 {
-                    found_prime = false;
-                    break;
-                }
-            }
-
-            if found_prime {
-                let end = PreciseTime::now();
-                //println!("verifiying primality for {} bits took {}.", bitsize, start.to(end));
-                return candidate
-            }
-        }
+impl PrimeExtras for ramp::Int {
+    fn set_bit(self: &mut Self, bit: usize, bit_val: bool) { 
+        self.set_bit(bit as u32, bit_val);
     }
 
-    fn sample_safe_prime(bitsize: usize) -> Self {
-
-        // sample_prime should be able to throw an error?  (ie. Result type)
-        let mut candidate: ramp::Int = PrimeNumbers::sample_prime(bitsize);
-        loop {
-            
-            let mut candidate_1 = (&candidate).clone();
-            let mut candidate_2 = (&candidate).clone();
-            
-            candidate_1 -= 1;
-            candidate_1 /= 2;
-
-            candidate_2 *= 2;
-            candidate_2 += 1;
-            // Following Naccache optimization: https://eprint.iacr.org/2003/175.pdf
-            if ramp_helpers::is_prime(&candidate_1) || ramp_helpers::is_prime(&candidate_2) {
-                break;
-            }
-            candidate = PrimeNumbers::sample_prime(bitsize);
-        }
-        candidate
+    fn divmod(self: &Self, module: &Self) -> (Self, Self) {
+        self.divmod(module)
     }
-
 
 }
 
+pub type BigInteger = ramp::Int;
+
+
+/*
 mod ramp_helpers {
 
 extern crate ramp;
@@ -313,5 +259,5 @@ static SMALL_PRIMES: [u32; 999] = [3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 
          (s,d)
     }
 }
+*/
 
-pub type BigInteger = ramp::Int;
