@@ -140,8 +140,9 @@ mod tests {
 
     #[test]
     fn test_correct_keygen_512() {
-        let (ek, dk) = test_keypair_sized(512);
-
+        let (ek, dk) = test_keypair_sized(4096);
+        println!("p: {:?}", dk.p);
+        println!("q: {:?}", dk.q);
         let m = <Plain as PHE>::Plaintext::from(10);
         let c = Plain::encrypt(&ek, &m);
 
