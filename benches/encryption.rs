@@ -11,9 +11,11 @@ pub trait TestKeyGeneration
 where
     Self : PartiallyHomomorphicScheme
 {
-    fn test_keypair(usize) -> (Self::EncryptionKey, Self::DecryptionKey);
-    fn test_keypair_safe(usize) -> (Self::EncryptionKey, Self::DecryptionKey);
+    fn test_keypair() -> (Self::EncryptionKey, Self::DecryptionKey);
+    fn test_keypair_sized(usize) -> (Self::EncryptionKey, Self::DecryptionKey);
 }
+ 
+
 
 
 pub fn bench_key_generation_512<PHE>(b: &mut Bencher)
@@ -23,7 +25,7 @@ where
     PHE::Plaintext : From<usize>
 {
     b.iter(|| {
-        PHE::test_keypair(512);
+        PHE::test_keypair_sized(512);
     });
 }
 
@@ -34,7 +36,7 @@ where
     PHE::Plaintext : From<usize>
 {
     b.iter(|| {
-        PHE::test_keypair(1024);
+        PHE::test_keypair_sized(1024);
     });
 }
 
@@ -45,7 +47,7 @@ where
     PHE::Plaintext : From<usize>
 {
     b.iter(|| {
-        PHE::test_keypair(2048);
+        PHE::test_keypair_sized(2048);
     });
 }
 
@@ -56,24 +58,10 @@ where
     PHE::Plaintext : From<usize>
 {
     b.iter(|| {
-        PHE::test_keypair(4096);
+        PHE::test_keypair_sized(4096);
     });    
 }
 
-
-////////////// SAFE PRIMES  ////////////// 
-
-
-pub fn bench_key_generation_512_safe<PHE>(b: &mut Bencher)
-where
-    PHE : PartiallyHomomorphicScheme,
-    PHE : TestKeyGeneration,
-    PHE::Plaintext : From<usize>
-{
-    b.iter(|| {
-        PHE::test_keypair_safe(512);
-    });
-}
 
 ////////////// END SAFE PRIMES  ////////////// 
 
@@ -83,7 +71,7 @@ where
     PHE : TestKeyGeneration,
     PHE::Plaintext : From<usize>
 {
-    let (ek, _) = PHE::test_keypair(2048);
+    let (ek, _) = PHE::test_keypair();
     let m = PHE::Plaintext::from(10);
     b.iter(|| {
         let _ = PHE::encrypt(&ek, &m);
@@ -96,7 +84,7 @@ where
     PHE : TestKeyGeneration,
     PHE::Plaintext : From<usize>
 {
-    let (ek, dk) = PHE::test_keypair(2048);
+    let (ek, dk) = PHE::test_keypair();
     let m = PHE::Plaintext::from(10);
     let c = PHE::encrypt(&ek, &m);
     b.iter(|| {
@@ -110,7 +98,7 @@ where
     PHE : TestKeyGeneration,
     PHE::Plaintext : From<usize>
 {
-    let (ek, _) = PHE::test_keypair(2048);
+    let (ek, _) = PHE::test_keypair();
     let m = PHE::Plaintext::from(10);
     let c = PHE::encrypt(&ek, &m);
     b.iter(|| {
@@ -124,7 +112,7 @@ where
     PHE : TestKeyGeneration,
     PHE::Plaintext : From<usize>
 {
-    let (ek, _) = PHE::test_keypair(2048);
+    let (ek, _) = PHE::test_keypair();
 
     let m1 = PHE::Plaintext::from(10);
     let c1 = PHE::encrypt(&ek, &m1);
@@ -143,7 +131,7 @@ where
     PHE : TestKeyGeneration,
     PHE::Plaintext : From<usize>
 {
-    let (ek, _) = PHE::test_keypair(2048);
+    let (ek, _) = PHE::test_keypair();
 
     let m1 = PHE::Plaintext::from(10);
     let c1 = PHE::encrypt(&ek, &m1);
@@ -159,12 +147,12 @@ where
 
 #[cfg(feature="inclramp")]
 impl TestKeyGeneration for RampPlainPaillier {
-    fn test_keypair(bitsize: usize) -> (<Self as PartiallyHomomorphicScheme>::EncryptionKey, <Self as PartiallyHomomorphicScheme>::DecryptionKey) {
-        <Self as KeyGeneration>::keypair(bitsize)
+    fn test_keypair() -> (<Self as PartiallyHomomorphicScheme>::EncryptionKey, <Self as PartiallyHomomorphicScheme>::DecryptionKey) {
+        <Self as KeyGeneration>::keypair(2048)
     }
 
-    fn test_keypair_safe(bitsize: usize) -> (<Self as PartiallyHomomorphicScheme>::EncryptionKey, <Self as PartiallyHomomorphicScheme>::DecryptionKey) {
-        <Self as KeyGeneration>::keypair_safe(bitsize)
+     fn test_keypair_sized(bitsize: usize) -> (<Self as PartiallyHomomorphicScheme>::EncryptionKey, <Self as PartiallyHomomorphicScheme>::DecryptionKey) {
+        <Self as KeyGeneration>::keypair(bitsize)
     }
 
 }
