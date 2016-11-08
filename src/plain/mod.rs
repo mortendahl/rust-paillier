@@ -134,11 +134,13 @@ mod tests {
         (ek, dk)
     }
 
+    #[cfg(feature="keygen")]
     fn test_keypair_sized(bitsize: usize) -> (<Plain as PHE>::EncryptionKey, <Plain as PHE>::DecryptionKey) {
         <Plain as KeyGen>::keypair(bitsize)
     }
 
 
+    #[cfg(feature="keygen")]
     #[test]
     fn test_correct_keygen() {
         let (ek, dk) = test_keypair_sized(2048);
