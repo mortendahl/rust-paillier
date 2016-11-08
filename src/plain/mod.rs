@@ -1,9 +1,8 @@
 use std::ops::{Add, Sub, Mul, Div, Rem};
 use num_traits::{One};
 use arithimpl::traits::*;
-use arithimpl::primes::*;
 use phe::*;
-use rand::OsRng;
+//use rand::OsRng;
 
 
 
@@ -127,36 +126,24 @@ mod tests {
     use phe::KeyGeneration as KeyGen;
 
     fn test_keypair() -> (<Plain as PHE>::EncryptionKey, <Plain as PHE>::DecryptionKey) {
-        <Plain as KeyGen>::keypair(2048)
+        let p = str::parse("148677972634832330983979593310074301486537017973460461278300587514468301043894574906886127642530475786889672304776052879927627556769456140664043088700743909632312483413393134504352834240399191134336344285483935856491230340093391784574980688823380828143810804684752914935441384845195613674104960646037368551517").unwrap();
+        let q = str::parse("158741574437007245654463598139927898730476924736461654463975966787719309357536545869203069369466212089132653564188443272208127277664424448947476335413293018778018615899291704693105620242763173357203898195318179150836424196645745308205164116144020613415407736216097185962171301808761138424668335445923774195463").unwrap();
+        let n = &p * &q;
+        let ek = <Plain as PHE>::EncryptionKey::from(&n);
+        let dk = <Plain as PHE>::DecryptionKey::from(&p, &q);
+        (ek, dk)
     }
 
     fn test_keypair_sized(bitsize: usize) -> (<Plain as PHE>::EncryptionKey, <Plain as PHE>::DecryptionKey) {
         <Plain as KeyGen>::keypair(bitsize)
     }
 
-    fn test_keypair_sized_safe(bitsize: usize) -> (<Plain as PHE>::EncryptionKey, <Plain as PHE>::DecryptionKey) {
-        <Plain as KeyGen>::keypair_safe(bitsize)
-    }
 
     #[test]
-    fn test_correct_keygen_512() {
-        let (ek, dk) = test_keypair_sized(4096);
-        println!("p: {:?}", dk.p);
-        println!("q: {:?}", dk.q);
+    fn test_correct_keygen() {
+        let (ek, dk) = test_keypair_sized(2048);
         let m = <Plain as PHE>::Plaintext::from(10);
         let c = Plain::encrypt(&ek, &m);
-
-        let recovered_m = Plain::decrypt(&dk, &c);
-        assert_eq!(recovered_m, m);
-    }
-
-#[test]
-    fn test_correct_keygen_512_safe() {
-        let (ek, dk) = test_keypair_sized_safe(512);
-        
-        let m = <Plain as PHE>::Plaintext::from(10);
-        let c = Plain::encrypt(&ek, &m);
-
         let recovered_m = Plain::decrypt(&dk, &c);
         assert_eq!(recovered_m, m);
     }
@@ -202,6 +189,9 @@ mod tests {
 }
 
 #[cfg(feature="keygen")]
+use arithimpl::primes::*;
+
+#[cfg(feature="keygen")]
 impl <I> KeyGeneration for AbstractPlainPaillier<I>
 where
     I: From<u64>,
@@ -209,7 +199,7 @@ where
     I: Clone,
     I: Samplable,
     I: ModularArithmetic,
-    I: PrimeNumbers,
+    I: PrimeSampable,
                    I: Mul<Output=I>,
     for<'a>    &'a I: Mul<I, Output=I>,
     for<'b>        I: Mul<&'b I, Output=I>,
@@ -236,17 +226,4 @@ where
         (ek, dk)
         
     }
-
-
-    fn keypair_safe(bit_length: usize) -> (Self::EncryptionKey, Self::DecryptionKey) {
-    
-        let p = I::sample_safe_prime(bit_length);
-        let q = I::sample_safe_prime(bit_length);
-        let n = &p * &q;
-        let ek = PlainEncryptionKey::from(&n);
-        let dk = PlainDecryptionKey::from(&p, &q);
-        (ek, dk)
-    
-    }
-
 }

@@ -62,6 +62,8 @@ where
             (d, t, new_t)
         }
     }
+    
+    fn divmod(self: &Self, module: &Self) -> (Self, Self);
 }
 
 pub trait Samplable {
@@ -70,12 +72,8 @@ pub trait Samplable {
     fn sample(bitsize: usize) -> Self;
 }
 
-pub trait PrimeExtras where
-    Self: Sized
-    {
+pub trait BitManipulation {
     fn set_bit(self: &mut Self, bit: usize, bit_val: bool);
-    fn divmod(self: &Self, module: &Self) -> (Self, Self);
-    //fn trailing_zeros() -> usize;
 }
 
 pub trait ConvertFrom<T> {

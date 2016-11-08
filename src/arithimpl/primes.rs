@@ -1,4 +1,3 @@
-use rand::{OsRng, thread_rng};
 use arithimpl::traits::*;
 use std::iter::Step;
 use std::ops::{Add, Sub, Mul, Div, Rem, Shr, Neg};
@@ -7,17 +6,16 @@ use num_traits::{Zero, One};
 
 
 
-pub trait PrimeNumbers {
+pub trait PrimeSampable {
     fn sample_prime(bitsize: usize) -> Self;
-    fn sample_safe_prime(bitsize: usize) -> Self;
 }
 
 
-impl <I> PrimeNumbers for I
+impl <I> PrimeSampable for I
     where
         I: Samplable,
         I: ModularArithmetic,
-        I: PrimeExtras,
+        I: BitManipulation,
         I: Clone + Sized,
         I: From<u32>,
         I: PartialEq<usize>,
@@ -58,32 +56,11 @@ impl <I> PrimeNumbers for I
             // If no prime number is found in 500 iterations, 
             // restart the loop (re-seed).
             // FIXME: Why 500?
-            for i in 0..500 {
+            for _ in 0..500 {
                 if is_prime(&candidate) {
                     return candidate;
                 }
                 candidate = candidate + &two;
-            }
-        }
-    }
-
-    fn sample_safe_prime(bitsize: usize) -> Self {
-        let ref one = I::one();
-        let ref two = one + one;
-        loop {
-            // sample_prime should be able to throw an error?  (ie. Result type)
-            let candidate = I::sample_prime(bitsize);    
-            let mut candidate_1 = (&candidate).clone();
-            let mut candidate_2 = (&candidate).clone();
-            
-            candidate_1 = candidate_1 - one;
-            candidate_1 = candidate_1 / two;
-
-            candidate_2 = two * candidate_2;
-            candidate_2 = candidate_2 + one;
-            // Following Naccache optimization: https://eprint.iacr.org/2003/175.pdf
-            if is_prime(&candidate_1) || is_prime(&candidate_2) {
-                return candidate
             }
         }
     }
@@ -308,7 +285,7 @@ static SMALL_PRIMES: [u32; 2048] = [
     for<'b>        I: Sub<&'b I, Output=I>,
     for<'a,'b> &'a I: Sub<&'b I, Output=I>,
     I: Shr<usize, Output=I>,
-    I: PrimeExtras,
+    I: BitManipulation,
     I: Step,
     I: PartialEq<I>,
     {
@@ -318,7 +295,7 @@ static SMALL_PRIMES: [u32; 2048] = [
             let prime = I::from(*p);
             let (_, r) = candidate.divmod(&prime);
 
-            if r != 0_usize {
+            if !r.is_zero() {
                 continue;
             } else {
                 return false;
@@ -373,7 +350,6 @@ static SMALL_PRIMES: [u32; 2048] = [
         I: Samplable,
         I: PartialEq<I>,
         I: Step,
-        I: Zero + One + Neg<Output=I> + NumberTests,
         for<'a>    &'a I: Mul<I, Output=I>,
         for<'a,'b> &'a I: Mul<&'b I, Output=I>,
         for<'a,'b> &'a I: Div<&'b I, Output=I>,
@@ -383,13 +359,12 @@ static SMALL_PRIMES: [u32; 2048] = [
                        I: Sub<I, Output=I>,
         for<'b>        I: Sub<&'b I, Output=I>,
         for<'a,'b> &'a I: Sub<&'b I, Output=I>,
-        I: Shr<usize, Output=I>,
     {
         let (s,d) = rewrite(&(candidate - &I::one()));
         let one = I::one();
         let two = &one + &one;
 
-        for i in 0..limit {
+        for _ in 0..limit {
             let basis = I::sample_range(&two, &(candidate-&two));
             let mut y = I::modpow(&basis, &d, candidate);
 
@@ -416,7 +391,6 @@ static SMALL_PRIMES: [u32; 2048] = [
     where 
         I: ModularArithmetic,
         I: Clone + Sized,
-        I: Samplable,
         I: PartialEq<I>,
         I: Zero + One + Neg<Output=I> + NumberTests,
         for<'a>    &'a I: Mul<I, Output=I>,

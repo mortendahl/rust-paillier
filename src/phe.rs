@@ -15,5 +15,4 @@ pub trait KeyGeneration {
     type EncryptionKey;
     type DecryptionKey;
     fn keypair(bit_length: usize) -> (Self::EncryptionKey, Self::DecryptionKey);
-    fn keypair_safe(bit_length: usize) -> (Self::EncryptionKey, Self::DecryptionKey);    
 }
