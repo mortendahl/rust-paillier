@@ -33,3 +33,7 @@ bencher = "0.1"
 [[bench]]
 name = "encryption"
 harness = false
+
+[[bench]]
+name = "keygen"
+harness = false

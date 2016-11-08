@@ -123,6 +123,8 @@ mod tests {
 
     use phe::PartiallyHomomorphicScheme as PHE;
     use PlainPaillier as Plain;
+
+    #[cfg(feature="keygen")]
     use phe::KeyGeneration as KeyGen;
 
     fn test_keypair() -> (<Plain as PHE>::EncryptionKey, <Plain as PHE>::DecryptionKey) {
