@@ -43,17 +43,17 @@ impl <I> PrimeSampable for I
         let two = &one + &one;
 
         loop {
-            let mut candidate = Self::sample(bitsize);            
+            let mut candidate = Self::sample(bitsize);
             // To ensure the appropiate size
-            // The two MSB of the candidate are set. 
+            // The two MSB of the candidate are set.
             candidate.set_bit(1_usize, true);
 
             // We flip the LSB to make sure tue candidate is odd.
             //candidate.set_bit(bitsize as u32, true);
             candidate.set_bit(bitsize, true);
-            
 
-            // If no prime number is found in 500 iterations, 
+
+            // If no prime number is found in 500 iterations,
             // restart the loop (re-seed).
             // FIXME: Why 500?
             for _ in 0..500 {
@@ -259,7 +259,7 @@ static SMALL_PRIMES: [u32; 2048] = [
     17497, 17509, 17519, 17539, 17551, 17569, 17573, 17579, 17581, 17597, 17599,
     17609, 17623, 17627, 17657, 17659, 17669, 17681, 17683, 17707, 17713, 17729,
     17737, 17747, 17749, 17761, 17783, 17789, 17791, 17807, 17827, 17837, 17839,
-    17851, 17863 ];  
+    17851, 17863 ];
 
     // Runs the following three tests on a given `candidate` to determine
     // primality:
@@ -267,7 +267,7 @@ static SMALL_PRIMES: [u32; 2048] = [
     // 1. Divide the candidate by the first 999 small prime numbers.
     // 2. Run Fermat's Little Theorem against the candidate.
     // 3. Run five rounds of the Miller-Rabin test on the candidate.
-    pub fn is_prime<I>(candidate: &I) -> bool 
+    pub fn is_prime<I>(candidate: &I) -> bool
     where
     I: ModularArithmetic,
     I: Clone + Sized,
@@ -313,8 +313,8 @@ static SMALL_PRIMES: [u32; 2048] = [
         true
     }
 
-    fn fermat<I>(candidate: &I) -> bool 
-    where 
+    fn fermat<I>(candidate: &I) -> bool
+    where
         I: ModularArithmetic,
         I: Clone + Sized,
         I: Samplable,
@@ -338,18 +338,21 @@ static SMALL_PRIMES: [u32; 2048] = [
 
         result == I::one()
     }
-    
+
     // Iterations recommended for which  p < (1/2)^{80}
     //  500 bits => 6 iterations
     // 1000 bits => 3 iterations
     // 2000 bits => 2 iterations
-    fn miller_rabin<I>(candidate: &I, limit: usize) -> bool 
-    where 
+    fn miller_rabin<I>(candidate: &I, limit: usize) -> bool
+    where
         I: ModularArithmetic,
         I: Clone + Sized,
         I: Samplable,
         I: PartialEq<I>,
         I: Step,
+        I: Zero + One + Shr<usize, Output=I>,
+        I: Neg<Output=I>,
+        I: NumberTests,
         for<'a>    &'a I: Mul<I, Output=I>,
         for<'a,'b> &'a I: Mul<&'b I, Output=I>,
         for<'a,'b> &'a I: Div<&'b I, Output=I>,
@@ -385,10 +388,10 @@ static SMALL_PRIMES: [u32; 2048] = [
         true
     }
 
-    // rewrites a number n =  2^s * d 
+    // rewrites a number n =  2^s * d
     // (i.e., 2^s is the largest power of 2 that divides the candidate).
-    fn rewrite<I>(n: &I) -> (I, I) 
-    where 
+    fn rewrite<I>(n: &I) -> (I, I)
+    where
         I: ModularArithmetic,
         I: Clone + Sized,
         I: PartialEq<I>,

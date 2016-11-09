@@ -11,21 +11,31 @@ pub trait NumberTests {
 
 pub trait ModularArithmetic
 where
-    Self: Clone + Sized,
-    Self: Zero + One + Neg<Output=Self> + NumberTests,
-    for<'a>    &'a Self: Mul<Self, Output=Self>,
-    for<'a,'b> &'a Self: Mul<&'b Self, Output=Self>,
-    for<'a,'b> &'a Self: Div<&'b Self, Output=Self>,
-    for<'a>        Self: Rem<&'a Self, Output=Self>,
-    for<'a,'b> &'a Self: Rem<&'b Self, Output=Self>,
-    for<'a,'b> &'a Self: Add<&'b Self, Output=Self>,
-                   Self: Sub<Self, Output=Self>,
-    for<'b>        Self: Sub<&'b Self, Output=Self>,
-    for<'a,'b> &'a Self: Sub<&'b Self, Output=Self>,
-    Self: Shr<usize, Output=Self>,
+    Self: Sized
+{
+    fn modinv(a: &Self, prime: &Self) -> Self;
+    fn modpow(x: &Self, e: &Self, prime: &Self) -> Self;
+    fn egcd(a: &Self, b: &Self) -> (Self, Self, Self);
+    fn divmod(dividend: &Self, module: &Self) -> (Self, Self);
+}
+
+impl<I> ModularArithmetic for I
+where
+    I: Clone + Sized,
+    I: Zero + One + Neg<Output=I> + NumberTests,
+    for<'a>    &'a I: Mul<I, Output=I>,
+    for<'a,'b> &'a I: Mul<&'b I, Output=I>,
+    for<'a,'b> &'a I: Div<&'b I, Output=I>,
+    for<'a>        I: Rem<&'a I, Output=I>,
+    for<'a,'b> &'a I: Rem<&'b I, Output=I>,
+    for<'a,'b> &'a I: Add<&'b I, Output=I>,
+                   I: Sub<I, Output=I>,
+    for<'b>        I: Sub<&'b I, Output=I>,
+    for<'a,'b> &'a I: Sub<&'b I, Output=I>,
+    I: Shr<usize, Output=I>,
 {
 
-    fn modinv(a: &Self, prime: &Self) -> Self {
+    default fn modinv(a: &Self, prime: &Self) -> Self {
         let r = a % prime;
         let ref d = if NumberTests::is_negative(&r) {
             let r = r.neg();
@@ -36,7 +46,7 @@ where
         (prime + d) % prime
     }
 
-    fn modpow(base: &Self, exponent: &Self, modulus: &Self) -> Self {
+    default fn modpow(base: &Self, exponent: &Self, modulus: &Self) -> Self {
         let mut base = base.clone();
         let mut exponent = exponent.clone();
         let mut result = Self::one();
@@ -51,7 +61,7 @@ where
         result
     }
 
-    fn egcd(a: &Self, b: &Self) -> (Self, Self, Self) {
+    default fn egcd(a: &Self, b: &Self) -> (Self, Self, Self) {
         if NumberTests::is_zero(b) {
             (a.clone(), Self::one(), Self::zero())
         } else {
@@ -62,8 +72,11 @@ where
             (d, t, new_t)
         }
     }
-    
-    fn divmod(dividend: &Self, module: &Self) -> (Self, Self);
+
+    default fn divmod(dividend: &Self, module: &Self) -> (Self, Self) {
+        (dividend / module, dividend % module)
+    }
+
 }
 
 pub trait Samplable {

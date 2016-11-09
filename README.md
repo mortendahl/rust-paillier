@@ -33,6 +33,12 @@ cd rust-paillier
 cargo build --release
 ```
 
+## Cargo
+```toml
+[dependencies]
+paillier = { git="ssh://git@github.com/snipsco/rust-paillier.git" }
+```
+
 
 ## Building
 

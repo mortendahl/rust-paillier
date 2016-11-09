@@ -44,7 +44,7 @@ impl ConvertFrom<ramp::Int> for u64 {
 }
 
 impl BitManipulation for ramp::Int {
-    fn set_bit(self: &mut Self, bit: usize, bit_val: bool) { 
+    fn set_bit(self: &mut Self, bit: usize, bit_val: bool) {
         self.set_bit(bit as u32, bit_val);
     }
 }

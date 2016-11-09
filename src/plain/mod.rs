@@ -42,7 +42,9 @@ pub struct PlainDecryptionKey<I> {
 impl<I> PlainDecryptionKey<I>
 where
     I: Clone,
-    I: One + ModularArithmetic + Mul<Output=I>,
+    I: One,
+    I: ModularArithmetic,
+                   I: Mul<Output=I>,
     for<'a>    &'a I: Mul<I, Output=I>,
     for<'a,'b> &'a I: Mul<&'b I, Output=I>,
     for<'a,'b> &'a I: Div<&'b I, Output=I>,
@@ -74,8 +76,9 @@ pub struct AbstractPlainPaillier<I> {
 impl <I> PartiallyHomomorphicScheme for AbstractPlainPaillier<I>
 where
     // I: From<usize>,
+    I: One,
     I: Samplable,
-    I: One + ModularArithmetic,
+    I: ModularArithmetic,
     for<'a,'b> &'a I: Add<&'b I, Output=I>,
     for<'a>    &'a I: Sub<I, Output=I>,
     for<'a,'b> &'a I: Sub<&'b I, Output=I>,
