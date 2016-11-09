@@ -1,4 +1,3 @@
-
 #[macro_use]
 extern crate bencher;
 extern crate paillier;
@@ -118,6 +117,7 @@ impl TestKeyGeneration for NumPlainPaillier {
         (ek, dk)
     }
 }
+
 
 #[cfg(feature="inclramp")]
 benchmark_group!(ramp,
