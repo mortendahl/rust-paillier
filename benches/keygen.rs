@@ -8,65 +8,57 @@ mod bench {
 use bencher::Bencher;
 use paillier::*;
 
-
-pub trait TestKeyGeneration
-where
-    Self : PartiallyHomomorphicScheme
-{
-    fn test_keypair(bitsize: usize) -> (Self::EncryptionKey, Self::DecryptionKey);
-}
-
 pub fn bench_key_generation_512<PHE>(b: &mut Bencher)
 where
     PHE : PartiallyHomomorphicScheme,
-    PHE : TestKeyGeneration,
+    PHE : KeyGeneration,
     PHE::Plaintext : From<usize>
 {
     b.iter(|| {
-        PHE::test_keypair(512);
+        PHE::keypair(512);
     });
 }
 
 pub fn bench_key_generation_1024<PHE>(b: &mut Bencher)
 where
     PHE : PartiallyHomomorphicScheme,
-    PHE : TestKeyGeneration,
+    PHE : KeyGeneration,
     PHE::Plaintext : From<usize>
 {
     b.iter(|| {
-        PHE::test_keypair(1024);
+        PHE::keypair(1024);
     });
 }
 
 pub fn bench_key_generation_2048<PHE>(b: &mut Bencher)
 where
     PHE : PartiallyHomomorphicScheme,
-    PHE : TestKeyGeneration,
+    PHE : KeyGeneration,
     PHE::Plaintext : From<usize>
 {
     b.iter(|| {
-        PHE::test_keypair(2048);
+        PHE::keypair(2048);
     });
 }
 
 pub fn bench_key_generation_3072<PHE>(b: &mut Bencher)
 where
     PHE : PartiallyHomomorphicScheme,
-    PHE : TestKeyGeneration,
+    PHE : KeyGeneration,
     PHE::Plaintext : From<usize>
 {
     b.iter(|| {
-        PHE::test_keypair(3072);
+        PHE::keypair(3072);
     });    
 }
 
-
+/*
 impl TestKeyGeneration for PlainPaillier {
     fn test_keypair(bitsize: usize) -> (<Self as PartiallyHomomorphicScheme>::EncryptionKey, <Self as PartiallyHomomorphicScheme>::DecryptionKey) {
         <Self as KeyGeneration>::keypair(bitsize)
     }
 }
-
+*/
 
 benchmark_group!(keygen,
     self::bench_key_generation_512<PlainPaillier>,

@@ -293,7 +293,7 @@ static SMALL_PRIMES: [u32; 2048] = [
         // First, simple trial divide
         for p in SMALL_PRIMES.into_iter() {
             let prime = I::from(*p);
-            let (_, r) = candidate.divmod(&prime);
+            let (_, r) = I::divmod(&candidate, &prime);
 
             if !r.is_zero() {
                 continue;

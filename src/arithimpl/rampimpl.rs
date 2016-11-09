@@ -32,8 +32,8 @@ impl NumberTests for ramp::Int {
 }
 
 impl ModularArithmetic for ramp::Int {
-    fn divmod(self: &Self, module: &Self) -> (Self, Self) {
-        self.divmod(module)
+    fn divmod(dividend: &Self, module: &Self) -> (Self, Self) {
+        dividend.divmod(module)
     }
 }
 

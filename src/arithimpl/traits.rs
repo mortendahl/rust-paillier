@@ -63,7 +63,7 @@ where
         }
     }
     
-    fn divmod(self: &Self, module: &Self) -> (Self, Self);
+    fn divmod(dividend: &Self, module: &Self) -> (Self, Self);
 }
 
 pub trait Samplable {
