@@ -27,11 +27,10 @@ defaultgmp = []
 [dependencies]
 rand = "0.3"
 num-traits = "0.1"
-ramp = { version = "0.3", optional = true }
-num = { version = "0.1", optional = true }
-# rust-gmp = { version = "0.3", optional = true }
-rust-gmp = { git = "https://github.com/snipsco/rust-gmp.git", optional = true }
-primal = { version = "0.2", optional = true }
+ramp = { git="https://github.com/snipsco/ramp.git", branch="kali/fallbacks", optional=true }
+num = { version="0.1", optional=true }
+rust-gmp = { git="https://github.com/snipsco/rust-gmp.git", optional=true }
+primal = { version="0.2", optional=true }
 
 [dev-dependencies]
 bencher = "0.1"
