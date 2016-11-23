@@ -206,6 +206,7 @@ where
     I: Clone,
     I: Samplable,
     I: ModularArithmetic,
+    I: One,
     I: PrimeSampable,
                    I: Mul<Output=I>,
     for<'a>    &'a I: Mul<I, Output=I>,

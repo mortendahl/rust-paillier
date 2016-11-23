@@ -44,14 +44,12 @@ impl <I> PrimeSampable for I
 
         loop {
             let mut candidate = Self::sample(bitsize);
-            // To ensure the appropiate size
-            // The two MSB of the candidate are set.
-            candidate.set_bit(1_usize, true);
-
             // We flip the LSB to make sure tue candidate is odd.
-            //candidate.set_bit(bitsize as u32, true);
-            candidate.set_bit(bitsize, true);
+            candidate.set_bit(0, true);
 
+            // To ensure the appropiate size
+           // we set the MSB of the candidate.
+            candidate.set_bit(bitsize-1, true);
 
             // If no prime number is found in 500 iterations,
             // restart the loop (re-seed).
