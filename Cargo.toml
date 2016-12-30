@@ -29,7 +29,7 @@ rand = "0.3"
 num-traits = "0.1"
 ramp = { git="https://github.com/snipsco/ramp.git", optional=true }
 num = { version="0.1", optional=true }
-rust-gmp = { git="https://github.com/fizyk20/rust-gmp.git", optional=true }
+rust-gmp = { git="https://github.com/snipsco/rust-gmp.git", optional=true }
 primal = { version="0.2", optional=true }
 
 [dev-dependencies]

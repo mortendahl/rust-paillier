@@ -1,24 +1,19 @@
 
-use plain;
-use plain::AbstractScheme as PlainAbstractScheme;
-use plain::KeyGeneration as PlainKeyGeneration;
+use phe::PartiallyHomomorphicScheme as PHE;
 
 #[derive(Debug,Clone)]
-pub struct EncryptionKey<I> {
-    underlying_ek: plain::EncryptionKey<I>,
+pub struct PackedEncryptionKey<UnderlyingScheme : PHE> {
+    underlying_ek: UnderlyingScheme::EncryptionKey,
     component_count: usize,
     component_size: usize,  // in bits
 }
 
-impl <I> EncryptionKey<I> {
-    pub fn from(underlying_ek: plain::EncryptionKey<I>,
-                component_count: usize,
-                component_size: usize)
-                -> EncryptionKey<I> {
+impl<UnderlyingScheme: PHE> PackedEncryptionKey<UnderlyingScheme> {
+    pub fn from(underlying_ek: UnderlyingScheme::EncryptionKey, component_count: usize, component_size: usize) -> PackedEncryptionKey<UnderlyingScheme> {
         // assert!(component_size * component_count <= plain_ek.n.bits());
         // assert!(component_size * component_count <= underlying_ek.n.bit_length() as usize); // TODO
         assert!(component_size <= 64);
-        EncryptionKey {
+        PackedEncryptionKey {
             underlying_ek: underlying_ek,
             component_size: component_size,
             component_count: component_count,
@@ -26,21 +21,17 @@ impl <I> EncryptionKey<I> {
     }
 }
 
-
 #[derive(Debug,Clone)]
-pub struct DecryptionKey<I> {
-    underlying_dk: plain::DecryptionKey<I>,
+pub struct PackedDecryptionKey<UnderlyingScheme : PHE> {
+    underlying_dk: UnderlyingScheme::DecryptionKey,
     component_count: usize,
     component_size: usize,  // in bits
 }
 
-impl <I> DecryptionKey<I> {
-    pub fn from(underlying_dk: plain::DecryptionKey<I>,
-                component_count: usize,
-                component_size: usize)
-                -> DecryptionKey<I> {
+impl<UnderlyingScheme: PHE> PackedDecryptionKey<UnderlyingScheme> {
+    pub fn from(underlying_dk: UnderlyingScheme::DecryptionKey, component_count: usize, component_size: usize) -> PackedDecryptionKey<UnderlyingScheme> {
         assert!(component_size <= 64);
-        DecryptionKey {
+        PackedDecryptionKey {
             underlying_dk: underlying_dk,
             component_size: component_size,
             component_count: component_count,
@@ -48,234 +39,110 @@ impl <I> DecryptionKey<I> {
     }
 }
 
-use std::marker::PhantomData;
+pub struct AbstractPackedPaillier<T, BasePHE : PHE> {
+    junk: ::std::marker::PhantomData<(T, BasePHE)>
+}
 
 #[derive(Debug,Clone,PartialEq)]
-pub struct Plaintext<I, T> {
-    pub data: Vec<T>,
-    _phantom: PhantomData<I>
-}
+pub struct PackedPlaintext<ComponentType>(Vec<ComponentType>);
 
-impl <I, T> From<T> for Plaintext<I, T>
-where
-    I: From<T>,
-    T: Clone
-{
+impl <T : Clone> From<T> for PackedPlaintext<T> {
     fn from(x: T) -> Self {
-        Plaintext { data: vec![x.clone()], _phantom: PhantomData }
+        PackedPlaintext(vec![x.clone()])
     }
 }
 
-impl <I, T> From<Vec<T>> for Plaintext<I, T>
-where
-    I : From<T>,
-    T : Clone,
-{
+impl <T : Clone> From<Vec<T>> for PackedPlaintext<T> {
     fn from(x: Vec<T>) -> Self {
-        Plaintext { data: x.clone(), _phantom: PhantomData }
+        PackedPlaintext(x.clone())
     }
 }
 
-// impl <T : Clone> From<[T]> for Plaintext<T> {
-//     fn from(x: [T]) -> Self {
-//         Plaintext(x.to_vec())
-//     }
-// }
-
-
-#[derive(Debug,Clone)]
-pub struct Ciphertext<I>(plain::Ciphertext<I>);
-
-
-use std::ops::{Sub, Mul, Div};
 use std::ops::{Add, Shl, Shr, Rem};
 use num_traits::{One};
 use arithimpl::traits::*;
-use arithimpl::primes::*;
-
-pub struct Scheme<BigInteger, ComponentType> {
-    junk: ::std::marker::PhantomData<(BigInteger, ComponentType)>
-}
-
-pub trait AbstractScheme
-{
-    type BigInteger;
-    type ComponentType;
-
-    fn encrypt( ek: &EncryptionKey<Self::BigInteger>,
-                ms: &Plaintext<Self::BigInteger, Self::ComponentType>)
-                -> Ciphertext<Self::BigInteger>;
-
-    fn decrypt( dk: &DecryptionKey<Self::BigInteger>,
-                c: &Ciphertext<Self::BigInteger>)
-                -> Plaintext<Self::BigInteger, Self::ComponentType>;
-
-    fn add( ek: &EncryptionKey<Self::BigInteger>,
-            c1: &Ciphertext<Self::BigInteger>,
-            c2: &Ciphertext<Self::BigInteger>)
-            -> Ciphertext<Self::BigInteger>;
-
-    fn mult(ek: &EncryptionKey<Self::BigInteger>,
-            c1: &Ciphertext<Self::BigInteger>,
-            m2: &Self::ComponentType)
-            -> Ciphertext<Self::BigInteger>;
-
-    fn rerandomise(ek: &EncryptionKey<Self::BigInteger>,
-                    c: &Ciphertext<Self::BigInteger>)
-                    -> Ciphertext<Self::BigInteger>;
-}
-
-impl <I, T> AbstractScheme for Scheme<I, T>
+impl <ComponentType, BasePHE> PHE for AbstractPackedPaillier<ComponentType, BasePHE>
 where
     // regarding ComponentType
-            T: Clone,
-            T: One,
-            T: Shl<usize, Output=T>,
-    for<'b> T: ConvertFrom<I>,
-    // regarding I
-    I: From<T>,
-    I: One,
-    I: Samplable,
-    I: ModularArithmetic,
-                    I: Add<Output=I>,
-    for<'a,'b> &'a  I: Add<&'b I, Output=I>,
-    for<'a>    &'a  I: Sub<I, Output=I>,
-    for<'a,'b> &'a  I: Sub<&'b I, Output=I>,
-    for<'a>    &'a  I: Mul<I, Output=I>,
-    for<'b>         I: Mul<&'b I, Output=I>,
-    for<'a,'b> &'a  I: Mul<&'b I, Output=I>,
-    for<'b>         I: Div<&'b I, Output=I>,
-    for<'a,'b> &'a  I: Div<&'b I, Output=I>,
-                    I: Rem<Output=I>,
-    for<'a>         I: Rem<&'a I, Output=I>,
-    for<'a,'b> &'a  I: Rem<&'b I, Output=I>,
-                    I: Shl<usize, Output=I>,
-                    I: Shr<usize, Output=I>,
-    for<'a> &'a     I: Shr<usize, Output=I>,
+    ComponentType: Clone,
+    ComponentType: One,
+    ComponentType: Shl<usize, Output=ComponentType>,
+    for<'b> ComponentType: ConvertFrom<BasePHE::Plaintext>,
+    // regarding BasePHE
+    BasePHE: PHE,
+    BasePHE::Plaintext: From<ComponentType>,
+    BasePHE::Plaintext: Shl<usize, Output=BasePHE::Plaintext>,
+    // BasePHE::Plaintext: ShlAssign<usize>,
+    BasePHE::Plaintext: Shr<usize, Output=BasePHE::Plaintext>,
+    for<'a> &'a BasePHE::Plaintext: Shr<usize, Output=BasePHE::Plaintext>,
+    BasePHE::Plaintext: Add<Output=BasePHE::Plaintext>,
+    BasePHE::Plaintext: Rem<Output=BasePHE::Plaintext>,
+    for<'a,'b> &'a BasePHE::Plaintext: Rem<&'b BasePHE::Plaintext, Output=BasePHE::Plaintext>
 {
 
-    type BigInteger = I;
-    type ComponentType = T;
+    type Plaintext = PackedPlaintext<ComponentType>;
+    type Ciphertext = BasePHE::Ciphertext;
+    type EncryptionKey = PackedEncryptionKey<BasePHE>;
+    type DecryptionKey = PackedDecryptionKey<BasePHE>;
 
-    fn encrypt(ek: &EncryptionKey<I>, ms: &Plaintext<I, T>) -> Ciphertext<I> {
-        let plaintexts: &Vec<T> = &ms.data;
-        assert!(plaintexts.len() == ek.component_count);
-        let mut packed_plaintexts: I = I::from(plaintexts[0].clone());
-        for plaintext in &plaintexts[1..] {
-            packed_plaintexts = packed_plaintexts << ek.component_size;
-            packed_plaintexts = packed_plaintexts + I::from(plaintext.clone());
+    fn encrypt(ek: &Self::EncryptionKey, ms: &Self::Plaintext) -> Self::Ciphertext {
+        assert!(ms.0.len() == ek.component_count);
+        let mut packed_plaintext = BasePHE::Plaintext::from(ms.0[0].clone());
+        for m in &ms.0[1..] {
+            packed_plaintext = packed_plaintext << ek.component_size;
+            packed_plaintext = packed_plaintext + BasePHE::Plaintext::from(m.clone());
         }
-        let c: plain::Ciphertext<I> = plain::Scheme::encrypt(
-            &ek.underlying_ek,
-            &plain::Plaintext(packed_plaintexts));
-        Ciphertext(c)
+        BasePHE::encrypt(&ek.underlying_ek, &packed_plaintext)
     }
 
-    fn decrypt(dk: &DecryptionKey<I>, c: &Ciphertext<I>) -> Plaintext<I, T> {
-        let mut packed_plaintext: I = plain::Scheme::decrypt(&dk.underlying_dk, &c.0).0;
-        let raw_mask: T = T::one() << dk.component_size;
-        let mask: I = I::from(raw_mask.clone());
-        let mut result: Vec<T> = vec![];
+    fn decrypt(dk: &Self::DecryptionKey, c: &Self::Ciphertext) -> Self::Plaintext {
+        let mut packed_plaintext = BasePHE::decrypt(&dk.underlying_dk, c);
+        let raw_mask = ComponentType::one() << dk.component_size;
+        let mask = BasePHE::Plaintext::from(raw_mask);
+        let mut result = vec![];
         for _ in 0..dk.component_count {
             let slot_value = &packed_plaintext % &mask;
-            let foo = T::_from(&slot_value);
+            let foo = ComponentType::_from(&slot_value);
             result.push(foo);
             packed_plaintext = &packed_plaintext >> dk.component_size;
         }
         result.reverse();
-        Plaintext { data: result, _phantom: PhantomData }
+        PackedPlaintext(result)
     }
 
-    fn add(ek: &EncryptionKey<I>, c1: &Ciphertext<I>, c2: &Ciphertext<I>) -> Ciphertext<I> {
-        let c: plain::Ciphertext<I> = plain::Scheme::add(&ek.underlying_ek, &c1.0, &c2.0);
-        Ciphertext(c)
+    fn add(ek: &Self::EncryptionKey, c1: &Self::Ciphertext, c2: &Self::Ciphertext) -> Self::Ciphertext {
+        BasePHE::add(&ek.underlying_ek, c1, c2)
     }
 
-    fn mult(ek: &EncryptionKey<I>, c1: &Ciphertext<I>, m2: &T) -> Ciphertext<I> {
-        let scalar = plain::Plaintext(I::from(m2.clone()));
-        let c: plain::Ciphertext<I> = plain::Scheme::mult(&ek.underlying_ek, &c1.0, &scalar);
-        Ciphertext(c)
+    fn mult(ek: &Self::EncryptionKey, c1: &Self::Ciphertext, m2: &Self::Plaintext) -> Self::Ciphertext {
+        let ref expanded_m2 = BasePHE::Plaintext::from(m2.0[0].clone()); // TODO have separate type for scalar?
+        BasePHE::mult(&ek.underlying_ek, c1, expanded_m2)
     }
 
-    fn rerandomise(ek: &EncryptionKey<I>, c: &Ciphertext<I>) -> Ciphertext<I> {
-        let d: plain::Ciphertext<I> = plain::Scheme::rerandomise(&ek.underlying_ek, &c.0);
-        Ciphertext(d)
+    fn rerandomise(ek: &Self::EncryptionKey, c: &Self::Ciphertext) -> Self::Ciphertext {
+        BasePHE::rerandomise(&ek.underlying_ek, c)
     }
 
 }
-
-
-pub trait Encode<T>
-{
-    type I;
-    fn encode(x: T) -> Plaintext<Self::I, T>;
-}
-
-impl <I, T> Encode<T> for Scheme<I, T>
-where
-    Plaintext<I, T> : From<T>,
-{
-    type I = I;
-    fn encode(x: T) -> Plaintext<I, T> {
-        Plaintext::from(x)
-    }
-}
-
-
-pub trait KeyGeneration<I>
-{
-    fn keypair(bit_length: usize, component_count: usize, component_size: usize) -> (EncryptionKey<I>, DecryptionKey<I>);
-}
-
-#[cfg(feature="keygen")]
-impl <I, T> KeyGeneration<I> for Scheme<I, T>
-where
-    I: From<u64>,
-    I: ::std::str::FromStr, <I as ::std::str::FromStr>::Err: ::std::fmt::Debug,
-    I: Clone,
-    I: Samplable,
-    I: ModularArithmetic,
-    I: One,
-    I: PrimeSampable,
-                   I: Mul<Output=I>,
-    for<'a>    &'a I: Mul<I, Output=I>,
-    for<'b>        I: Mul<&'b I, Output=I>,
-    for<'a,'b> &'a I: Mul<&'b I, Output=I>,
-    for<'a,'b> &'a I: Add<&'b I, Output=I>,
-    for<'a>    &'a I: Sub<I, Output=I>,
-    for<'a,'b> &'a I: Sub<&'b I, Output=I>,
-    for<'b>        I: Div<&'b I, Output=I>,
-    for<'a,'b> &'a I: Div<&'b I, Output=I>,
-    for<'a>        I: Rem<&'a I, Output=I>,
-    for<'a,'b> &'a I: Rem<&'b I, Output=I>
-{
-    fn keypair(bit_length: usize, component_count: usize, component_size: usize) -> (EncryptionKey<I>, DecryptionKey<I>) {
-        let (plain_ek, plain_dk) = plain::Scheme::keypair(bit_length);
-        let ek = EncryptionKey::from(plain_ek, component_count, component_size);
-        let dk = DecryptionKey::from(plain_dk, component_count, component_size);
-        (ek, dk)
-    }
-}
-
 
 #[cfg(test)]
 mod tests {
 
-    use ::{BigInteger, PackedPaillier};
-    use ::plain;
-    use super::*;
+    use PlainPaillier;
+    use PackedPaillier;
+    use phe::PartiallyHomomorphicScheme as PHE;
 
-    fn test_keypair() -> (EncryptionKey<BigInteger>, DecryptionKey<BigInteger>) {
+    fn test_keypair() -> (<PackedPaillier as PHE>::EncryptionKey, <PackedPaillier as PHE>::DecryptionKey) {
         //1024 bits prime
         let p = str::parse("148677972634832330983979593310074301486537017973460461278300587514468301043894574906886127642530475786889672304776052879927627556769456140664043088700743909632312483413393134504352834240399191134336344285483935856491230340093391784574980688823380828143810804684752914935441384845195613674104960646037368551517").unwrap();
         let q = str::parse("158741574437007245654463598139927898730476924736461654463975966787719309357536545869203069369466212089132653564188443272208127277664424448947476335413293018778018615899291704693105620242763173357203898195318179150836424196645745308205164116144020613415407736216097185962171301808761138424668335445923774195463").unwrap();
-
+        
         let n = &p * &q;
-        let plain_ek = plain::EncryptionKey::from(&n);
-        let plain_dk = plain::DecryptionKey::from(&p, &q);
+        let plain_ek = <PlainPaillier as PHE>::EncryptionKey::from(&n);
+        let plain_dk = <PlainPaillier as PHE>::DecryptionKey::from(&p, &q);
 
-        let ek = EncryptionKey::from(plain_ek, 3, 10);
-        let dk = DecryptionKey::from(plain_dk, 3, 10);
+        let ek = <PackedPaillier as PHE>::EncryptionKey::from(plain_ek, 3, 10);
+        let dk = <PackedPaillier as PHE>::DecryptionKey::from(plain_dk, 3, 10);
         (ek, dk)
     }
 
@@ -283,10 +150,10 @@ mod tests {
     fn test_correct_encryption_decryption() {
         let (ek, dk) = test_keypair();
 
-        let m: Plaintext<BigInteger, u64> = Plaintext::from(vec![1, 2, 3]);
-        let c: Ciphertext<BigInteger> = Scheme::encrypt(&ek, &m);
+        let m = <PackedPaillier as PHE>::Plaintext::from(vec![1, 2, 3]);
+        let c = PackedPaillier::encrypt(&ek, &m);
 
-        let recovered_m: Plaintext<BigInteger, u64> = Scheme::decrypt(&dk, &c);
+        let recovered_m = PackedPaillier::decrypt(&dk, &c);
         assert_eq!(recovered_m, m);
     }
 
@@ -294,27 +161,27 @@ mod tests {
     fn test_correct_addition() {
         let (ek, dk) = test_keypair();
 
-        let m1 = Plaintext::from(vec![1, 2, 3]);
+        let m1 = <PackedPaillier as PHE>::Plaintext::from(vec![1, 2, 3]);
         let c1 = PackedPaillier::encrypt(&ek, &m1);
-        let m2 = Plaintext::from(vec![1, 2, 3]);
+        let m2 = <PackedPaillier as PHE>::Plaintext::from(vec![1, 2, 3]);
         let c2 = PackedPaillier::encrypt(&ek, &m2);
 
         let c = PackedPaillier::add(&ek, &c1, &c2);
-        let m: Plaintext<BigInteger, u64> = PackedPaillier::decrypt(&dk, &c);
-        assert_eq!(m.data, vec![2, 4, 6]);
+        let m = PackedPaillier::decrypt(&dk, &c);
+        assert_eq!(m.0, vec![2, 4, 6]);
     }
 
     #[test]
     fn test_correct_multiplication() {
         let (ek, dk) = test_keypair();
 
-        let m1 = Plaintext::from(vec![1, 2, 3]);
+        let m1 = <PackedPaillier as PHE>::Plaintext::from(vec![1, 2, 3]);
         let c1 = PackedPaillier::encrypt(&ek, &m1);
-        let m2 = 4;
+        let m2 = <PackedPaillier as PHE>::Plaintext::from(vec![4]);
 
         let c = PackedPaillier::mult(&ek, &c1, &m2);
         let m = PackedPaillier::decrypt(&dk, &c);
-        assert_eq!(m.data, vec![4, 8, 12]);
+        assert_eq!(m.0, vec![4, 8, 12]);
     }
 
 }
