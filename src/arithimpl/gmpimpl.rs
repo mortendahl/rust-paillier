@@ -12,10 +12,12 @@ impl Samplable for Mpz {
         r.urandom(upper)
     }
 
+    #[allow(unused_variables)]
     fn sample(bitsize: usize) -> Self {
         unimplemented!();
     }
 
+    #[allow(unused_variables)]
     fn sample_range(lower: &Self, upper: &Self) -> Self {
         unimplemented!();
     }
