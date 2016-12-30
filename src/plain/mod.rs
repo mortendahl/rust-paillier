@@ -153,7 +153,10 @@ where
     type BigInteger = I;
 
     fn encrypt(ek: &EncryptionKey<I>, m: &Plaintext<I>) -> Ciphertext<I> {
-        let gx = I::modpow(&ek.g, &m.0, &ek.nn);
+        // let gx = I::modpow(&ek.g, &m.0, &ek.nn);
+        // assume here that g = n+1
+        let nm = &m.0 * &ek.n;
+        let gx = (&nm + &I::one()) % &ek.nn;
         Self::rerandomise(ek, &Ciphertext(gx))
     }
 
