@@ -1,25 +1,45 @@
 # Paillier
 
+[![License: MIT/Apache2](https://img.shields.io/badge/license-MIT%2fApache2-blue.svg)](https://img.shields.io/badge/license-MIT%2fApache2-blue.svg)
+
 Efficient pure-Rust library for the [Paillier](https://en.wikipedia.org/wiki/Paillier_cryptosystem) partially homomorphic encryption scheme, offering both plain and packed variants.
+Supports several underlying arbitrary precision libraries, including [RAMP](https://github.com/Aatch/ramp) (default), [GMP](https://github.com/fizyk20/rust-gmp), and [num](https://github.com/rust-num/num).
 
-**Important**: while we have followed recommendations regarding the scheme itself, so far no particular efforts have been made to harden the library against non-cryptographic attacks, including side-channel attacks.
+**Important**: while we have followed recommendations regarding the scheme itself, this library should currently be seen as an experimental implementation. In particular, no particular efforts have so far been made to harden it against non-cryptographic attacks, including side-channel attacks.
 
-The implementation exposes the usual operations through the `PartiallyHomomorphicScheme` interface:
+The library exposes the scheme operations through two traits and implementations, for respectively a single large value (`plain::Scheme`) and for a vector of smaller values (`packed::Scheme`):
 ```rust
-pub trait PartiallyHomomorphicScheme {
-    type Plaintext;
-    type Ciphertext;
-    type EncryptionKey;
-    type DecryptionKey;
-    fn encrypt(&Self::EncryptionKey, &Self::Plaintext) -> Self::Ciphertext;
-    fn decrypt(&Self::DecryptionKey, &Self::Ciphertext) -> Self::Plaintext;
-    fn rerandomise(&Self::EncryptionKey, &Self::Ciphertext) -> Self::Ciphertext;
-    fn add(&Self::EncryptionKey, &Self::Ciphertext, &Self::Ciphertext) -> Self::Ciphertext;
-    fn mult(&Self::EncryptionKey, &Self::Ciphertext, &Self::Plaintext) -> Self::Ciphertext;
+pub trait AbstractScheme {
+
+    fn encrypt(
+      ek: &EncryptionKey<Self::BigInteger>,
+       m: &Plaintext<Self::BigInteger>)
+       -> Ciphertext<Self::BigInteger>;
+
+    fn decrypt(
+      dk: &DecryptionKey<Self::BigInteger>,
+       c: &Ciphertext<Self::BigInteger>)
+       -> Plaintext<Self::BigInteger>;
+
+    fn add(
+      ek: &EncryptionKey<Self::BigInteger>,
+      c1: &Ciphertext<Self::BigInteger>,
+      c2: &Ciphertext<Self::BigInteger>)
+       -> Ciphertext<Self::BigInteger>;
+
+    fn mult(
+      ek: &EncryptionKey<Self::BigInteger>,
+      c1: &Ciphertext<Self::BigInteger>,
+      m2: &Plaintext<Self::BigInteger>)
+       -> Ciphertext<Self::BigInteger>;
+
+    fn rerandomise(
+      ek: &EncryptionKey<Self::BigInteger>,
+       c: &Ciphertext<Self::BigInteger>)
+       -> Ciphertext<Self::BigInteger>;
+
 }
 ```
-along with implementations `PlainPaillier` and `PackedPaillier`.
-
 
 
 # Installation
@@ -36,7 +56,7 @@ cargo build --release
 ## Cargo
 ```toml
 [dependencies]
-paillier = { git="ssh://git@github.com/snipsco/rust-paillier.git" }
+paillier = { git="https://github.com/snipsco/rust-paillier.git" }
 ```
 
 
@@ -54,15 +74,15 @@ cargo build --features "keygen"
 The library supports the use of different arithmetic libraries, currently defaulting to [`ramp`](https://github.com/Aatch/ramp) for efficiency.
 
 For [`ramp`](https://github.com/Aatch/ramp)-only compilation use `cargo build` or
-```
+```sh
 cargo build --features "inclramp"
 ```
 for [`num`](https://github.com/rust-num/num)-only compilation use
-```
+```sh
 cargo build --no-default-features --features "inclnum"
 ```
 and finally, use
-```
+```sh
 cargo build --features "inclramp inclnum"
 ```
 to have both available (useful for e.g. performance tests).
@@ -70,7 +90,7 @@ to have both available (useful for e.g. performance tests).
 
 # Performance
 These numbers were obtained by running
-```
+```sh
 cargo bench
 ```
 using the nightly toolchain.
@@ -78,8 +98,10 @@ using the nightly toolchain.
 # License
 
 Licensed under either of
+
  * Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
  * MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+
 at your option.
 
 ## Contribution

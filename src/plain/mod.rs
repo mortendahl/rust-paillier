@@ -1,9 +1,11 @@
 
+//! Standard Paillier supporting ciphertext addition and plaintext multiplication.
+
 use std::ops::{Add, Sub, Mul, Div, Rem};
 use num_traits::{One};
 use arithimpl::traits::*;
 
-
+/// Encryption key that may be shared publicly.
 #[derive(Debug,Clone)]
 pub struct EncryptionKey<I> {
     pub n: I,  // the modulus
@@ -26,7 +28,7 @@ where
     }
 }
 
-
+/// Decryption key that should be kept private.
 #[derive(Debug,Clone)]
 pub struct DecryptionKey<I> {
     pub p: I,  // first prime
@@ -66,7 +68,7 @@ where
     }
 }
 
-
+/// Representation of unencrypted message.
 #[derive(Debug,Clone,PartialEq)]
 pub struct Plaintext<I>(pub I);
 
@@ -80,41 +82,55 @@ where
     }
 }
 
-
+/// Representation of encrypted message.
 #[derive(Debug,Clone)]
 pub struct Ciphertext<I>(pub I);
 
-
+/// Implementation of the Paillier operations, such as encryption, decryption, and addition.
 pub struct Scheme<I> {
     junk: ::std::marker::PhantomData<I>
 }
 
-
+/// Operations exposed by the basic Paillier scheme.
 pub trait AbstractScheme
 {
+    /// Underlying arbitrary precision arithmetic type.
     type BigInteger;
 
-    fn encrypt( ek: &EncryptionKey<Self::BigInteger>,
-                m: &Plaintext<Self::BigInteger>)
-                -> Ciphertext<Self::BigInteger>;
+    /// Encrypt plaintext `m` under key `ek` into a ciphertext.
+    fn encrypt(
+        ek: &EncryptionKey<Self::BigInteger>,
+        m: &Plaintext<Self::BigInteger>)
+        -> Ciphertext<Self::BigInteger>;
 
-    fn decrypt( dk: &DecryptionKey<Self::BigInteger>,
-                c: &Ciphertext<Self::BigInteger>)
-                -> Plaintext<Self::BigInteger>;
+    /// Decrypt ciphertext `c` using key `dk` into a plaintext.
+    fn decrypt(
+        dk: &DecryptionKey<Self::BigInteger>,
+        c: &Ciphertext<Self::BigInteger>)
+        -> Plaintext<Self::BigInteger>;
 
-    fn add( ek: &EncryptionKey<Self::BigInteger>,
-            c1: &Ciphertext<Self::BigInteger>,
-            c2: &Ciphertext<Self::BigInteger>)
-            -> Ciphertext<Self::BigInteger>;
+    /// Homomorphically combine ciphertexts `c1` and `c2` to obtain a ciphertext containing
+    /// the sum of the two underlying plaintexts, reduced modulus `n` from `ek`.
+    fn add(
+        ek: &EncryptionKey<Self::BigInteger>,
+        c1: &Ciphertext<Self::BigInteger>,
+        c2: &Ciphertext<Self::BigInteger>)
+        -> Ciphertext<Self::BigInteger>;
 
-    fn mult(ek: &EncryptionKey<Self::BigInteger>,
-            c1: &Ciphertext<Self::BigInteger>,
-            m2: &Plaintext<Self::BigInteger>)
-            -> Ciphertext<Self::BigInteger>;
+    /// Homomorphically combine ciphertext `c1` and plaintext `m2` to obtain a ciphertext
+    /// containing the multiplication of the (underlying) plaintexts, reduced modulus `n` from `ek`.
+    fn mult(
+        ek: &EncryptionKey<Self::BigInteger>,
+        c1: &Ciphertext<Self::BigInteger>,
+        m2: &Plaintext<Self::BigInteger>)
+        -> Ciphertext<Self::BigInteger>;
 
-    fn rerandomise(ek: &EncryptionKey<Self::BigInteger>,
-                    c: &Ciphertext<Self::BigInteger>)
-                    -> Ciphertext<Self::BigInteger>;
+    /// Rerandomise ciphertext `c` to hide any history of which homomorphic operations were
+    /// used to compute it, making it look exactly like a fresh encryption of the same plaintext.
+    fn rerandomise(
+        ek: &EncryptionKey<Self::BigInteger>,
+        c: &Ciphertext<Self::BigInteger>)
+        -> Ciphertext<Self::BigInteger>;
 }
 
 impl <I> AbstractScheme for Scheme<I>
@@ -165,7 +181,7 @@ where
 
 }
 
-
+/// Encoding of e.g. primitive values as plaintexts.
 pub trait Encode<T>
 {
     type I;
@@ -182,7 +198,7 @@ where
     }
 }
 
-
+/// Decoding of plaintexts into e.g. primitive values.
 pub trait Decode<T>
 {
     type I;
@@ -199,9 +215,17 @@ where
     }
 }
 
-
+/// Secure generation of fresh key pairs for encryption and decryption.
 pub trait KeyGeneration<I>
 {
+    // /// Generate fresh key pair with currently recommended security level (2048 bit modulus).
+    // fn keypair() -> (EncryptionKey<I>, DecryptionKey<I>) {
+    //     keypair(2048)
+    // }
+
+    /// Generate fresh key pair with security level specified as the `bit_length` of the modulus.
+    ///
+    /// Currently recommended security level is a minimum of 2048 bits.
     fn keypair(big_length: usize) -> (EncryptionKey<I>, DecryptionKey<I>);
 }
 

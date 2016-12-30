@@ -1,10 +1,16 @@
 
+//! Packed variant of Paillier allowing several (small) values to be encrypted together.
+//! Homomorphic properties are preserved, as long as the absolute values stay within specified bounds.
+
 use plain;
 use plain::AbstractScheme as PlainAbstractScheme;
 
 #[cfg(feature="keygen")]
 use plain::KeyGeneration as PlainKeyGeneration;
 
+/// Encryption key that may be shared publicly.
+/// Specifies the number of components in each plaintext as well as the number of bits
+/// allocated for each (thereby determining an upper bound on each component value).
 #[derive(Debug,Clone)]
 pub struct EncryptionKey<I> {
     underlying_ek: plain::EncryptionKey<I>,
@@ -28,7 +34,9 @@ impl <I> EncryptionKey<I> {
     }
 }
 
-
+/// Decryption key that should be kept private.
+/// Specifies the number of components in each plaintext as well as the number of bits
+/// allocated for each (thereby determining an upper bound on each component value).
 #[derive(Debug,Clone)]
 pub struct DecryptionKey<I> {
     underlying_dk: plain::DecryptionKey<I>,
@@ -52,6 +60,7 @@ impl <I> DecryptionKey<I> {
 
 use std::marker::PhantomData;
 
+/// Representation of unencrypted message (vector).
 #[derive(Debug,Clone,PartialEq)]
 pub struct Plaintext<I, T> {
     pub data: Vec<T>,
@@ -84,7 +93,7 @@ where
 //     }
 // }
 
-
+/// Representation of encrypted message (vector).
 #[derive(Debug,Clone)]
 pub struct Ciphertext<I, T> {
     pub data: plain::Ciphertext<I>,
@@ -100,36 +109,57 @@ use arithimpl::traits::*;
 #[cfg(feature="keygen")]
 use arithimpl::primes::*;
 
+/// Implementation of the Paillier operations, such as encryption, decryption, and addition.
 pub struct Scheme<BigInteger, ComponentType> {
     junk: ::std::marker::PhantomData<(BigInteger, ComponentType)>
 }
 
+/// Operations exposed by the packed Paillier scheme.
 pub trait AbstractScheme
 {
+    /// Underlying arbitrary precision arithmetic type.
     type BigInteger;
+
+    /// Type of packed values.
     type ComponentType;
 
-    fn encrypt( ek: &EncryptionKey<Self::BigInteger>,
-                ms: &Plaintext<Self::BigInteger, Self::ComponentType>)
-                -> Ciphertext<Self::BigInteger, Self::ComponentType>;
+    /// Encrypt plaintext `m` under key `ek` into a ciphertext.
+    fn encrypt(
+        ek: &EncryptionKey<Self::BigInteger>,
+        ms: &Plaintext<Self::BigInteger, Self::ComponentType>)
+        -> Ciphertext<Self::BigInteger, Self::ComponentType>;
 
-    fn decrypt( dk: &DecryptionKey<Self::BigInteger>,
-                c: &Ciphertext<Self::BigInteger, Self::ComponentType>)
-                -> Plaintext<Self::BigInteger, Self::ComponentType>;
+    /// Decrypt ciphertext `c` using key `dk` into a plaintext.
+    fn decrypt(
+        dk: &DecryptionKey<Self::BigInteger>,
+        c: &Ciphertext<Self::BigInteger, Self::ComponentType>)
+        -> Plaintext<Self::BigInteger, Self::ComponentType>;
 
-    fn add( ek: &EncryptionKey<Self::BigInteger>,
-            c1: &Ciphertext<Self::BigInteger, Self::ComponentType>,
-            c2: &Ciphertext<Self::BigInteger, Self::ComponentType>)
-            -> Ciphertext<Self::BigInteger, Self::ComponentType>;
+    /// Homomorphically combine ciphertexts `c1` and `c2` to obtain a ciphertext containing
+    /// the component-wise sum of the two underlying plaintexts. Correct as long as the absolute
+    /// values do not exceed the upper bound specified as part of the public key.
+    fn add(
+        ek: &EncryptionKey<Self::BigInteger>,
+        c1: &Ciphertext<Self::BigInteger, Self::ComponentType>,
+        c2: &Ciphertext<Self::BigInteger, Self::ComponentType>)
+        -> Ciphertext<Self::BigInteger, Self::ComponentType>;
 
-    fn mult(ek: &EncryptionKey<Self::BigInteger>,
-            c1: &Ciphertext<Self::BigInteger, Self::ComponentType>,
-            m2: &Self::ComponentType)
-            -> Ciphertext<Self::BigInteger, Self::ComponentType>;
+    /// Homomorphically combine ciphertext `c1` and scalar `m2` to obtain a ciphertext
+    /// containing the component-wise multiplication of the underlying plaintext and the scalar.
+    /// Correct as long as the absolute values do not exceed the upper bound specified as
+    /// part of the public key.
+    fn mult(
+        ek: &EncryptionKey<Self::BigInteger>,
+        c1: &Ciphertext<Self::BigInteger, Self::ComponentType>,
+        m2: &Self::ComponentType)
+        -> Ciphertext<Self::BigInteger, Self::ComponentType>;
 
-    fn rerandomise(ek: &EncryptionKey<Self::BigInteger>,
-                    c: &Ciphertext<Self::BigInteger, Self::ComponentType>)
-                    -> Ciphertext<Self::BigInteger, Self::ComponentType>;
+    /// Rerandomise ciphertext `c` to hide any history of which homomorphic operations were
+    /// used to compute it, making it look exactly like a fresh encryption of the same plaintext.
+    fn rerandomise(
+        ek: &EncryptionKey<Self::BigInteger>,
+        c: &Ciphertext<Self::BigInteger, Self::ComponentType>)
+        -> Ciphertext<Self::BigInteger, Self::ComponentType>;
 }
 
 impl <I, T> AbstractScheme for Scheme<I, T>
@@ -228,10 +258,19 @@ where
     }
 }
 
-
+/// Secure generation of fresh key pairs for encryption and decryption.
 pub trait KeyGeneration<I>
 {
-    fn keypair(bit_length: usize, component_count: usize, component_size: usize) -> (EncryptionKey<I>, DecryptionKey<I>);
+    /// Generate fresh key pair with security level specified as the `bit_length` of the modulus,
+    /// and expecting each plaintext of contain `component_count` values, each of size at most
+    /// `component_size` bits.
+    ///
+    /// Currently recommended security level is a minimum of 2048 bits.
+    fn keypair(
+        bit_length: usize,
+        component_count: usize,
+        component_size: usize)
+        -> (EncryptionKey<I>, DecryptionKey<I>);
 }
 
 #[cfg(feature="keygen")]

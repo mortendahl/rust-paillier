@@ -26,7 +26,7 @@ macro_rules! bigint {
             type $t = ::NumBigInteger;
             $body
         }
-        
+
     };
 }
 

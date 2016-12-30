@@ -1,14 +1,17 @@
 [package]
 name = "paillier"
 version = "0.1.0"
-authors = ["Morten Dahl"]
+authors = [
+  "Mario Cornejo <mario.cornejo@snips.ai>",
+  "Morten Dahl <morten.dahl@snips.ai>"
+]
 description = "A pure-Rust implementation of the Paillier encryption scheme"
 keywords = [
   "Paillier",
-  "homomorphic encryption",
-  "secure computation",
-  "multi-party computation", "MPC",
-  "cryptography", "crypto"
+  "homomorphic",
+  "cryptography",
+  "secure-computation",
+  "mpc",
 ]
 homepage = "https://github.com/snips/rust-paillier"
 repository = "https://github.com/snips/rust-paillier"
