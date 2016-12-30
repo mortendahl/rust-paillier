@@ -49,3 +49,7 @@ harness = false
 [[bench]]
 name = "arith"
 harness = false
+
+[[bench]]
+name = "algo"
+harness = false
