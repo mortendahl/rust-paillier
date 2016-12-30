@@ -12,29 +12,29 @@ pub trait PrimeSampable {
 
 
 impl <I> PrimeSampable for I
-    where
-        I: Samplable,
-        I: ModularArithmetic,
-        I: BitManipulation,
-        I: Clone + Sized,
-        I: From<u32>,
-        I: PartialEq<usize>,
-        I: PartialEq<I>,
-        I: Step,
-        I: Zero + One + Neg<Output=I> + NumberTests,
-        for<'a>    &'a I: Mul<I, Output=I>,
-        for<'a,'b> &'a I: Mul<&'b I, Output=I>,
+where
+    I: Samplable,
+    I: ModularArithmetic,
+    I: BitManipulation,
+    I: Clone + Sized,
+    I: From<u32>,
+    I: PartialEq<usize>,
+    I: PartialEq<I>,
+    I: Step,
+    I: Zero + One + Neg<Output=I> + NumberTests,
+    for<'a>    &'a I: Mul<I, Output=I>,
+    for<'a,'b> &'a I: Mul<&'b I, Output=I>,
 
-        for<'a,'b> &'a I: Div<&'b I, Output=I>,
-        for<'b>        I: Div<&'b I, Output=I>,
-        for<'a>        I: Rem<&'a I, Output=I>,
-        for<'a,'b> &'a I: Rem<&'b I, Output=I>,
-        for<'a,'b> &'a I: Add<&'b I, Output=I>,
-        for<'b>        I: Add<&'b I, Output=I>,
-                       I: Sub<I, Output=I>,
-        for<'b>        I: Sub<&'b I, Output=I>,
-        for<'a,'b> &'a I: Sub<&'b I, Output=I>,
-        I: Shr<usize, Output=I>,
+    for<'a,'b> &'a I: Div<&'b I, Output=I>,
+    for<'b>        I: Div<&'b I, Output=I>,
+    for<'a>        I: Rem<&'a I, Output=I>,
+    for<'a,'b> &'a I: Rem<&'b I, Output=I>,
+    for<'a,'b> &'a I: Add<&'b I, Output=I>,
+    for<'b>        I: Add<&'b I, Output=I>,
+                   I: Sub<I, Output=I>,
+    for<'b>        I: Sub<&'b I, Output=I>,
+    for<'a,'b> &'a I: Sub<&'b I, Output=I>,
+    I: Shr<usize, Output=I>,
 {
     fn sample_prime(bitsize :usize) -> Self {
         // See Practical Considerations section inside the section 11.5 "Prime Number Generation"
@@ -259,14 +259,14 @@ static SMALL_PRIMES: [u32; 2048] = [
     17737, 17747, 17749, 17761, 17783, 17789, 17791, 17807, 17827, 17837, 17839,
     17851, 17863 ];
 
-    // Runs the following three tests on a given `candidate` to determine
-    // primality:
-    //
-    // 1. Divide the candidate by the first 999 small prime numbers.
-    // 2. Run Fermat's Little Theorem against the candidate.
-    // 3. Run five rounds of the Miller-Rabin test on the candidate.
-    pub fn is_prime<I>(candidate: &I) -> bool
-    where
+// Runs the following three tests on a given `candidate` to determine
+// primality:
+//
+// 1. Divide the candidate by the first 999 small prime numbers.
+// 2. Run Fermat's Little Theorem against the candidate.
+// 3. Run five rounds of the Miller-Rabin test on the candidate.
+pub fn is_prime<I>(candidate: &I) -> bool
+where
     I: ModularArithmetic,
     I: Clone + Sized,
     I: Samplable,
@@ -286,132 +286,131 @@ static SMALL_PRIMES: [u32; 2048] = [
     I: BitManipulation,
     I: Step,
     I: PartialEq<I>,
-    {
+{
+    // First, simple trial divide
+    for p in SMALL_PRIMES.into_iter() {
+        let prime = I::from(*p);
+        let (_, r) = I::divmod(&candidate, &prime);
 
-        // First, simple trial divide
-        for p in SMALL_PRIMES.into_iter() {
-            let prime = I::from(*p);
-            let (_, r) = I::divmod(&candidate, &prime);
-
-            if !r.is_zero() {
-                continue;
-            } else {
-                return false;
-            }
-        }
-        // Second, do a little Fermat test on the candidate
-        if !fermat(candidate) {
+        if !r.is_zero() {
+            continue;
+        } else {
             return false;
         }
-
-        // Finally, do a Miller-Rabin test
-        if !miller_rabin(candidate, 5) {
-            return false;
-        }
-        true
+    }
+    // Second, do a little Fermat test on the candidate
+    if !fermat(candidate) {
+        return false;
     }
 
-    fn fermat<I>(candidate: &I) -> bool
-    where
-        I: ModularArithmetic,
-        I: Clone + Sized,
-        I: Samplable,
-        I: PartialEq<I>,
-        I: Zero + One + Neg<Output=I> + NumberTests,
-        for<'a>    &'a I: Mul<I, Output=I>,
-        for<'a,'b> &'a I: Mul<&'b I, Output=I>,
-        for<'a,'b> &'a I: Div<&'b I, Output=I>,
-        for<'a>        I: Rem<&'a I, Output=I>,
-        for<'a,'b> &'a I: Rem<&'b I, Output=I>,
-        for<'a,'b> &'a I: Add<&'b I, Output=I>,
-                       I: Sub<I, Output=I>,
-        for<'b>        I: Sub<&'b I, Output=I>,
-        for<'a,'b> &'a I: Sub<&'b I, Output=I>,
-        I: Shr<usize, Output=I>,
-    {
-        // Perform Fermat's little theorem
-        // This might be perform more than once. Handbook of Applied Cryptography [Algorithm 4.9 p136]
-        let random = I::sample_below(candidate);
-        let result = I::modpow(&random, &(candidate - &I::one()), candidate);
-
-        result == I::one()
+    // Finally, do a Miller-Rabin test
+    if !miller_rabin(candidate, 5) {
+        return false;
     }
+    true
+}
 
-    // Iterations recommended for which  p < (1/2)^{80}
-    //  500 bits => 6 iterations
-    // 1000 bits => 3 iterations
-    // 2000 bits => 2 iterations
-    fn miller_rabin<I>(candidate: &I, limit: usize) -> bool
-    where
-        I: ModularArithmetic,
-        I: Clone + Sized,
-        I: Samplable,
-        I: PartialEq<I>,
-        I: Step,
-        I: Zero + One + Shr<usize, Output=I>,
-        I: Neg<Output=I>,
-        I: NumberTests,
-        for<'a>    &'a I: Mul<I, Output=I>,
-        for<'a,'b> &'a I: Mul<&'b I, Output=I>,
-        for<'a,'b> &'a I: Div<&'b I, Output=I>,
-        for<'a>        I: Rem<&'a I, Output=I>,
-        for<'a,'b> &'a I: Rem<&'b I, Output=I>,
-        for<'a,'b> &'a I: Add<&'b I, Output=I>,
-                       I: Sub<I, Output=I>,
-        for<'b>        I: Sub<&'b I, Output=I>,
-        for<'a,'b> &'a I: Sub<&'b I, Output=I>,
-    {
-        let (s,d) = rewrite(&(candidate - &I::one()));
-        let one = I::one();
-        let two = &one + &one;
+fn fermat<I>(candidate: &I) -> bool
+where
+    I: ModularArithmetic,
+    I: Clone + Sized,
+    I: Samplable,
+    I: PartialEq<I>,
+    I: Zero + One + Neg<Output=I> + NumberTests,
+    for<'a>    &'a I: Mul<I, Output=I>,
+    for<'a,'b> &'a I: Mul<&'b I, Output=I>,
+    for<'a,'b> &'a I: Div<&'b I, Output=I>,
+    for<'a>        I: Rem<&'a I, Output=I>,
+    for<'a,'b> &'a I: Rem<&'b I, Output=I>,
+    for<'a,'b> &'a I: Add<&'b I, Output=I>,
+                   I: Sub<I, Output=I>,
+    for<'b>        I: Sub<&'b I, Output=I>,
+    for<'a,'b> &'a I: Sub<&'b I, Output=I>,
+    I: Shr<usize, Output=I>,
+{
+    // Perform Fermat's little theorem
+    // This might be perform more than once. Handbook of Applied Cryptography [Algorithm 4.9 p136]
+    let random = I::sample_below(candidate);
+    let result = I::modpow(&random, &(candidate - &I::one()), candidate);
 
-        for _ in 0..limit {
-            let basis = I::sample_range(&two, &(candidate-&two));
-            let mut y = I::modpow(&basis, &d, candidate);
+    result == I::one()
+}
 
-            if y == one || y == (candidate - &one) {
-                continue;
-            } else {
-                for _ in one.clone()..s-one.clone() {
-                    y = I::modpow(&y, &two, candidate);
-                    if y == one {
-                        return false
-                    } else if y == candidate - &one {
-                        break;
-                    }
+// Iterations recommended for which  p < (1/2)^{80}
+//  500 bits => 6 iterations
+// 1000 bits => 3 iterations
+// 2000 bits => 2 iterations
+fn miller_rabin<I>(candidate: &I, limit: usize) -> bool
+where
+    I: ModularArithmetic,
+    I: Clone + Sized,
+    I: Samplable,
+    I: PartialEq<I>,
+    I: Step,
+    I: Zero + One + Shr<usize, Output=I>,
+    I: Neg<Output=I>,
+    I: NumberTests,
+    for<'a>    &'a I: Mul<I, Output=I>,
+    for<'a,'b> &'a I: Mul<&'b I, Output=I>,
+    for<'a,'b> &'a I: Div<&'b I, Output=I>,
+    for<'a>        I: Rem<&'a I, Output=I>,
+    for<'a,'b> &'a I: Rem<&'b I, Output=I>,
+    for<'a,'b> &'a I: Add<&'b I, Output=I>,
+                   I: Sub<I, Output=I>,
+    for<'b>        I: Sub<&'b I, Output=I>,
+    for<'a,'b> &'a I: Sub<&'b I, Output=I>,
+{
+    let (s,d) = rewrite(&(candidate - &I::one()));
+    let one = I::one();
+    let two = &one + &one;
+
+    for _ in 0..limit {
+        let basis = I::sample_range(&two, &(candidate-&two));
+        let mut y = I::modpow(&basis, &d, candidate);
+
+        if y == one || y == (candidate - &one) {
+            continue;
+        } else {
+            for _ in one.clone()..s-one.clone() {
+                y = I::modpow(&y, &two, candidate);
+                if y == one {
+                    return false
+                } else if y == candidate - &one {
+                    break;
                 }
-                return false;
             }
+            return false;
         }
-        true
     }
+    true
+}
 
-    // rewrites a number n =  2^s * d
-    // (i.e., 2^s is the largest power of 2 that divides the candidate).
-    fn rewrite<I>(n: &I) -> (I, I)
-    where
-        I: ModularArithmetic,
-        I: Clone + Sized,
-        I: PartialEq<I>,
-        I: Zero + One + Neg<Output=I> + NumberTests,
-        for<'a>    &'a I: Mul<I, Output=I>,
-        for<'a,'b> &'a I: Mul<&'b I, Output=I>,
-        for<'a,'b> &'a I: Div<&'b I, Output=I>,
-        for<'a>        I: Rem<&'a I, Output=I>,
-        for<'a,'b> &'a I: Rem<&'b I, Output=I>,
-        for<'a,'b> &'a I: Add<&'b I, Output=I>,
-                       I: Sub<I, Output=I>,
-        for<'b>        I: Sub<&'b I, Output=I>,
-        for<'a,'b> &'a I: Sub<&'b I, Output=I>,
-        I: Shr<usize, Output=I>,
-    {
-         let mut d = n.clone();
-         let mut s = I::zero();
-         let one = I::one();
+// rewrites a number n =  2^s * d
+// (i.e., 2^s is the largest power of 2 that divides the candidate).
+fn rewrite<I>(n: &I) -> (I, I)
+where
+    I: ModularArithmetic,
+    I: Clone + Sized,
+    I: PartialEq<I>,
+    I: Zero + One + Neg<Output=I> + NumberTests,
+    for<'a>    &'a I: Mul<I, Output=I>,
+    for<'a,'b> &'a I: Mul<&'b I, Output=I>,
+    for<'a,'b> &'a I: Div<&'b I, Output=I>,
+    for<'a>        I: Rem<&'a I, Output=I>,
+    for<'a,'b> &'a I: Rem<&'b I, Output=I>,
+    for<'a,'b> &'a I: Add<&'b I, Output=I>,
+                   I: Sub<I, Output=I>,
+    for<'b>        I: Sub<&'b I, Output=I>,
+    for<'a,'b> &'a I: Sub<&'b I, Output=I>,
+    I: Shr<usize, Output=I>,
+{
+     let mut d = n.clone();
+     let mut s = I::zero();
+     let one = I::one();
 
-         while I::is_even(&d) {
-             d = d >> 1_usize;
-             s = &s + &one;
-         }
-         (s,d)
-    }
+     while I::is_even(&d) {
+         d = d >> 1_usize;
+         s = &s + &one;
+     }
+     (s,d)
+}
