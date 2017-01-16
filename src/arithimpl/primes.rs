@@ -304,6 +304,7 @@ where
     }
 
     // Finally, do a Miller-Rabin test
+    // NIST recommendation is 5 rounds for 512 and 1024 bits. For 1536 bits, the recommendation is 4 rounds.
     if !miller_rabin(candidate, 5) {
         return false;
     }
