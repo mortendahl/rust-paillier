@@ -12,34 +12,38 @@ Supports several underlying arbitrary precision libraries, including [RAMP](http
 extern crate paillier;
 use paillier::*;
 
-// generate a fresh keypair
-let (ek, dk) = Paillier::keypair();
+fn main() {
 
-// select integral coding
-let code = integral::Code::default();
+  // generate a fresh keypair
+  let (ek, dk) = Paillier::keypair();
 
-// pair keys with coding
-let eek = ek.with_code(&code);
-let ddk = dk.with_code(&code);
+  // select integral coding
+  let code = integral::Code::default();
 
-// encrypt four values
-let c1 = Paillier::encrypt(&eek, &10);
-let c2 = Paillier::encrypt(&eek, &20);
-let c3 = Paillier::encrypt(&eek, &30);
-let c4 = Paillier::encrypt(&eek, &40);
+  // pair keys with coding
+  let eek = ek.with_code(&code);
+  let ddk = dk.with_code(&code);
 
-// add all of them together
-let c = Paillier::add(&ek,
-  &Paillier::add(&ek, &c1, &c2),
-  &Paillier::add(&ek, &c3, &c4)
-);
+  // encrypt four values
+  let c1 = Paillier::encrypt(&eek, &10);
+  let c2 = Paillier::encrypt(&eek, &20);
+  let c3 = Paillier::encrypt(&eek, &30);
+  let c4 = Paillier::encrypt(&eek, &40);
 
-// multiply the sum by 2
-let d = Paillier::mul(&eek, &c, &2);
+  // add all of them together
+  let c = Paillier::add(&ek,
+    &Paillier::add(&ek, &c1, &c2),
+    &Paillier::add(&ek, &c3, &c4)
+  );
 
-// decrypt final result
-let m: u64 = Paillier::decrypt(&ddk, &d);
-println!("decrypted total sum is {}", m);
+  // multiply the sum by 2
+  let d = Paillier::mul(&eek, &c, &2);
+
+  // decrypt final result
+  let m: u64 = Paillier::decrypt(&ddk, &d);
+  println!("decrypted total sum is {}", m);
+
+}
 ```
 
 
@@ -63,7 +67,7 @@ paillier = { version="0.1" }
 
 ## Building
 
-Note that the nightly toolchain is currently needed in order to build the library.
+The nightly toolchain is currently needed in order to build the library. When key generation we strongly encourage building and testing in release mode for performance reasons.
 
 ### Arithmetic
 
