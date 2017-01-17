@@ -1,6 +1,6 @@
 [package]
 name = "paillier"
-version = "0.1.4"
+version = "0.1.5-pre"
 authors = [
   "Mario Cornejo <mario.cornejo@snips.ai>",
   "Morten Dahl <morten.dahl@snips.ai>"
@@ -15,6 +15,7 @@ keywords = [
 ]
 homepage = "https://github.com/snipsco/rust-paillier"
 repository = "https://github.com/snipsco/rust-paillier"
+documentation = "https://docs.rs/paillier"
 license = "MIT/Apache-2.0"
 
 [features]

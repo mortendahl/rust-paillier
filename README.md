@@ -57,7 +57,7 @@ cargo build --release
 ## Cargo
 ```toml
 [dependencies]
-paillier = { git="https://github.com/snipsco/rust-paillier.git" }
+paillier = { version="0.1" }
 ```
 
 
