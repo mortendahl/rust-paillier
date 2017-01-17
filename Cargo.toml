@@ -1,6 +1,6 @@
 [package]
 name = "paillier"
-version = "0.1.0"
+version = "0.1.3"
 authors = [
   "Mario Cornejo <mario.cornejo@snips.ai>",
   "Morten Dahl <morten.dahl@snips.ai>"
@@ -13,24 +13,25 @@ keywords = [
   "secure-computation",
   "mpc",
 ]
-homepage = "https://github.com/snips/rust-paillier"
-repository = "https://github.com/snips/rust-paillier"
+homepage = "https://github.com/snipsco/rust-paillier"
+repository = "https://github.com/snipsco/rust-paillier"
 license = "MIT/Apache-2.0"
 
 [features]
-default = ["inclramp", "defaultramp"]
+default = ["inclramp", "defaultramp", "keygen"]
 keygen = ["primal"]
-inclramp = ["ramp"]
+inclramp = ["framp"]
 inclnum = ["num"]
 inclgmp = ["rust-gmp"]
 defaultramp = []
 defaultnum = []
 defaultgmp = []
+rampexpmod = []
 
 [dependencies]
 rand = "0.3"
 num-traits = "0.1"
-ramp = { git="https://github.com/snipsco/ramp.git", optional=true }
+framp = { version="0.3", optional=true }
 num = { version="0.1", optional=true }
 rust-gmp = { version="0.4", optional=true }
 primal = { version="0.2", optional=true }
@@ -40,6 +41,10 @@ bencher = "0.1"
 
 [[bench]]
 name = "encryption"
+harness = false
+
+[[bench]]
+name = "crt"
 harness = false
 
 [[bench]]

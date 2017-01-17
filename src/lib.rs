@@ -11,18 +11,21 @@ macro_rules! bigint {
 
         #[cfg(feature="inclramp")]
         mod ramp {
+            #[allow(dead_code)]
             type $t = ::RampBigInteger;
             $body
         }
 
         #[cfg(feature="inclgmp")]
         mod gmp {
+            #[allow(dead_code)]
             type $t = ::GmpBigInteger;
             $body
         }
 
         #[cfg(feature="inclnum")]
         mod num {
+            #[allow(dead_code)]
             type $t = ::NumBigInteger;
             $body
         }
@@ -31,8 +34,24 @@ macro_rules! bigint {
 }
 
 pub mod arithimpl;
-pub mod plain;
-pub mod packed;
+pub mod traits;
+pub mod core;
+pub mod coding;
+
+pub use traits::*;
+pub use coding::*;
+pub use core::standard::EncryptionKey;
+pub use core::crt::DecryptionKey;
+
+
+/// Parameterised type onto which all operations are added (see `Paillier`).
+pub struct AbstractPaillier<I> {
+    junk: ::std::marker::PhantomData<I>
+}
+
+impl<I> AbstractScheme for AbstractPaillier<I> {
+    type BigInteger=I;
+}
 
 
 /*************************
@@ -43,15 +62,12 @@ pub mod packed;
 mod rampinstance
 {
     pub use arithimpl::rampimpl::BigInteger as RampBigInteger;
-    pub type RampPlainPaillier = ::plain::Scheme<RampBigInteger>;
-    pub type RampPackedPaillier = ::packed::Scheme<RampBigInteger, u64>;
+    pub type RampPaillier = ::AbstractPaillier<RampBigInteger>;
 
     #[cfg(feature="defaultramp")]
     pub type BigInteger = RampBigInteger;
     #[cfg(feature="defaultramp")]
-    pub type PlainPaillier = RampPlainPaillier;
-    #[cfg(feature="defaultramp")]
-    pub type PackedPaillier = RampPackedPaillier;
+    pub type Paillier = RampPaillier;
 }
 #[cfg(feature="inclramp")]
 pub use self::rampinstance::*;
@@ -65,15 +81,12 @@ pub use self::rampinstance::*;
 mod numinstance
 {
     pub use arithimpl::numimpl::BigInteger as NumBigInteger;
-    pub type NumPlainPaillier = ::plain::Scheme<NumBigInteger>;
-    pub type NumPackedPaillier = ::packed::Scheme<NumBigInteger, u64>;
+    pub type NumPaillier = ::AbstractPaillier<NumBigInteger>;
 
     #[cfg(feature="defaultnum")]
     pub type BigInteger = NumBigInteger;
     #[cfg(feature="defaultnum")]
-    pub type PlainPaillier = NumPlainPaillier;
-    #[cfg(feature="defaultnum")]
-    pub type PackedPaillier = NumPackedPaillier;
+    pub type Paillier = NumPaillier;
 }
 #[cfg(feature="inclnum")]
 pub use self::numinstance::*;
@@ -87,15 +100,12 @@ pub use self::numinstance::*;
 mod gmpinstance
 {
     pub use arithimpl::gmpimpl::BigInteger as GmpBigInteger;
-    pub type GmpPlainPaillier = ::plain::Scheme<GmpBigInteger>;
-    pub type GmpPackedPaillier = ::packed::Scheme<GmpBigInteger, u64>;
+    pub type GmpPaillier = ::AbstractPaillier<GmpBigInteger>;
 
     #[cfg(feature="defaultgmp")]
     pub type BigInteger = GmpBigInteger;
     #[cfg(feature="defaultgmp")]
-    pub type PlainPaillier = GmpPlainPaillier;
-    #[cfg(feature="defaultgmp")]
-    pub type PackedPaillier = GmpPackedPaillier;
+    pub type Paillier = GmpPaillier;
 }
 #[cfg(feature="inclgmp")]
 pub use self::gmpinstance::*;

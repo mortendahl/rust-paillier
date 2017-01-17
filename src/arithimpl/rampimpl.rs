@@ -1,6 +1,7 @@
 #![cfg(feature="inclramp")]
 
-extern crate ramp;
+// extern crate ramp;
+extern crate framp as ramp;
 use rand::{OsRng};
 use super::traits::*;
 
@@ -34,6 +35,34 @@ impl NumberTests for ramp::Int {
 impl ModularArithmetic for ramp::Int {
     fn divmod(dividend: &Self, module: &Self) -> (Self, Self) {
         dividend.divmod(module)
+    }
+
+    fn modpow(base: &Self, exponent: &Self, modulus: &Self) -> Self {
+        base.modpow(exponent, modulus)
+    }
+}
+
+impl ConvertFrom<ramp::Int> for usize {
+    fn _from(x: &ramp::Int) -> usize {
+        usize::from(x)
+    }
+}
+
+impl ConvertFrom<ramp::Int> for u8 {
+    fn _from(x: &ramp::Int) -> u8 {
+        u8::from(x)
+    }
+}
+
+impl ConvertFrom<ramp::Int> for u16 {
+    fn _from(x: &ramp::Int) -> u16 {
+        u16::from(x)
+    }
+}
+
+impl ConvertFrom<ramp::Int> for u32 {
+    fn _from(x: &ramp::Int) -> u32 {
+        u32::from(x)
     }
 }
 
