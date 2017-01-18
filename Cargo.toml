@@ -20,14 +20,13 @@ license = "MIT/Apache-2.0"
 
 [features]
 default = ["inclramp", "defaultramp", "keygen"]
-keygen = ["primal"]
+keygen = []
 inclramp = ["framp"]
 inclnum = ["num"]
 inclgmp = ["rust-gmp"]
 defaultramp = []
 defaultnum = []
 defaultgmp = []
-rampexpmod = []
 
 [dependencies]
 rand = "0.3"
@@ -35,7 +34,6 @@ num-traits = "0.1"
 framp = { version="0.3", optional=true }
 num = { version="0.1", optional=true }
 rust-gmp = { version="0.4", optional=true }
-primal = { version="0.2", optional=true }
 
 [dev-dependencies]
 bencher = "0.1"

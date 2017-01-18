@@ -67,11 +67,11 @@ paillier = { version="0.1" }
 
 ## Building
 
-The nightly toolchain is currently needed in order to build the library. When key generation we strongly encourage building and testing in release mode for performance reasons.
+The nightly toolchain is currently needed in order to build the library. For performance reasons we strongly encourage building and testing in release mode.
 
 ### Arithmetic
 
-The library supports the use of different arithmetic libraries, currently defaulting to [RAMP](https://github.com/Aatch/ramp) for efficiency.
+The library supports the use of different arithmetic libraries, currently defaulting to [RAMP](https://github.com/Aatch/ramp) for portability with good performance.
 
 For [RAMP](https://github.com/Aatch/ramp)-only compilation use `cargo` parameters
 ```
@@ -96,7 +96,7 @@ to have one or more available, using one of them as the default (useful for e.g.
 
 ### Key generation
 
-Key generation is optional as it is not always needed yet adds several extra (heavy) dependencies. Moreover, key generation is currently only implemented for [RAMP](https://github.com/Aatch/ramp).
+Key generation is optional as it is currently only implemented when using [RAMP](https://github.com/Aatch/ramp) as the underlying arithmetic library.
 
 While included by default it may be excluded using parameter
 ```
