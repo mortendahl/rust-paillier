@@ -4,22 +4,30 @@ extern crate gmp;
 
 use super::traits::*;
 use self::gmp::mpz::Mpz;
-use self::gmp::rand::RandState;
+use rand::{OsRng, Rng};
 
 impl Samplable for Mpz {
+
     fn sample_below(upper: &Self) -> Self {
-        let mut r = RandState::new();
-        r.urandom(upper)
+        let bits = upper.bit_length();
+        loop {
+            let n =  Self::sample(bits);
+            if n < *upper {
+                return n
+            }
+        }
+    }
+    
+    fn sample(bitsize: usize) -> Self {        
+        let mut rng = OsRng::new().unwrap();
+        let bytes = (bitsize -1) / 8 + 1;
+        let mut buf: Vec<u8> = vec![0; bytes];
+        rng.fill_bytes(&mut buf);
+        Self::from(&*buf) >> (bytes*8-bitsize)
     }
 
-    #[allow(unused_variables)]
-    fn sample(bitsize: usize) -> Self {
-        unimplemented!();
-    }
-
-    #[allow(unused_variables)]
     fn sample_range(lower: &Self, upper: &Self) -> Self {
-        unimplemented!();
+        lower + Self::sample_below(&(upper - lower))
     }
 }
 
@@ -30,7 +38,7 @@ impl NumberTests for Mpz {
 }
 
 pub use num_traits::{Zero, One};
-
+use std::ops::{Div, Rem};
 impl ModularArithmetic for Mpz {
 
     fn modinv(a: &Self, prime: &Self) -> Self {
@@ -55,5 +63,16 @@ impl ConvertFrom<Mpz> for u64 {
         foo.unwrap()
     }
 }
+
+impl BitManipulation for Mpz {
+    fn set_bit(self: &mut Self, bit: usize, bit_val: bool) {
+        if bit_val {
+            self.setbit(bit);
+        } else {
+            self.clrbit(bit);
+        }
+    }
+}
+
 
 pub type BigInteger = Mpz;

@@ -205,6 +205,7 @@ pub fn bench_muldiv_mul(bencer: &mut Bencher)
     });
 }
 
+
 pub fn bench_muldiv_div(bencer: &mut Bencher)
 {
     let ref a: BigInteger = str::parse(A).unwrap();
@@ -212,6 +213,16 @@ pub fn bench_muldiv_div(bencer: &mut Bencher)
 
     bencer.iter(|| {
         let _ = a / b;
+    });
+}
+
+pub fn bench_muldiv_divmod(bencer: &mut Bencher)
+{
+    let ref a: BigInteger = str::parse(A).unwrap();
+    let ref b: BigInteger = str::parse(B).unwrap();
+
+    bencer.iter(|| {
+        let _ = a.divmod(b);
     });
 }
 
@@ -230,6 +241,7 @@ pub fn bench_muldiv_rem(bencer: &mut Bencher)
 benchmark_group!(muldiv,
     bench_muldiv_mul,
     bench_muldiv_div,
+    bench_muldiv_divmod,
     bench_muldiv_rem
 );
 

@@ -1,5 +1,4 @@
 use arithimpl::traits::*;
-use std::iter::Step;
 use std::ops::{Add, Sub, Mul, Div, Rem, Shr, Neg};
 use std::marker::Sized;
 use num_traits::{Zero, One};
@@ -18,9 +17,8 @@ where
     I: BitManipulation,
     I: Clone + Sized,
     I: From<u32>,
-    I: PartialEq<usize>,
-    I: PartialEq<I>,
-    I: Step,
+    I: Eq,
+    I: Ord,
     I: Zero + One + Neg<Output=I> + NumberTests,
     for<'a>    &'a I: Mul<I, Output=I>,
     for<'a,'b> &'a I: Mul<&'b I, Output=I>,
@@ -50,7 +48,6 @@ where
             // To ensure the appropiate size
            // we set the MSB of the candidate.
             candidate.set_bit(bitsize-1, true);
-
             // If no prime number is found in 500 iterations,
             // restart the loop (re-seed).
             // FIXME: Why 500?
@@ -270,9 +267,10 @@ where
     I: ModularArithmetic,
     I: Clone + Sized,
     I: Samplable,
+    I: Eq,
+    I: Ord,
     I: From<u32>,
     I: Zero + One + Neg<Output=I> + NumberTests,
-    I: PartialEq<usize>,
     for<'a>    &'a I: Mul<I, Output=I>,
     for<'a,'b> &'a I: Mul<&'b I, Output=I>,
     for<'a,'b> &'a I: Div<&'b I, Output=I>,
@@ -284,14 +282,11 @@ where
     for<'a,'b> &'a I: Sub<&'b I, Output=I>,
     I: Shr<usize, Output=I>,
     I: BitManipulation,
-    I: Step,
-    I: PartialEq<I>,
 {
     // First, simple trial divide
     for p in SMALL_PRIMES.into_iter() {
         let prime = I::from(*p);
         let (_, r) = I::divmod(&candidate, &prime);
-
         if !r.is_zero() {
             continue;
         } else {
@@ -316,7 +311,7 @@ where
     I: ModularArithmetic,
     I: Clone + Sized,
     I: Samplable,
-    I: PartialEq<I>,
+    I: Eq,
     I: Zero + One + Neg<Output=I> + NumberTests,
     for<'a>    &'a I: Mul<I, Output=I>,
     for<'a,'b> &'a I: Mul<&'b I, Output=I>,
@@ -346,8 +341,8 @@ where
     I: ModularArithmetic,
     I: Clone + Sized,
     I: Samplable,
-    I: PartialEq<I>,
-    I: Step,
+    I: Eq,
+    I: Ord,
     I: Zero + One + Shr<usize, Output=I>,
     I: Neg<Output=I>,
     I: NumberTests,
@@ -372,13 +367,15 @@ where
         if y == one || y == (candidate - &one) {
             continue;
         } else {
-            for _ in one.clone()..s-one.clone() {
+            let mut counter = I::one();
+            while counter < (&s-&one){
                 y = I::modpow(&y, &two, candidate);
                 if y == one {
                     return false
                 } else if y == candidate - &one {
                     break;
                 }
+                counter = counter + I::one();
             }
             return false;
         }
@@ -392,7 +389,6 @@ fn rewrite<I>(n: &I) -> (I, I)
 where
     I: ModularArithmetic,
     I: Clone + Sized,
-    I: PartialEq<I>,
     I: Zero + One + Neg<Output=I> + NumberTests,
     for<'a>    &'a I: Mul<I, Output=I>,
     for<'a,'b> &'a I: Mul<&'b I, Output=I>,

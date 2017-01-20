@@ -60,10 +60,24 @@ where
     });
 }
 
+pub fn bench_divmod<I>(b: &mut Bencher)
+where
+    I: paillier::arithimpl::traits::ModularArithmetic,
+    I: ::std::str::FromStr, <I as ::std::str::FromStr>::Err: ::std::fmt::Debug
+{
+    let ref p: I = str::parse(P).unwrap();
+    let ref n: I = str::parse(N).unwrap();
+
+    b.iter(|| {
+        let _ = I::divmod(p, n);
+    });
+}
+
 #[cfg(feature="inclramp")]
 benchmark_group!(ramp,
     self::bench_mul<RampBigInteger>,
     self::bench_mulrem<RampBigInteger>,
+    self::bench_divmod<RampBigInteger>,
     self::bench_modarith<RampBigInteger>
 );
 
@@ -78,6 +92,7 @@ benchmark_group!(num,
 benchmark_group!(gmp,
     self::bench_mul<GmpBigInteger>,
     self::bench_mulrem<GmpBigInteger>,
+    self::bench_divmod<GmpBigInteger>,
     self::bench_modarith<GmpBigInteger>
 );
 
