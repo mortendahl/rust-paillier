@@ -1,6 +1,6 @@
 [package]
 name = "paillier"
-version = "0.1.5"
+version = "0.1.6-pre"
 authors = [
   "Mario Cornejo <mario.cornejo@snips.ai>",
   "Morten Dahl <morten.dahl@snips.ai>"
