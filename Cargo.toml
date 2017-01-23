@@ -17,6 +17,10 @@ homepage = "https://github.com/snipsco/rust-paillier"
 repository = "https://github.com/snipsco/rust-paillier"
 documentation = "https://docs.rs/paillier"
 license = "MIT/Apache-2.0"
+categories = ["cryptography"]
+
+[badges]
+travis-ci = { repository = "snipsco/rust-paillier" }
 
 [features]
 default = ["inclramp", "defaultramp", "keygen"]
