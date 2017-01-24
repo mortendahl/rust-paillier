@@ -14,7 +14,7 @@ fn main() {
     use paillier::traits::*;
     type MyScheme = AbstractPaillier<BigInteger>;
 
-    let (ek, dk) = MyScheme::keypair();
+    let (ek, dk) = MyScheme::keypair().keys();
     let code = integral::Code::default();
 
     let eek = ek.with_code(&code);

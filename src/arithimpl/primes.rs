@@ -13,7 +13,6 @@ pub trait PrimeSampable {
 impl <I> PrimeSampable for I
 where
     I: Samplable,
-    I: ModularArithmetic,
     I: BitManipulation,
     I: Clone + Sized,
     I: From<u32>,
@@ -264,7 +263,6 @@ static SMALL_PRIMES: [u32; 2048] = [
 // 3. Run five rounds of the Miller-Rabin test on the candidate.
 pub fn is_prime<I>(candidate: &I) -> bool
 where
-    I: ModularArithmetic,
     I: Clone + Sized,
     I: Samplable,
     I: Eq,
@@ -286,7 +284,7 @@ where
     // First, simple trial divide
     for p in SMALL_PRIMES.into_iter() {
         let prime = I::from(*p);
-        let (_, r) = I::divmod(&candidate, &prime);
+        let r = candidate % &prime;
         if !r.is_zero() {
             continue;
         } else {
@@ -308,7 +306,7 @@ where
 
 fn fermat<I>(candidate: &I) -> bool
 where
-    I: ModularArithmetic,
+    I: ModPow,
     I: Clone + Sized,
     I: Samplable,
     I: Eq,
@@ -338,7 +336,7 @@ where
 // 2000 bits => 2 iterations
 fn miller_rabin<I>(candidate: &I, limit: usize) -> bool
 where
-    I: ModularArithmetic,
+    I: ModPow,
     I: Clone + Sized,
     I: Samplable,
     I: Eq,
@@ -387,7 +385,6 @@ where
 // (i.e., 2^s is the largest power of 2 that divides the candidate).
 fn rewrite<I>(n: &I) -> (I, I)
 where
-    I: ModularArithmetic,
     I: Clone + Sized,
     I: Zero + One + Neg<Output=I> + NumberTests,
     for<'a>    &'a I: Mul<I, Output=I>,

@@ -5,7 +5,6 @@ extern crate framp as ramp;
 use rand::{OsRng};
 use super::traits::*;
 
-
 impl Samplable for ramp::Int {
     fn sample_below(upper: &Self) -> Self {
         use self::ramp::RandomInt;
@@ -32,11 +31,7 @@ impl NumberTests for ramp::Int {
     fn is_negative(me: &Self) -> bool { me < &0 }
 }
 
-impl ModularArithmetic for ramp::Int {
-    fn divmod(dividend: &Self, module: &Self) -> (Self, Self) {
-        dividend.divmod(module)
-    }
-
+impl ModPow for ramp::Int {
     fn modpow(base: &Self, exponent: &Self, modulus: &Self) -> Self {
         base.modpow(exponent, modulus)
     }

@@ -12,7 +12,7 @@ fn main() {
     use paillier::*;
 
     // generate a fresh keypair
-    let (ek, dk) = Paillier::keypair();
+    let (ek, dk) = Paillier::keypair().keys();
 
     // encrypt two values
     let c1 = Paillier::encrypt(&ek, &core::Plaintext::from(20));

@@ -35,11 +35,11 @@ impl NumberTests for num::bigint::BigInt {
     fn is_negative(me: &Self) -> bool { me.is_negative() }
 }
 
-impl ModularArithmetic for num::bigint::BigInt {
-    fn divmod(dividend: &Self, module: &Self) -> (Self, Self) {
-        dividend.div_rem(module)
-    }
-}
+// impl DivRem for num::bigint::BigInt {
+//     fn divmod(dividend: &Self, module: &Self) -> (Self, Self) {
+//         dividend.div_rem(module)
+//     }
+// }
 
 use self::num::ToPrimitive;
 impl ConvertFrom<num::bigint::BigInt> for u64 {

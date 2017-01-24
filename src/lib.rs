@@ -5,32 +5,8 @@ extern crate test;
 extern crate rand;
 extern crate num_traits;
 
-macro_rules! bigint {
-    ( $t:ident, $body:item ) => {
-
-        #[cfg(feature="inclramp")]
-        mod ramp {
-            #[allow(dead_code)]
-            type $t = ::RampBigInteger;
-            $body
-        }
-
-        #[cfg(feature="inclgmp")]
-        mod gmp {
-            #[allow(dead_code)]
-            type $t = ::GmpBigInteger;
-            $body
-        }
-
-        #[cfg(feature="inclnum")]
-        mod num {
-            #[allow(dead_code)]
-            type $t = ::NumBigInteger;
-            $body
-        }
-
-    };
-}
+#[macro_use]
+mod macros;
 
 pub mod arithimpl;
 pub mod traits;
@@ -39,6 +15,7 @@ pub mod coding;
 
 pub use traits::*;
 pub use coding::*;
+pub use core::Keypair;
 pub use core::standard::EncryptionKey;
 pub use core::crt::DecryptionKey;
 

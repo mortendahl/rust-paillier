@@ -4,14 +4,13 @@
 use super::*;
 use arithimpl::primes::*;
 
-impl<I, S> KeyGeneration<standard::EncryptionKey<I>, crt::DecryptionKey<I>> for S
-where
+impl<I, S> KeyGeneration<Keypair<I>> for S
+where // TODO clean up bounds
     S: AbstractScheme<BigInteger=I>,
     I: From<u64>,
     I: ::std::str::FromStr, <I as ::std::str::FromStr>::Err: ::std::fmt::Debug,
     I: Clone,
     I: Samplable,
-    I: ModularArithmetic,
     I: One,
     I: PrimeSampable,
                    I: Mul<Output=I>,
@@ -27,12 +26,12 @@ where
     for<'a>        I: Rem<&'a I, Output=I>,
     for<'a,'b> &'a I: Rem<&'b I, Output=I>
 {
-    fn keypair_with_modulus_size(bit_length: usize) -> (standard::EncryptionKey<I>, crt::DecryptionKey<I>) {
+    fn keypair_with_modulus_size(bit_length: usize) -> Keypair<I> {
         let p = I::sample_prime(bit_length/2);
         let q = I::sample_prime(bit_length/2);
-        let n = &p * &q;
-        let ek = standard::EncryptionKey::from(&n);
-        let dk = crt::DecryptionKey::from((&p, &q));
-        (ek, dk)
+        Keypair {
+            p: p,
+            q: q,
+        }
     }
 }

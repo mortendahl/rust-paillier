@@ -7,7 +7,7 @@ use super::*;
 /// Encryption key that may be shared publicly.
 #[derive(Debug,Clone)]
 pub struct EncryptionKey<I> {
-    n: I,  // the modulus
+    pub n: I,  // the modulus
     nn: I, // the modulus squared
 }
 
@@ -15,15 +15,16 @@ pub struct EncryptionKey<I> {
 impl<I> ::traits::EncryptionKey for EncryptionKey<I> {}
 
 
-impl<'i, I> From<&'i I> for EncryptionKey<I>
+impl<'kp, I> From<&'kp Keypair<I>> for EncryptionKey<I>
 where
     I: Clone,
     for<'a, 'b> &'a I: Mul<&'b I, Output=I>,
 {
-    fn from(modulus: &I) -> EncryptionKey<I> {
+    fn from(keypair: &'kp Keypair<I>) -> EncryptionKey<I> {
+        let ref modulus = &keypair.p * &keypair.q;
         EncryptionKey {
             n: modulus.clone(),
-            nn: modulus * modulus
+            nn: modulus * modulus,
         }
     }
 }
@@ -42,23 +43,23 @@ pub struct DecryptionKey<I> {
 
 impl<I> ::traits::DecryptionKey for DecryptionKey<I> {}
 
-impl<'p, 'q, I> From<(&'p I, &'q I)> for DecryptionKey<I>
+impl<'kp, I> From<&'kp Keypair<I>> for DecryptionKey<I>
 where
     I: One,
     I: Clone,
-    I: ModularArithmetic,
+    I: ModInv,
     for<'a,'b> &'a I: Mul<&'b I, Output=I>,
     for<'a,'b> &'a I: Sub<&'b I, Output=I>,
 {
-    fn from((p, q): (&I, &I)) -> DecryptionKey<I> {
+    fn from(keypair: &'kp Keypair<I>) -> DecryptionKey<I> {
         let ref one = I::one();
-        let modulus = p * q;
+        let modulus = &keypair.p * &keypair.q;
         let nn = &modulus * &modulus;
-        let lambda = (p - one) * (q - one);
+        let lambda = (&keypair.p - one) * (&keypair.q - one);
         let mu = I::modinv(&lambda, &modulus);
         DecryptionKey {
-            p: p.clone(),
-            q: q.clone(),
+            p: keypair.p.clone(), // TODO store reference instead
+            q: keypair.q.clone(),
             n: modulus,
             nn: nn,
             lambda: lambda,
@@ -72,7 +73,7 @@ impl<I, S> Rerandomisation<EncryptionKey<I>, Ciphertext<I>> for S
 where
     S: AbstractScheme<BigInteger=I>,
     I: Samplable,
-    I: ModularArithmetic,
+    I: ModPow,
     for<'a>    &'a I: Mul<I, Output=I>,
     for<'b>        I: Rem<&'b I, Output=I>,
 {
@@ -87,9 +88,8 @@ where
 impl<I, S> Encryption<EncryptionKey<I>, Plaintext<I>, Ciphertext<I>> for S
 where
     S: AbstractScheme<BigInteger=I>,
+    S: Rerandomisation<EncryptionKey<I>, Ciphertext<I>>,
     I: One,
-    I: Samplable,
-    I: ModularArithmetic,
     for<'a,'b> &'a I: Add<&'b I, Output=I>,
     for<'a>    &'a I: Mul<I, Output=I>,
     for<'a,'b> &'a I: Mul<&'b I, Output=I>,
@@ -120,7 +120,7 @@ where
 impl<I, S> Multiplication<EncryptionKey<I>, Ciphertext<I>, Plaintext<I>, Ciphertext<I>> for S
 where
     S: AbstractScheme<BigInteger=I>,
-    I: ModularArithmetic,
+    I: ModPow,
 {
     fn mul(ek: &EncryptionKey<I>, c1: &Ciphertext<I>, m2: &Plaintext<I>) -> Ciphertext<I> {
         let c = I::modpow(&c1.0, &m2.0, &ek.nn);
@@ -133,7 +133,7 @@ impl<I, S> Decryption<DecryptionKey<I>, Ciphertext<I>, Plaintext<I>> for S
 where
     S: AbstractScheme<BigInteger=I>,
     I: One,
-    I: ModularArithmetic,
+    I: ModPow,
     for<'a>    &'a I: Sub<I, Output=I>,
     for<'b>        I: Mul<&'b I, Output=I>,
     for<'b>        I: Div<&'b I, Output=I>,

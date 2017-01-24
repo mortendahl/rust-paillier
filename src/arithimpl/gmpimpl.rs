@@ -17,8 +17,8 @@ impl Samplable for Mpz {
             }
         }
     }
-    
-    fn sample(bitsize: usize) -> Self {        
+
+    fn sample(bitsize: usize) -> Self {
         let mut rng = OsRng::new().unwrap();
         let bytes = (bitsize -1) / 8 + 1;
         let mut buf: Vec<u8> = vec![0; bytes];
@@ -38,23 +38,23 @@ impl NumberTests for Mpz {
 }
 
 pub use num_traits::{Zero, One};
-use std::ops::{Div, Rem};
-impl ModularArithmetic for Mpz {
 
-    fn modinv(a: &Self, prime: &Self) -> Self {
-        a.invert(prime).unwrap()
+impl ModPow for Mpz {
+    fn modpow(base: &Self, exponent: &Self, modulus: &Self) -> Self {
+        base.powm(exponent, modulus)
     }
+}
 
-    fn modpow(x: &Self, e: &Self, prime: &Self) -> Self {
-        x.powm(e, prime)
+impl ModInv for Mpz {
+    fn modinv(a: &Self, modulus: &Self) -> Self {
+        a.invert(modulus).unwrap()
     }
+}
 
+impl EGCD for Mpz {
     fn egcd(a: &Self, b: &Self) -> (Self, Self, Self) {
         a.gcdext(b)
     }
-
-    // TODO: native way of doing divmod (supported by GMP but not currently by Rust wrapper)
-
 }
 
 impl ConvertFrom<Mpz> for u64 {

@@ -78,17 +78,29 @@ where
 }
 
 
-// impl<'a, 'b, E, CT, S, EK: 'a> Addition<EncodingEncryptionKey<'a, 'b, EK, E>, CT, CT, CT> for S
-// where
-//     E : Encoder<M>,
-//     S : Addition<EK, CT, CT, CT>,
-// {
-//     fn add(ek: &EncodingEncryptionKey<EK, E>, c1: &CT, c2: &CT) -> CT {
-//         S::add(ek.key, c1, c2)
-//     }
-// }
+impl<'a, 'b, E, EK: 'a, I, S> Addition<EncodingEncryptionKey<'a, 'b, EK, E>, core::Ciphertext<I>, core::Ciphertext<I>, core::Ciphertext<I>> for S
+where
+    S : Addition<EK, core::Ciphertext<I>, core::Ciphertext<I>, core::Ciphertext<I>>,
+{
+    fn add(ek: &EncodingEncryptionKey<EK, E>, c1: &core::Ciphertext<I>, c2: &core::Ciphertext<I>) -> core::Ciphertext<I> {
+        S::add(ek.key, c1, c2)
+    }
+}
 
-// TODO we could add something similar for addition, allowing public values to be implicitly convert (and encryption)
+
+impl<'a, 'b, E, M, EK: 'a, CT, S> Addition<EncodingEncryptionKey<'a, 'b, EK, E>, CT, M, CT> for S
+where
+    M : EncodableType,
+    E : Encoder<M>,
+    S : Encryption<EK, E::Target, CT>,
+    S : Addition<EK, CT, CT, CT>,
+{
+    fn add(ek: &EncodingEncryptionKey<'a, 'b, EK, E>, c1: &CT, m2: &M) -> CT {
+        let ref p2 = ek.encoder.encode(m2);
+        let ref c2 = S::encrypt(&ek.key, p2);
+        S::add(ek.key, c1, c2)
+    }
+}
 
 
 impl<'a, 'b, E, M: 'b, CT, S, EK: 'a> Multiplication<EncodingEncryptionKey<'a, 'b, EK, E>, CT, M, CT> for S
@@ -98,6 +110,7 @@ where
     S : Multiplication<EK, CT, E::Target, CT>,
 {
     fn mul(ek: &EncodingEncryptionKey<EK, E>, c1: &CT, m2: &M) -> CT {
-        S::mul(ek.key, c1, &ek.encoder.encode(m2))
+        let ref p2 = ek.encoder.encode(m2);
+        S::mul(ek.key, c1, p2)
     }
 }

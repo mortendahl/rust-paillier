@@ -11,7 +11,7 @@ fn main() {
 
     use paillier::*;
 
-    let (ek, dk) = Paillier::keypair();
+    let (ek, dk) = Paillier::keypair().keys();
     let code = integral::Code::new(3, 16);
 
     //

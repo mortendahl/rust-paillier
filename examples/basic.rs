@@ -1,5 +1,6 @@
 
 extern crate paillier;
+use paillier::*;
 
 #[cfg(not(feature="keygen"))]
 fn main() {
@@ -9,10 +10,8 @@ fn main() {
 #[cfg(feature="keygen")]
 fn main() {
 
-    use paillier::*;
-
-    // generate a fresh keypair
-    let (ek, dk) = Paillier::keypair();
+    // generate a fresh keypair and extract encryption and decryption keys
+    let (ek, dk) = Paillier::keypair().keys();
 
     // select integral coding
     let code = integral::Code::default();
@@ -28,7 +27,10 @@ fn main() {
     let c4 = Paillier::encrypt(&eek, &40);
 
     // add all of them together
-    let c = Paillier::add(&ek, &Paillier::add(&ek, &c1, &c2), &Paillier::add(&ek, &c3, &c4));
+    let c = Paillier::add(&eek,
+        &Paillier::add(&eek, &c1, &c2),
+        &Paillier::add(&eek, &c3, &c4)
+    );
 
     // multiply the sum by 2
     let d = Paillier::mul(&eek, &c, &2);

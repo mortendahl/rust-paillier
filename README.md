@@ -16,8 +16,8 @@ use paillier::*;
 
 fn main() {
 
-  // generate a fresh keypair
-  let (ek, dk) = Paillier::keypair();
+  // generate a fresh keypair and extract encryption and decryption keys
+  let (ek, dk) = Paillier::keypair().keys();
 
   // select integral coding
   let code = integral::Code::default();
@@ -33,9 +33,9 @@ fn main() {
   let c4 = Paillier::encrypt(&eek, &40);
 
   // add all of them together
-  let c = Paillier::add(&ek,
-    &Paillier::add(&ek, &c1, &c2),
-    &Paillier::add(&ek, &c3, &c4)
+  let c = Paillier::add(&eek,
+    &Paillier::add(&eek, &c1, &c2),
+    &Paillier::add(&eek, &c3, &c4)
   );
 
   // multiply the sum by 2
@@ -87,7 +87,7 @@ For [num](https://github.com/rust-num/num)-only compilation use
 
 For [GMP](https://github.com/fizyk20/rust-gmp)-only compilation use
 ```
---no-default-features --features "inclgmp defaultgmp"
+--no-default-features --features "inclgmp defaultgmp keygen"
 ```
 
 Finally, use
@@ -98,7 +98,7 @@ to have one or more available, using one of them as the default (useful for e.g.
 
 ### Key generation
 
-Key generation is optional as it is currently only implemented when using [RAMP](https://github.com/Aatch/ramp) as the underlying arithmetic library.
+Key generation is optional as it is currently only implemented when using [RAMP](https://github.com/Aatch/ramp) or [GMP](https://github.com/fizyk20/rust-gmp) as the underlying arithmetic library.
 
 While included by default it may be excluded using parameter
 ```
