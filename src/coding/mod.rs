@@ -103,6 +103,22 @@ where
 }
 
 
+// maybe this could work if we didn't parameterise over S but stuck to a concrete type instead
+// impl<'a, 'b, E, M, EK: 'a, CT, S> Addition<EncodingEncryptionKey<'a, 'b, EK, E>, M, CT, CT> for S
+// where
+//     M : EncodableType,
+//     E : Encoder<M>,
+//     S : Encryption<EK, E::Target, CT>,
+//     S : Addition<EK, CT, CT, CT>,
+// {
+//     fn add(ek: &EncodingEncryptionKey<'a, 'b, EK, E>, c1: &CT, m2: &M) -> CT {
+//         let ref p2 = ek.encoder.encode(m2);
+//         let ref c2 = S::encrypt(&ek.key, p2);
+//         S::add(ek.key, c1, c2)
+//     }
+// }
+
+
 impl<'a, 'b, E, M: 'b, CT, S, EK: 'a> Multiplication<EncodingEncryptionKey<'a, 'b, EK, E>, CT, M, CT> for S
 where
     M : EncodableType,
