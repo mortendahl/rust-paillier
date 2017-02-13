@@ -65,7 +65,9 @@ where
     S: AbstractScheme<BigInteger=I>,
     I: One,
     I: ModPow,
+    I: NumberTests,
     for<'a>    &'a I: Add<I, Output=I>,
+    for<'b>        I: Add<&'b I, Output=I>,
     for<'a>    &'a I: Sub<I, Output=I>,
     for<'a,'b> &'a I: Sub<&'b I, Output=I>,
     for<'b>        I: Mul<&'b I, Output=I>,
@@ -114,13 +116,19 @@ where
 
 fn crt<I>(mp: &I, mq: &I, dk: &DecryptionKey<I>) -> I
 where
+    I: NumberTests,
     for<'a>    &'a I: Add<I, Output=I>,
+    for<'b>        I: Add<&'b I, Output=I>,
     for<'a,'b> &'a I: Sub<&'b I, Output=I>,
     for<'a,'b> &'a I: Mul<&'b I, Output=I>,
     for<'b>        I: Mul<&'b I, Output=I>,
     for<'b>        I: Rem<&'b I, Output=I>,
 {
-    let u = ((mq - mp) * &dk.pinvq) % &dk.q;
+    let mut mq_minus_mp = (mq-mp) % &dk.q;
+    if NumberTests::is_negative(&mq_minus_mp) {
+        mq_minus_mp = mq_minus_mp + &dk.q;
+    }
+    let u = (mq_minus_mp * &dk.pinvq) % &dk.q;
     let m = mp + (&u * &dk.p);
     m % &dk.n
 }
