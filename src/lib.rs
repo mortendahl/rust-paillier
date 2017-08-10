@@ -49,6 +49,25 @@ mod rampinstance
 pub use self::rampinstance::*;
 
 
+/*************************
+  Framp instance (default)
+ *************************/
+
+#[cfg(feature="inclframp")]
+mod frampinstance
+{
+    pub use arithimpl::frampimpl::BigInteger as FrampBigInteger;
+    pub type FrampPaillier = ::AbstractPaillier<FrampBigInteger>;
+
+    #[cfg(feature="defaultframp")]
+    pub type BigInteger = FrampBigInteger;
+    #[cfg(feature="defaultframp")]
+    pub type Paillier = FrampPaillier;
+}
+#[cfg(feature="inclframp")]
+pub use self::frampinstance::*;
+
+
 /**************
   Num instance
  **************/

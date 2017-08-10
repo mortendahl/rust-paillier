@@ -139,18 +139,24 @@ where
     });
 }
 
-type RampStandardEK = standard::EncryptionKey<RampBigInteger>;
-type RampGenericEK = generic::EncryptionKey<RampBigInteger>;
-type RampCrtDK = crt::DecryptionKey<RampBigInteger>;
-
 #[cfg(feature="inclramp")]
 benchmark_group!(ramp,
-    self::bench_encryption<RampPaillier, RampStandardEK>,
-    self::bench_encryption<RampPaillier, RampGenericEK>,
-    self::bench_decryption<RampPaillier, RampStandardEK, RampCrtDK>,
-    self::bench_rerandomisation<RampPaillier, RampStandardEK>,
-    self::bench_addition<RampPaillier, RampStandardEK>,
-    self::bench_multiplication<RampPaillier, RampStandardEK>
+    self::bench_encryption<RampPaillier, standard::EncryptionKey<RampBigInteger>>,
+    self::bench_encryption<RampPaillier, generic::EncryptionKey<RampBigInteger>>,
+    self::bench_decryption<RampPaillier, standard::EncryptionKey<RampBigInteger>, crt::DecryptionKey<RampBigInteger>>,
+    self::bench_rerandomisation<RampPaillier, standard::EncryptionKey<RampBigInteger>>,
+    self::bench_addition<RampPaillier, standard::EncryptionKey<RampBigInteger>>,
+    self::bench_multiplication<RampPaillier, standard::EncryptionKey<RampBigInteger>>
+);
+
+#[cfg(feature="inclframp")]
+benchmark_group!(ramp,
+    self::bench_encryption<FrampPaillier, standard::EncryptionKey<FrampBigInteger>>,
+    self::bench_encryption<FrampPaillier, generic::EncryptionKey<FrampBigInteger>>,
+    self::bench_decryption<FrampPaillier, standard::EncryptionKey<FrampBigInteger>, crt::DecryptionKey<FrampBigInteger>>,
+    self::bench_rerandomisation<FrampPaillier, standard::EncryptionKey<FrampBigInteger>>,
+    self::bench_addition<FrampPaillier, standard::EncryptionKey<FrampBigInteger>>,
+    self::bench_multiplication<FrampPaillier, standard::EncryptionKey<FrampBigInteger>>
 );
 
 #[cfg(feature="inclnum")]

@@ -1,10 +1,10 @@
-#![cfg(feature="inclramp")]
+#![cfg(feature="inclframp")]
 
-extern crate ramp;
-use rand::{OsRng};
+extern crate framp;
+use frand::{OsRng};
 use super::traits::*;
 
-impl Samplable for ramp::Int {
+impl Samplable for framp::Int {
     fn sample_below(upper: &Self) -> Self {
         use self::ramp::RandomInt;
         let mut rng = OsRng::new().unwrap();
@@ -24,40 +24,44 @@ impl Samplable for ramp::Int {
     }
 }
 
-impl NumberTests for ramp::Int {
+impl NumberTests for framp::Int {
     fn is_zero(me: &Self) -> bool { me == &0 }
     fn is_even(me: &Self) -> bool { me.is_even() }
     fn is_negative(me: &Self) -> bool { me < &0 }
 }
 
-impl ModPow for ramp::Int {}
+impl ModPow for framp::Int {
+    fn modpow(base: &Self, exponent: &Self, modulus: &Self) -> Self {
+        base.modpow(exponent, modulus)
+    }
+}
 
-impl ConvertFrom<ramp::Int> for usize {
-    fn _from(x: &ramp::Int) -> usize {
+impl ConvertFrom<framp::Int> for usize {
+    fn _from(x: &framp::Int) -> usize {
         usize::from(x)
     }
 }
 
-impl ConvertFrom<ramp::Int> for u8 {
-    fn _from(x: &ramp::Int) -> u8 {
+impl ConvertFrom<framp::Int> for u8 {
+    fn _from(x: &framp::Int) -> u8 {
         u8::from(x)
     }
 }
 
-impl ConvertFrom<ramp::Int> for u16 {
-    fn _from(x: &ramp::Int) -> u16 {
+impl ConvertFrom<framp::Int> for u16 {
+    fn _from(x: &framp::Int) -> u16 {
         u16::from(x)
     }
 }
 
-impl ConvertFrom<ramp::Int> for u32 {
-    fn _from(x: &ramp::Int) -> u32 {
+impl ConvertFrom<framp::Int> for u32 {
+    fn _from(x: &framp::Int) -> u32 {
         u32::from(x)
     }
 }
 
-impl ConvertFrom<ramp::Int> for u64 {
-    fn _from(x: &ramp::Int) -> u64 {
+impl ConvertFrom<framp::Int> for u64 {
+    fn _from(x: &framp::Int) -> u64 {
         u64::from(x)
     }
 }
@@ -68,4 +72,4 @@ impl BitManipulation for ramp::Int {
     }
 }
 
-pub type BigInteger = ramp::Int;
+pub type BigInteger = framp::Int;
