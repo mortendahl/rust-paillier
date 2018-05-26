@@ -8,11 +8,11 @@ authors = [
 ]
 description = "A pure-Rust implementation of the Paillier encryption scheme"
 keywords = [
-  "Paillier",
-  "homomorphic",
+  "paillier",
   "cryptography",
+  "homomorphic-encryption",
   "secure-computation",
-  "mpc",
+  "zero-knowledge",
 ]
 homepage = "https://github.com/mortendahl/rust-paillier"
 repository = "https://github.com/mortendahl/rust-paillier"
@@ -21,10 +21,10 @@ license = "MIT/Apache-2.0"
 categories = ["cryptography"]
 
 #[badges]
-#travis-ci = { repository = "snipsco/rust-paillier" }
+#travis-ci = { repository = "mortendahl/rust-paillier" }
 
 [features]
-default = ["inclramp", "defaultramp", "keygen"]
+default = ["inclgmp", "defaultgmp", "keygen"]
 keygen = []
 inclramp = ["ramp"]
 inclframp = ["framp"]
