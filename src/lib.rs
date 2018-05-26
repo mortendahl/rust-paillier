@@ -12,9 +12,11 @@ pub mod arithimpl;
 pub mod traits;
 pub mod core;
 pub mod coding;
+pub mod zkproof;
 
 pub use traits::*;
 pub use coding::*;
+pub use zkproof::*;
 pub use core::Keypair;
 pub use core::standard::EncryptionKey;
 pub use core::crt::DecryptionKey;
