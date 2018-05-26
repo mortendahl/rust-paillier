@@ -31,7 +31,7 @@ impl<I> AbstractScheme for AbstractPaillier<I> {
 
 
 /*************************
-  Ramp instance (default)
+  Ramp instance
  *************************/
 
 #[cfg(feature="inclramp")]
@@ -50,7 +50,7 @@ pub use self::rampinstance::*;
 
 
 /*************************
-  Framp instance (default)
+  Framp instance
  *************************/
 
 #[cfg(feature="inclframp")]
@@ -66,25 +66,6 @@ mod frampinstance
 }
 #[cfg(feature="inclframp")]
 pub use self::frampinstance::*;
-
-
-/**************
-  Num instance
- **************/
-
-#[cfg(feature="inclnum")]
-mod numinstance
-{
-    pub use arithimpl::numimpl::BigInteger as NumBigInteger;
-    pub type NumPaillier = ::AbstractPaillier<NumBigInteger>;
-
-    #[cfg(feature="defaultnum")]
-    pub type BigInteger = NumBigInteger;
-    #[cfg(feature="defaultnum")]
-    pub type Paillier = NumPaillier;
-}
-#[cfg(feature="inclnum")]
-pub use self::numinstance::*;
 
 
 /**************
@@ -104,3 +85,22 @@ mod gmpinstance
 }
 #[cfg(feature="inclgmp")]
 pub use self::gmpinstance::*;
+
+
+/**************
+  Num instance
+ **************/
+
+#[cfg(feature="inclnum")]
+mod numinstance
+{
+    pub use arithimpl::numimpl::BigInteger as NumBigInteger;
+    pub type NumPaillier = ::AbstractPaillier<NumBigInteger>;
+
+    #[cfg(feature="defaultnum")]
+    pub type BigInteger = NumBigInteger;
+    #[cfg(feature="defaultnum")]
+    pub type Paillier = NumPaillier;
+}
+#[cfg(feature="inclnum")]
+pub use self::numinstance::*;
