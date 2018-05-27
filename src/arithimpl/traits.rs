@@ -38,6 +38,14 @@ pub trait ConvertFrom<T> {
     fn _from(&T) -> Self;
 }
 
+pub trait ToString {
+    fn to_hex_str(a: &Self) -> String;
+}
+
+pub trait FromString<I> {
+    fn from_hex_str(a: String) -> I;
+}
+
 use std::ops::{Add, Sub, Mul, Div, Rem, Shr, Neg};
 use num_traits::{Zero, One};
 

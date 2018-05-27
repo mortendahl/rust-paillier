@@ -57,6 +57,14 @@ impl EGCD for Mpz {
     }
 }
 
+impl ToString for Mpz {
+    fn to_hex_str(a: &Self) -> String { a.to_str_radix(16) }
+}
+
+impl FromString<Mpz> for Mpz {
+    fn from_hex_str(a: String) -> Mpz { Mpz::from_str_radix(&a, 16).unwrap() }
+}
+
 impl ConvertFrom<Mpz> for u64 {
     fn _from(x: &Mpz) -> u64 {
         let foo: Option<u64> = x.into();
