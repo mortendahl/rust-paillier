@@ -5,12 +5,10 @@ use std::ops::{Sub, Mul, Rem};
 use crypto::sha2::Sha256;
 use crypto::digest::Digest;
 
-const SECURITY_FACTOR : usize = 40;
-
 pub trait ZKVerifier<'ek, I>
 {
-    fn generate_challenge(&'ek self) -> (Vec<I>, I, Vec<I>);
-    fn verify(&'ek self, challenge: &Vec<I>, proof: &I) -> Result<(), String>;
+    fn generate_challenge(&'ek self) -> (Vec<I>, I, Vec<I>, Vec<I>);
+    fn verify(&'ek self, challenge: &Vec<I>, proof: &I, y: &Vec<I>) -> Result<(), String>;
 }
 
 #[allow(dead_code)] // TODO: to remove once implementation is done
@@ -30,11 +28,11 @@ impl<'ek, I> ZKVerifier<'ek, I> for EncryptionKey<I>
         for<'a>    &'a I: Mul<I, Output=I>,
 {
     #[allow(unused)] // TODO: to remove once implementation is done
-    fn generate_challenge(&'ek self) -> (Vec<I>, I, Vec<I>) {
+    fn generate_challenge(&'ek self) -> (Vec<I>, I, Vec<I>, Vec<I>) {
         let (mut y, mut challenge) : (Vec<I>, Vec<I>) = (Vec::new(), Vec::new());
 
         let mut i : usize = 0;
-        while i < SECURITY_FACTOR {
+        while i < ZK_SECURITY_FACTOR {
             let candidate = I::sample_below(&self.n);
             let (g, s, t) = I::egcd(&self.n, &candidate);
             if g != I::one() { continue; }
@@ -51,7 +49,7 @@ impl<'ek, I> ZKVerifier<'ek, I> for EncryptionKey<I>
         a_x_hash.input_str(&I::to_hex_str(&self.n));
 
         let mut j : usize = 0;
-        while j < SECURITY_FACTOR {
+        while j < ZK_SECURITY_FACTOR {
             let candidate = I::sample_below(&self.n);
             let (g, s, t) = I::egcd(&self.n, &candidate);
             if g != I::one() { continue; }
@@ -71,7 +69,7 @@ impl<'ek, I> ZKVerifier<'ek, I> for EncryptionKey<I>
         let mut z : Vec<I> = Vec::new();
 
         let mut k : usize = 0;
-        while k < SECURITY_FACTOR {
+        while k < ZK_SECURITY_FACTOR {
             let mod_k_n = random.get(k).unwrap() % &self.n;
             let mod_pow_y_e_n = I::modpow(
                 &y.get(k).unwrap(), &e, &self.n);
@@ -80,29 +78,30 @@ impl<'ek, I> ZKVerifier<'ek, I> for EncryptionKey<I>
             k+= 1;
         }
 
-        (challenge, e, z)
+        (challenge, e, z, y )
     }
 
     #[allow(unused)] // TODO: to remove once implementation is done
-    fn verify(&'ek self, challenge: &Vec<I>, proof: &I) -> Result<(), String> {
-        unimplemented!();
+    fn verify(&'ek self, challenge: &Vec<I>, proof: &I, y:  &Vec<I>) -> Result<(), String> {
+        let mut y_hash = Sha256::new();
+
+        let mut v : usize = 0;
+        while v < ZK_SECURITY_FACTOR {
+            y_hash.input_str(&I::to_hex_str(&y.get(v).unwrap()));
+            v += 1;
+        }
+
+        let proof_client : I = I::from_hex_str(y_hash.result_str());
+        println!("proof client {}", I::to_hex_str(&proof_client));
+        println!("proof server {}", I::to_hex_str(&proof));
+
+        if &proof_client != proof {
+            return Err("Proof client and Server are differents!".to_string());
+        }
+
+        return Ok(())
     }
 }
-
-pub trait ZKProver<'dk, I>
-{
-    fn generate_proof(&'dk self, challenge: &Vec<I>, e: &I, z: &Vec<I>) -> I;
-}
-
-#[allow(dead_code)] // TODO: to remove once implementation is done
-impl<'a, I> ZKProver<'a, I> for DecryptionKey<I>
-{
-    #[allow(unused)] // TODO: to remove once implementation is done
-    fn generate_proof(&'a self, challenge: &Vec<I>, e: &I, z: &Vec<I>) -> I {
-        unimplemented!();
-    }
-}
-
 
 bigint!(I,
 #[cfg(test)]
@@ -121,15 +120,16 @@ mod tests {
     }
 
     #[test]
-    #[should_panic] // TODO: to remove once the implementation is done. This is just here to not break the build.
     fn test_correct_zk_proof() {
         let (ek, dk) = test_keypair().keys();
 
-        let (challenge, e, z) = ek.generate_challenge();
+        let (challenge, e, z, y) = ek.generate_challenge();
         //println!("challenge: {:?}, e: {:?}, z: {:?}", challenge, e, z);
-        let proof = dk.generate_proof(&challenge, &e, &z);
-        let result = ek.verify(&challenge, &proof);
 
+        let proof = dk.generate_proof(&challenge, &e, &z);
+        assert!(proof.is_ok());
+
+        let result = ek.verify(&challenge, &proof.unwrap(), &y);
         assert!(result.is_ok())
     }
 });
