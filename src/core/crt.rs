@@ -105,25 +105,25 @@ impl<I> ZKProver<I> for DecryptionKey<I>
         for<'a,'b> &'a I: Rem<&'b I, Output=I>,
         for<'a>    &'a I: Mul<I, Output=I>
 {
-    #[allow(unused)] // TODO: to remove once implementation is done
+
     fn generate_proof(&self, challenge: &Vec<I>, e: &I, z: &Vec<I>) -> Result<I, String> {
         let phi = (&self.p - &I::one()) * (&self.q - &I::one());
 
         let mut a : Vec<I> = Vec::new();
         let mut i : usize = 0;
         while i < ZK_SECURITY_FACTOR {
-            let zi_n = I::modpow(&z.get(i).unwrap(), &self.n, &self.n);
-            let xi_phi = I::modpow(&challenge.get(i).unwrap(), &phi, &self.n);
+            let zi_n = I::modpow(&z[i], &self.n, &self.n);
+            let xi_phi = I::modpow(&challenge[i], &phi, &self.n);
 
             let xi_minus_phi =I::modinv(
-                &I::modpow(&challenge.get(i).unwrap(), &e, &self.n),
+                &I::modpow(&challenge[i], &e, &self.n),
                 &self.n);
 
             a.push((zi_n * xi_phi * xi_minus_phi) % &self.n);
 
-            if I::egcd(&self.n, a.get(i).unwrap()).0 != I::one()
-                || I::egcd(&self.n, challenge.get(i).unwrap()).0 != I::one()
-                || I::egcd(&self.n, z.get(i).unwrap()).0 != I::one(){
+            if I::egcd(&self.n, &a[i]).0 != I::one()
+                || I::egcd(&self.n, &challenge[i]).0 != I::one()
+                || I::egcd(&self.n, &z[i]).0 != I::one(){
                 return Err("Proof can't be generated, egcd n and a not equal to 1".to_string());
             }
 
@@ -135,17 +135,13 @@ impl<I> ZKProver<I> for DecryptionKey<I>
 
         let mut j : usize = 0;
         while j < ZK_SECURITY_FACTOR {
-            a_x_hash.input_str(&I::to_hex_str(&challenge.get(j).unwrap()));
-            a_x_hash.input_str(&I::to_hex_str(&a.get(j).unwrap()));
+            a_x_hash.input_str(&I::to_hex_str(&challenge[j]));
+            a_x_hash.input_str(&I::to_hex_str(&a[j]));
             j += 1;
         }
 
         let e_s : I = I::from_hex_str(a_x_hash.result_str());
-
-        println!("e client {}", I::to_hex_str(&e));
-        println!("e server {}", I::to_hex_str(&e_s));
-
-        if (e != &e_s) {
+        if e != &e_s {
             return Err("Missmatch between e from client and from server!".to_string());
         }
 
@@ -155,7 +151,7 @@ impl<I> ZKProver<I> for DecryptionKey<I>
 
         let mut k : usize = 0;
         while k < ZK_SECURITY_FACTOR {
-            let y_tag = I::modpow(&challenge.get(k).unwrap(), &d_n, &self.n);
+            let y_tag = I::modpow(&challenge[k], &d_n, &self.n);
             y_tag_hash.input_str(&I::to_hex_str(&y_tag));
 
             k += 1;

@@ -8,10 +8,9 @@ use crypto::digest::Digest;
 pub trait ZKVerifier<'ek, I>
 {
     fn generate_challenge(&'ek self) -> (Vec<I>, I, Vec<I>, Vec<I>);
-    fn verify(&'ek self, challenge: &Vec<I>, proof: &I, y: &Vec<I>) -> Result<(), String>;
+    fn verify(&'ek self, proof: &I, y: &Vec<I>) -> Result<(), String>;
 }
 
-#[allow(dead_code)] // TODO: to remove once implementation is done
 impl<'ek, I> ZKVerifier<'ek, I> for EncryptionKey<I>
     where
         I : Samplable,
@@ -27,14 +26,13 @@ impl<'ek, I> ZKVerifier<'ek, I> for EncryptionKey<I>
         for<'a,'b> &'a I: Rem<&'b I, Output=I>,
         for<'a>    &'a I: Mul<I, Output=I>,
 {
-    #[allow(unused)] // TODO: to remove once implementation is done
     fn generate_challenge(&'ek self) -> (Vec<I>, I, Vec<I>, Vec<I>) {
         let (mut y, mut challenge) : (Vec<I>, Vec<I>) = (Vec::new(), Vec::new());
 
         let mut i : usize = 0;
         while i < ZK_SECURITY_FACTOR {
             let candidate = I::sample_below(&self.n);
-            let (g, s, t) = I::egcd(&self.n, &candidate);
+            let (g, _s, _t) = I::egcd(&self.n, &candidate);
             if g != I::one() { continue; }
 
             y.push(candidate);
@@ -51,15 +49,15 @@ impl<'ek, I> ZKVerifier<'ek, I> for EncryptionKey<I>
         let mut j : usize = 0;
         while j < ZK_SECURITY_FACTOR {
             let candidate = I::sample_below(&self.n);
-            let (g, s, t) = I::egcd(&self.n, &candidate);
+            let (g, _s, _t) = I::egcd(&self.n, &candidate);
             if g != I::one() { continue; }
 
             random.push(candidate);
             a.push(I::modpow(
-                &random.get(j).unwrap(), &self.n, &self.n));
+                &random[j], &self.n, &self.n));
 
-            a_x_hash.input_str(&I::to_hex_str(&challenge.get(j).unwrap()));
-            a_x_hash.input_str(&I::to_hex_str(&a.get(j).unwrap()));
+            a_x_hash.input_str(&I::to_hex_str(&challenge[j]));
+            a_x_hash.input_str(&I::to_hex_str(&a[j]));
 
             j += 1;
         }
@@ -70,9 +68,9 @@ impl<'ek, I> ZKVerifier<'ek, I> for EncryptionKey<I>
 
         let mut k : usize = 0;
         while k < ZK_SECURITY_FACTOR {
-            let mod_k_n = random.get(k).unwrap() % &self.n;
+            let mod_k_n = &random[k] % &self.n;
             let mod_pow_y_e_n = I::modpow(
-                &y.get(k).unwrap(), &e, &self.n);
+                &y[k], &e, &self.n);
 
             z.push((mod_k_n * mod_pow_y_e_n) % &self.n);
             k+= 1;
@@ -81,13 +79,12 @@ impl<'ek, I> ZKVerifier<'ek, I> for EncryptionKey<I>
         (challenge, e, z, y )
     }
 
-    #[allow(unused)] // TODO: to remove once implementation is done
-    fn verify(&'ek self, challenge: &Vec<I>, proof: &I, y:  &Vec<I>) -> Result<(), String> {
+    fn verify(&'ek self, proof: &I, y:  &Vec<I>) -> Result<(), String> {
         let mut y_hash = Sha256::new();
 
         let mut v : usize = 0;
         while v < ZK_SECURITY_FACTOR {
-            y_hash.input_str(&I::to_hex_str(&y.get(v).unwrap()));
+            y_hash.input_str(&I::to_hex_str(&y[v]));
             v += 1;
         }
 
@@ -123,13 +120,40 @@ mod tests {
     fn test_correct_zk_proof() {
         let (ek, dk) = test_keypair().keys();
 
+        // TODO: create a bench
+        //let start = PreciseTime::now();
         let (challenge, e, z, y) = ek.generate_challenge();
         //println!("challenge: {:?}, e: {:?}, z: {:?}", challenge, e, z);
 
         let proof = dk.generate_proof(&challenge, &e, &z);
         assert!(proof.is_ok());
 
-        let result = ek.verify(&challenge, &proof.unwrap(), &y);
-        assert!(result.is_ok())
+        let result = ek.verify(&proof.unwrap(), &y);
+        assert!(result.is_ok());
+
+        //let end = PreciseTime::now();
+        //println!("{} seconds with ZK_SECURITY_FACTOR: {}.", start.to(end), ZK_SECURITY_FACTOR);
+    }
+
+    #[test]
+    fn test_incorrect_zk_proof() {
+        let (ek, dk) = test_keypair().keys();
+
+        let (challenge, e, _z, y) = ek.generate_challenge();
+
+        let proof = dk.generate_proof(&challenge, &e, &y);
+        assert!(proof.is_err()); // ERROR expected because of the use of y instead of z
+    }
+
+    #[test]
+    fn test_incorrect_zk_proof_2() {
+        let (ek, dk) = test_keypair().keys();
+
+        let (challenge, e, z, y) = ek.generate_challenge();
+        let proof = dk.generate_proof(&challenge, &e, &z);
+        assert!(proof.is_ok());
+
+        let result = ek.verify(&e, &y);
+        assert!(result.is_err()); // ERROR expected becasue use of e instead of proof
     }
 });
