@@ -58,7 +58,7 @@ impl<'ek, I> ZKVerifier<'ek, I> for EncryptionKey<I>
 
             random.push(candidate);
             a.push(I::modpow(
-                &random.get(i).unwrap(), &self.n, &self.n));
+                &random.get(j).unwrap(), &self.n, &self.n));
 
             a_x_hash.input_str(&I::to_hex_str(&challenge.get(j).unwrap()));
             a_x_hash.input_str(&I::to_hex_str(&a.get(j).unwrap()));
@@ -126,6 +126,7 @@ mod tests {
         let (ek, dk) = test_keypair().keys();
 
         let (challenge, e, z) = ek.generate_challenge();
+        //println!("challenge: {:?}, e: {:?}, z: {:?}", challenge, e, z);
         let proof = dk.generate_proof(&challenge, &e, &z);
         let result = ek.verify(&challenge, &proof);
 
