@@ -5,6 +5,7 @@ extern crate test;
 extern crate rand;
 extern crate num_traits;
 extern crate crypto;
+extern crate time;
 
 #[macro_use]
 mod macros;

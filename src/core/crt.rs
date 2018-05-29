@@ -97,9 +97,12 @@ impl<I> ZKProver<I> for DecryptionKey<I>
         I : One,
         I : ModPow,
         I : ModInv,
+        I : ModMul,
         I : EGCD,
         I : ToString,
         I : FromString<I>,
+        for<'a>    &'a I: Add<I, Output=I>,
+        for<'b>        I: Add<&'b I, Output=I>,
         for<'a,'b> &'a I: Sub<&'b I, Output=I>,
         for<'a>        I: Rem<&'a I, Output=I>,
         for<'a,'b> &'a I: Rem<&'b I, Output=I>,
@@ -146,12 +149,21 @@ impl<I> ZKProver<I> for DecryptionKey<I>
         }
 
         let d_n = I::modinv(&self.n, &phi);
+        let d_p = &d_n % &(&self.p - &I::one());
+        let d_q = &d_n % &(&self.q - &I::one());
 
         let mut y_tag_hash = Sha256::new();
 
         let mut k : usize = 0;
         while k < ZK_SECURITY_FACTOR {
-            let y_tag = I::modpow(&challenge[k], &d_n, &self.n);
+            let c_p = &challenge[k] % &self.p;
+            let c_q = &challenge[k] % &self.q;
+            let m_p = I::modpow(&c_p, &d_p, &self.p);
+            let m_q = I::modpow(&c_q, &d_q, &self.q);
+            let q_inv_p = I::modinv(&self.q, &self.p);
+            let m_tag = &m_q + (&self.q * I::modmul(&q_inv_p, &(&m_p - &m_q), &self.p));
+
+            let y_tag = m_tag;
             y_tag_hash.input_str(&I::to_hex_str(&y_tag));
 
             k += 1;

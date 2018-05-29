@@ -4,6 +4,7 @@ use num_traits::{Zero, One};
 use std::ops::{Sub, Mul, Rem};
 use crypto::sha2::Sha256;
 use crypto::digest::Digest;
+use time::PreciseTime;
 
 pub trait ZKVerifier<'ek, I>
 {
@@ -121,7 +122,7 @@ mod tests {
         let (ek, dk) = test_keypair().keys();
 
         // TODO: create a bench
-        //let start = PreciseTime::now();
+        let start = PreciseTime::now();
         let (challenge, e, z, y) = ek.generate_challenge();
         //println!("challenge: {:?}, e: {:?}, z: {:?}", challenge, e, z);
 
@@ -131,8 +132,8 @@ mod tests {
         let result = ek.verify(&proof.unwrap(), &y);
         assert!(result.is_ok());
 
-        //let end = PreciseTime::now();
-        //println!("{} seconds with ZK_SECURITY_FACTOR: {}.", start.to(end), ZK_SECURITY_FACTOR);
+        let end = PreciseTime::now();
+        println!("{} seconds with ZK_SECURITY_FACTOR: {}.", start.to(end), ZK_SECURITY_FACTOR);
     }
 
     #[test]

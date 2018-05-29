@@ -12,6 +12,11 @@ pub trait ModPow
     fn modpow(base: &Self, exponent: &Self, modulus: &Self) -> Self;
 }
 
+pub trait ModMul
+{
+    fn modmul(base: &Self, exponent: &Self, modulus: &Self) -> Self;
+}
+
 pub trait EGCD
 where
     Self: Sized

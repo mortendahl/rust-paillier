@@ -43,6 +43,7 @@ ramp = { version="0.3", optional=true }
 framp = { version="0.3", optional=true }
 num = { version="0.1", optional=true }
 rust-gmp = { version="0.4", optional=true }
+time = "*"
 
 [dev-dependencies]
 bencher = "0.1"
