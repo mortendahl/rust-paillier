@@ -12,7 +12,6 @@ pub mod arithimpl;
 pub mod traits;
 pub mod core;
 pub mod coding;
-
 #[cfg(feature="keygen")]
 pub mod keygen;
 
@@ -22,7 +21,7 @@ pub use core::Keypair;
 pub use core::EncryptionKey;
 pub use core::DecryptionKey;
 #[cfg(feature="keygen")]
-pub use self::keygen::*;
+pub use keygen::*;
 
 
 /// Parameterised type onto which all operations are added (see `Paillier`).

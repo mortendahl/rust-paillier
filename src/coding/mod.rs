@@ -1,56 +1,83 @@
-//! Variout coding schemes to be used in conjuction with the core Paillier encryption scheme.
+//! Various coding schemes to be used in conjunction with the core Paillier encryption scheme.
 
-mod packing;
 pub mod integral;
+use ::BigInteger as BigInt;
+use arithimpl::traits::ConvertFrom;
 
 use super::*;
-use self::packing::*;
 
-/// Associating a key with a code.
-pub trait WithCode<'k, 'c, K, C> {
-    /// Return key combined with code.
-    fn with_code(&'k self, code: &'c C) -> K;
-}
-
-/// Encryption key with associated encoder.
-pub struct EncodingEncryptionKey<'ek, 'e, EK: 'ek, E: 'e> {
-    key: &'ek EK,
-    encoder: &'e E,
-}
-
-// impl<'ek, 'e, EK: 'ek, E: 'e> ::traits::EncryptionKey for EncodingEncryptionKey<'ek, 'e, EK, E> {}
-
-/// Decryption key with associated decoder.
-pub struct DecodingDecryptionKey<'dk, 'd, DK: 'dk, D: 'd> {
-    key: &'dk DK,
-    decoder: &'d D,
-}
-
-// impl<'dk, 'd, DK: 'dk, D: 'd> ::traits::DecryptionKey for DecodingDecryptionKey<'dk, 'd, DK, D> {}
-
-impl<'a, 'b, EK, E> WithCode<'a, 'b, EncodingEncryptionKey<'a, 'b, EK, E>, E> for EK
-where
-    EK: ::traits::EncryptionKey
+pub fn pack<T>(components: &Vec<T>, component_count: usize, component_size: usize) -> BigInt
+where T: Clone, BigInt: From<T>
 {
-    fn with_code(&'a self, code: &'b E) -> EncodingEncryptionKey<'a, 'b, EK, E> {
-        EncodingEncryptionKey {
-            key: self,
-            encoder: code
-        }
+    assert!(components.len() == component_count);
+    let mut packed = BigInt::from(components[0].clone());
+    for component in &components[1..] {
+        packed = packed << component_size;
+        packed = packed + BigInt::from(component.clone());
     }
+    packed
 }
 
-impl<'a, 'b, DK, D> WithCode<'a, 'b, DecodingDecryptionKey<'a, 'b, DK, D>, D> for DK
-where
-    DK: ::traits::DecryptionKey
+pub fn unpack<T>(mut packed_components: BigInt, component_count: usize, component_size: usize) -> Vec<T>
+where T: ConvertFrom<BigInt>
 {
-    fn with_code(&'a self, code: &'b D) -> DecodingDecryptionKey<'a, 'b, DK, D> {
-        DecodingDecryptionKey {
-            key: self,
-            decoder: code
-        }
+    let mask = BigInt::one() << component_size;
+    let mut components: Vec<T> = vec![];
+    for _ in 0..component_count {
+        let raw_component = &packed_components % &mask;  // TODO replace with bitwise AND
+        let component = T::_from(&raw_component);
+        components.push(component);
+        packed_components = &packed_components >> component_size;
     }
+    components.reverse();
+    components
 }
+
+// /// Associating a key with a code.
+// pub trait WithCode<'k, 'c, K, C> {
+//     /// Return key combined with code.
+//     fn with_code(&'k self, code: &'c C) -> K;
+// }
+
+// /// Encryption key with associated encoder.
+// pub struct EncodingEncryptionKey<'ek, 'e, EK: 'ek, E: 'e> {
+//     key: &'ek EK,
+//     encoder: &'e E,
+// }
+
+// // impl<'ek, 'e, EK: 'ek, E: 'e> ::traits::EncryptionKey for EncodingEncryptionKey<'ek, 'e, EK, E> {}
+
+// /// Decryption key with associated decoder.
+// pub struct DecodingDecryptionKey<'dk, 'd, DK: 'dk, D: 'd> {
+//     key: &'dk DK,
+//     decoder: &'d D,
+// }
+
+// // impl<'dk, 'd, DK: 'dk, D: 'd> ::traits::DecryptionKey for DecodingDecryptionKey<'dk, 'd, DK, D> {}
+
+// impl<'a, 'b, EK, E> WithCode<'a, 'b, EncodingEncryptionKey<'a, 'b, EK, E>, E> for EK
+// where
+//     EK: ::traits::EncryptionKey
+// {
+//     fn with_code(&'a self, code: &'b E) -> EncodingEncryptionKey<'a, 'b, EK, E> {
+//         EncodingEncryptionKey {
+//             key: self,
+//             encoder: code
+//         }
+//     }
+// }
+
+// impl<'a, 'b, DK, D> WithCode<'a, 'b, DecodingDecryptionKey<'a, 'b, DK, D>, D> for DK
+// where
+//     DK: ::traits::DecryptionKey
+// {
+//     fn with_code(&'a self, code: &'b D) -> DecodingDecryptionKey<'a, 'b, DK, D> {
+//         DecodingDecryptionKey {
+//             key: self,
+//             decoder: code
+//         }
+//     }
+// }
 
 
 // impl<'a, 'b, E: 'b, M, CT, S, EK: 'a> Encryption<EncodingEncryptionKey<'a, 'b, EK, E>, M, CT> for S

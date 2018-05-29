@@ -9,23 +9,7 @@ use ::traits::*;
 use ::BigInteger as BigInt;
 
 
-/// Representation of unencrypted integral vector.
-#[derive(Debug,Clone,PartialEq)]
-pub struct Plaintext<T> {
-    pub data: core::Plaintext,
-    pub component_count: usize,
-    pub component_size: usize,  // in bits
-    pub _phantom: PhantomData<T>,
-}
 
-/// Representation of encrypted integral vector.
-#[derive(Debug,Clone)]
-pub struct Ciphertext<T> {
-    pub data: core::Ciphertext,
-    pub component_count: usize,
-    pub component_size: usize,  // in bits
-    pub _phantom: PhantomData<T>,
-}
 
 impl<S, EK, T> Encryption<EK, Plaintext<T>, Ciphertext<T>> for S
 where

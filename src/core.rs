@@ -180,7 +180,9 @@ where S: AbstractScheme<BigInteger=BigInt>
 }
 
 impl<S> Encryption<EncryptionKey, Plaintext, Ciphertext> for S
-where S: AbstractScheme<BigInteger=BigInt> + Rerandomisation<EncryptionKey, Ciphertext>
+where 
+    S: AbstractScheme<BigInteger=BigInt>,
+    S: Rerandomisation<EncryptionKey, Ciphertext>,
 {
     fn encrypt(ek: &EncryptionKey, m: &Plaintext) -> Ciphertext {
         // here we assume that g = n+1
@@ -208,14 +210,12 @@ where S: AbstractScheme<BigInteger=BigInt>
     }
 }
 
-
-
-
 #[cfg(test)]
 mod tests {
 
     use ::AbstractPaillier;
     use super::*;
+    use ::keygen::KeyGeneration;
 
     fn test_keypair() -> Keypair {
         let p = str::parse("148677972634832330983979593310074301486537017973460461278300587514468301043894574906886127642530475786889672304776052879927627556769456140664043088700743909632312483413393134504352834240399191134336344285483935856491230340093391784574980688823380828143810804684752914935441384845195613674104960646037368551517").unwrap();
