@@ -6,11 +6,7 @@ use super::*;
 pub mod scalar;
 pub mod vector;
 
-use std::ops::{Add, Shl, Shr, Rem};
-use num_traits::One;
-use arithimpl::traits::ConvertFrom;
 use std::marker::PhantomData;
-
 
 /// Integral code for scalars and vectors.
 pub struct Code<I> {
@@ -93,40 +89,40 @@ impl<I> Code<I> {
 // }
 
 
-impl<I> Encoder<u64> for Code<I>
-where
-    I: From<u64>,
-{
-    type Target=scalar::Plaintext<I, u64>;
-    fn encode(&self, x: &u64) -> Self::Target {
-        scalar::Plaintext {
-            data: core::Plaintext(I::from(*x)),
-            _phantom: PhantomData,
-        }
-    }
-}
+// impl<I> Encoder<u64> for Code<I>
+// where
+//     I: From<u64>,
+// {
+//     type Target=scalar::Plaintext<I, u64>;
+//     fn encode(&self, x: &u64) -> Self::Target {
+//         scalar::Plaintext {
+//             data: core::Plaintext(I::from(*x)),
+//             _phantom: PhantomData,
+//         }
+//     }
+// }
 
 
-impl<I> Encoder<Vec<u64>> for Code<I>
-where
-    I: One,
-    I: Clone,
-    I: From<u64>,
-    I: Shl<usize, Output=I>,
-    I: Add<I, Output=I>,
-    for<'a,'b> &'a I: Rem<&'b I, Output=I>,
-    for<'a> &'a    I: Shr<usize, Output=I>,
-{
-    type Target=vector::Plaintext<I, u64>;
-    fn encode(&self, x: &Vec<u64>) -> Self::Target {
-        vector::Plaintext {
-            data: core::Plaintext(pack(x, self.component_count, self.component_size)),
-            component_count: self.component_count,
-            component_size: self.component_size,
-            _phantom: PhantomData,
-        }
-    }
-}
+// impl<I> Encoder<Vec<u64>> for Code<I>
+// where
+//     I: One,
+//     I: Clone,
+//     I: From<u64>,
+//     I: Shl<usize, Output=I>,
+//     I: Add<I, Output=I>,
+//     for<'a,'b> &'a I: Rem<&'b I, Output=I>,
+//     for<'a> &'a    I: Shr<usize, Output=I>,
+// {
+//     type Target=vector::Plaintext<I, u64>;
+//     fn encode(&self, x: &Vec<u64>) -> Self::Target {
+//         vector::Plaintext {
+//             data: core::Plaintext(pack(x, self.component_count, self.component_size)),
+//             component_count: self.component_count,
+//             component_size: self.component_size,
+//             _phantom: PhantomData,
+//         }
+//     }
+// }
 
 
 // impl<I> Decoder<usize> for Code<I>
@@ -169,31 +165,31 @@ where
 //     }
 // }
 
-impl<I> Decoder<u64> for Code<I>
-where
-    u64: ConvertFrom<I>,
-{
-    type Source=scalar::Plaintext<I, u64>;
-    fn decode(&self, x: &scalar::Plaintext<I, u64>) -> u64 {
-        u64::_from(&x.data.0)
-    }
-}
+// impl<I> Decoder<u64> for Code<I>
+// where
+//     u64: ConvertFrom<I>,
+// {
+//     type Source=scalar::Plaintext<I, u64>;
+//     fn decode(&self, x: &scalar::Plaintext<I, u64>) -> u64 {
+//         u64::_from(&x.data.0)
+//     }
+// }
 
 
-impl<I> Decoder<Vec<u64>> for Code<I>
-where
-    u64: ConvertFrom<I>,
-    I: One,
-    I: Clone,
-    I: From<u64>,
-    I: Shl<usize, Output=I>,
-    I: Add<I, Output=I>,
-    for<'a,'b> &'a I: Rem<&'b I, Output=I>,
-    for<'a> &'a    I: Shr<usize, Output=I>,
-{
-    type Source=vector::Plaintext<I, u64>;
+// impl<I> Decoder<Vec<u64>> for Code<I>
+// where
+//     u64: ConvertFrom<I>,
+//     I: One,
+//     I: Clone,
+//     I: From<u64>,
+//     I: Shl<usize, Output=I>,
+//     I: Add<I, Output=I>,
+//     for<'a,'b> &'a I: Rem<&'b I, Output=I>,
+//     for<'a> &'a    I: Shr<usize, Output=I>,
+// {
+//     type Source=vector::Plaintext<I, u64>;
 
-    fn decode(&self, x: &vector::Plaintext<I, u64>) -> Vec<u64> {
-        unpack(x.data.0.clone(), self.component_count, self.component_size)
-    }
-}
+//     fn decode(&self, x: &vector::Plaintext<I, u64>) -> Vec<u64> {
+//         unpack(x.data.0.clone(), self.component_count, self.component_size)
+//     }
+// }

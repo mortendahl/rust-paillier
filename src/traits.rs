@@ -8,6 +8,10 @@ pub trait AbstractScheme
     type BigInteger;
 }
 
+pub trait Scheme {
+    type BigInt;
+}
+
 /// Secure generation of fresh key pairs.
 pub trait KeyGeneration<KP>
 {
@@ -44,15 +48,19 @@ pub trait DefaultKeys {
 }
 
 /// Marker trait for encryption keys.
-pub trait EncryptionKey {}
+// pub trait EncryptionKey {}
 
 /// Marker trait for decryption keys.
-pub trait DecryptionKey {}
+// pub trait DecryptionKey {}
 
 /// Encryption of plaintext.
 pub trait Encryption<EK, PT, CT> {
     /// Encrypt plaintext `m` under key `ek` into a ciphertext.
     fn encrypt(ek: &EK, m: &PT) -> CT;
+}
+
+pub trait Encrypt<EK, PT, CT> {
+    fn encrypt<P: AsRef<PT>>(ek: &EK, m: P) -> CT;
 }
 
 /// Decryption of ciphertext.
@@ -110,4 +118,10 @@ pub trait Decoder<T>
 
     /// Decode `Source` types into `T` types.
     fn decode(&self, y: &Self::Source) -> T;
+}
+
+pub trait Encode<T>
+{
+    type Target;
+    fn encode(x: T) -> Self::Target;
 }

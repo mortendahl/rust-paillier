@@ -13,11 +13,16 @@ pub mod traits;
 pub mod core;
 pub mod coding;
 
+#[cfg(feature="keygen")]
+pub mod keygen;
+
 pub use traits::*;
 pub use coding::*;
 pub use core::Keypair;
-pub use core::standard::EncryptionKey;
-pub use core::crt::DecryptionKey;
+pub use core::EncryptionKey;
+pub use core::DecryptionKey;
+#[cfg(feature="keygen")]
+pub use self::keygen::*;
 
 
 /// Parameterised type onto which all operations are added (see `Paillier`).
@@ -104,3 +109,10 @@ mod numinstance
 }
 #[cfg(feature="inclnum")]
 pub use self::numinstance::*;
+
+
+pub struct NewPaillier();
+
+impl Scheme for NewPaillier {
+    type BigInt=BigInteger;
+}
