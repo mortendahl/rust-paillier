@@ -6,6 +6,7 @@ use std::fmt;
 use ::traits::*;
 use ::arithimpl::traits::*;
 use ::BigInteger as BigInt;
+use ::Paillier as Paillier;
 
 
 /// Representation of a keypair from which encryption and decryption keys can be derived.
@@ -140,8 +141,7 @@ fn l(u: &BigInt, n: &BigInt) -> BigInt {
     (u - 1) / n
 }
 
-impl<S> Decryption<DecryptionKey, Ciphertext, Plaintext> for S
-where S: AbstractScheme<BigInteger=BigInt>
+impl Decrypt<DecryptionKey, Ciphertext, Plaintext> for Paillier
 {
     fn decrypt(dk: &DecryptionKey, c: &Ciphertext) -> Plaintext {
         // process using p
@@ -169,8 +169,7 @@ fn crt(mp: &BigInt, mq: &BigInt, dk: &DecryptionKey) -> BigInt
     m % &dk.n
 }
 
-impl<S> Rerandomisation<EncryptionKey, Ciphertext> for S
-where S: AbstractScheme<BigInteger=BigInt>
+impl Rerandomize<EncryptionKey, Ciphertext> for Paillier
 {
     fn rerandomise(ek: &EncryptionKey, c: &Ciphertext) -> Ciphertext {
         let r = BigInt::sample_below(&ek.n);
@@ -179,10 +178,7 @@ where S: AbstractScheme<BigInteger=BigInt>
     }
 }
 
-impl<S> Encryption<EncryptionKey, Plaintext, Ciphertext> for S
-where 
-    S: AbstractScheme<BigInteger=BigInt>,
-    S: Rerandomisation<EncryptionKey, Ciphertext>,
+impl Encrypt<EncryptionKey, Plaintext, Ciphertext> for Paillier
 {
     fn encrypt(ek: &EncryptionKey, m: &Plaintext) -> Ciphertext {
         // here we assume that g = n+1
@@ -192,8 +188,7 @@ where
     }
 }
 
-impl<S> Addition<EncryptionKey, Ciphertext, Ciphertext, Ciphertext> for S
-where S: AbstractScheme<BigInteger=BigInt>
+impl Add<EncryptionKey, Ciphertext, Ciphertext, Ciphertext> for Paillier
 {
     fn add(ek: &EncryptionKey, c1: &Ciphertext, c2: &Ciphertext) -> Ciphertext {
         let c = (&c1.0 * &c2.0) % &ek.nn;
@@ -201,11 +196,36 @@ where S: AbstractScheme<BigInteger=BigInt>
     }
 }
 
-impl<S> Multiplication<EncryptionKey, Ciphertext, Plaintext, Ciphertext> for S
-where S: AbstractScheme<BigInteger=BigInt>
+impl Add<EncryptionKey, Ciphertext, Plaintext, Ciphertext> for Paillier
+{
+    fn add(ek: &EncryptionKey, c1: &Ciphertext, m2: &Plaintext) -> Ciphertext {
+        let c2 = Self::encrypt(ek, m2);
+        let c = (&c1.0 * &c2.0) % &ek.nn;
+        Ciphertext(c)
+    }
+}
+
+impl Add<EncryptionKey, Plaintext, Ciphertext, Ciphertext> for Paillier
+{
+    fn add(ek: &EncryptionKey, m1: &Plaintext, c2: &Ciphertext) -> Ciphertext {
+        let c1 = Self::encrypt(ek, m1);
+        let c = (&c1.0 * &c2.0) % &ek.nn;
+        Ciphertext(c)
+    }
+}
+
+impl Mul<EncryptionKey, Ciphertext, Plaintext, Ciphertext> for Paillier
 {
     fn mul(ek: &EncryptionKey, c1: &Ciphertext, m2: &Plaintext) -> Ciphertext {
         let c = BigInt::modpow(&c1.0, &m2.0, &ek.nn);
+        Ciphertext(c)
+    }
+}
+
+impl Mul<EncryptionKey, Plaintext, Ciphertext, Ciphertext> for Paillier
+{
+    fn mul(ek: &EncryptionKey, m1: &Plaintext, c2: &Ciphertext) -> Ciphertext {
+        let c = BigInt::modpow(&c2.0, &m1.0, &ek.nn);
         Ciphertext(c)
     }
 }
