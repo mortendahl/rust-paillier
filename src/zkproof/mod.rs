@@ -1,18 +1,28 @@
 use super::*;
 use arithimpl::traits::*;
+
 use num_traits::{Zero, One};
 use std::ops::{Sub, Mul, Rem};
+
 use crypto::sha2::Sha256;
 use crypto::digest::Digest;
-use time::PreciseTime;
 
-pub trait ZKVerifier<'ek, I>
-{
-    fn generate_challenge(&'ek self) -> (Vec<I>, I, Vec<I>, Vec<I>);
-    fn verify(&'ek self, proof: &I, y: &Vec<I>) -> Result<(), String>;
+use std::error::Error;
+use std::fmt;
+
+impl fmt::Display for ZKVerifierError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "ZKVerifierError")
+    }
 }
 
-impl<'ek, I> ZKVerifier<'ek, I> for EncryptionKey<I>
+impl Error for ZKVerifierError {
+    fn description(&self) -> &str {
+        "Error while verifying"
+    }
+}
+
+impl<I> ZKVerifier<I> for EncryptionKey<I>
     where
         I : Samplable,
         I : Eq,
@@ -27,35 +37,32 @@ impl<'ek, I> ZKVerifier<'ek, I> for EncryptionKey<I>
         for<'a,'b> &'a I: Rem<&'b I, Output=I>,
         for<'a>    &'a I: Mul<I, Output=I>,
 {
-    fn generate_challenge(&'ek self) -> (Vec<I>, I, Vec<I>, Vec<I>) {
+    fn generate_challenge(&self) -> (Vec<I>, I, Vec<I>, Vec<I>) {
         let (mut y, mut challenge) : (Vec<I>, Vec<I>) = (Vec::new(), Vec::new());
 
         let mut i : usize = 0;
         while i < ZK_SECURITY_FACTOR {
             let candidate = I::sample_below(&self.n);
-            let (g, _s, _t) = I::egcd(&self.n, &candidate);
-            if g != I::one() { continue; }
+            if I::egcd(&self.n, &candidate).0 != I::one() { continue; }
 
             y.push(candidate);
-            challenge.push(I::modpow(
-                &y.get(i).unwrap(), &self.n, &self.n));
+            challenge.push(I::modpow(&y[i], &self.n, &self.n));
 
             i += 1;
         }
 
         let (mut random, mut a) : (Vec<I>, Vec<I>) = (Vec::new(), Vec::new());
+
         let mut a_x_hash = Sha256::new();
         a_x_hash.input_str(&I::to_hex_str(&self.n));
 
         let mut j : usize = 0;
         while j < ZK_SECURITY_FACTOR {
             let candidate = I::sample_below(&self.n);
-            let (g, _s, _t) = I::egcd(&self.n, &candidate);
-            if g != I::one() { continue; }
+            if I::egcd(&self.n, &candidate).0 != I::one() { continue; }
 
             random.push(candidate);
-            a.push(I::modpow(
-                &random[j], &self.n, &self.n));
+            a.push(I::modpow(&random[j], &self.n, &self.n));
 
             a_x_hash.input_str(&I::to_hex_str(&challenge[j]));
             a_x_hash.input_str(&I::to_hex_str(&a[j]));
@@ -69,18 +76,14 @@ impl<'ek, I> ZKVerifier<'ek, I> for EncryptionKey<I>
 
         let mut k : usize = 0;
         while k < ZK_SECURITY_FACTOR {
-            let mod_k_n = &random[k] % &self.n;
-            let mod_pow_y_e_n = I::modpow(
-                &y[k], &e, &self.n);
-
-            z.push((mod_k_n * mod_pow_y_e_n) % &self.n);
+            z.push(((&random[k] % &self.n) * I::modpow(&y[k], &e, &self.n)) % &self.n);
             k+= 1;
         }
 
         (challenge, e, z, y )
     }
 
-    fn verify(&'ek self, proof: &I, y:  &Vec<I>) -> Result<(), String> {
+    fn verify(&self, proof: &I, y:  &Vec<I>) -> Result<(), ZKVerifierError> {
         let mut y_hash = Sha256::new();
 
         let mut v : usize = 0;
@@ -89,15 +92,11 @@ impl<'ek, I> ZKVerifier<'ek, I> for EncryptionKey<I>
             v += 1;
         }
 
-        let proof_client : I = I::from_hex_str(y_hash.result_str());
-        println!("proof client {}", I::to_hex_str(&proof_client));
-        println!("proof server {}", I::to_hex_str(&proof));
-
-        if &proof_client != proof {
-            return Err("Proof client and Server are differents!".to_string());
+        if &I::from_hex_str(y_hash.result_str()) != proof {
+            Err(ZKVerifierError)
+        } else {
+            Ok(())
         }
-
-        return Ok(())
     }
 }
 
@@ -119,21 +118,21 @@ mod tests {
 
     #[test]
     fn test_correct_zk_proof() {
-        let (ek, dk) = test_keypair().keys();
+        let mut attempt : usize = 10;
 
-        // TODO: create a bench
-        let start = PreciseTime::now();
-        let (challenge, e, z, y) = ek.generate_challenge();
-        //println!("challenge: {:?}, e: {:?}, z: {:?}", challenge, e, z);
+        while attempt > 0 {
+            let (ek, dk) = test_keypair().keys();
 
-        let proof = dk.generate_proof(&challenge, &e, &z);
-        assert!(proof.is_ok());
+            let (challenge, e, z, y) = ek.generate_challenge();
 
-        let result = ek.verify(&proof.unwrap(), &y);
-        assert!(result.is_ok());
+            let proof = dk.generate_proof(&challenge, &e, &z);
+            assert!(proof.is_ok());
 
-        let end = PreciseTime::now();
-        println!("{} seconds with ZK_SECURITY_FACTOR: {}.", start.to(end), ZK_SECURITY_FACTOR);
+            let result = ek.verify(&proof.unwrap(), &y);
+            assert!(result.is_ok());
+
+            attempt -= 1;
+        }
     }
 
     #[test]

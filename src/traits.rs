@@ -1,6 +1,5 @@
 
 //! Abstract operations exposed by the library.
-
 pub const ZK_SECURITY_FACTOR : usize = 40;
 
 /// Marker trait for the Paillier scheme.
@@ -114,7 +113,20 @@ pub trait Decoder<T>
     fn decode(&self, y: &Self::Source) -> T;
 }
 
+#[derive(Debug)]
+pub struct ZKVerifierError;
+
+pub trait ZKVerifier<I>
+{
+    fn generate_challenge(&self) -> (Vec<I>, I, Vec<I>, Vec<I>);
+    fn verify(&self, proof: &I, y: &Vec<I>) -> Result<(), ZKVerifierError>;
+}
+
+#[derive(Debug)]
+pub struct ZKProverError;
+
 pub trait ZKProver<I>
 {
-    fn generate_proof(&self, challenge: &Vec<I>, e: &I, z: &Vec<I>) -> Result<I, String>;
+    fn generate_proof(&self, challenge: &Vec<I>, e: &I, z: &Vec<I>) -> Result<I, ZKProverError>;
 }
+

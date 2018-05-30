@@ -4,6 +4,7 @@
 use super::*;
 use crypto::sha2::Sha256;
 use crypto::digest::Digest;
+use std::error::Error;
 
 /// Decryption key that should be kept private.
 #[derive(Debug,Clone)]
@@ -90,6 +91,18 @@ where
     }
 }
 
+impl fmt::Display for ZKProverError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "ZKProverError")
+    }
+}
+
+impl Error for ZKProverError {
+    fn description(&self) -> &str {
+        "Error while proving"
+    }
+}
+
 impl<I> ZKProver<I> for DecryptionKey<I>
     where
         I : Samplable,
@@ -109,25 +122,26 @@ impl<I> ZKProver<I> for DecryptionKey<I>
         for<'a>    &'a I: Mul<I, Output=I>
 {
 
-    fn generate_proof(&self, challenge: &Vec<I>, e: &I, z: &Vec<I>) -> Result<I, String> {
+    fn generate_proof(&self, challenge: &Vec<I>, e: &I, z: &Vec<I>) -> Result<I, ZKProverError> {
         let phi = (&self.p - &I::one()) * (&self.q - &I::one());
 
         let mut a : Vec<I> = Vec::new();
         let mut i : usize = 0;
         while i < ZK_SECURITY_FACTOR {
-            let zi_n = I::modpow(&z[i], &self.n, &self.n);
-            let xi_phi = I::modpow(&challenge[i], &phi, &self.n);
+            if I::egcd(&self.n, &z[i]).0 != I::one() ||
+                I::egcd(&self.n, &challenge[i]).0 != I::one() {
+                return Err(ZKProverError);
+            }
 
-            let xi_minus_phi =I::modinv(
-                &I::modpow(&challenge[i], &e, &self.n),
-                &self.n);
+            let zn = I::modpow(&z[i], &self.n, &self.n);
+            let cphi = I::modpow(&challenge[i], &phi, &self.n);
+            let cminphi = I::modinv(
+                &I::modpow(&challenge[i], &e, &self.n), &self.n);
 
-            a.push((zi_n * xi_phi * xi_minus_phi) % &self.n);
+            a.push((zn * cphi * cminphi) % &self.n);
 
-            if I::egcd(&self.n, &a[i]).0 != I::one()
-                || I::egcd(&self.n, &challenge[i]).0 != I::one()
-                || I::egcd(&self.n, &z[i]).0 != I::one(){
-                return Err("Proof can't be generated, egcd n and a not equal to 1".to_string());
+            if I::egcd(&self.n, &z[i]).0 != I::one(){
+                return Err(ZKProverError);
             }
 
             i += 1;
@@ -143,28 +157,28 @@ impl<I> ZKProver<I> for DecryptionKey<I>
             j += 1;
         }
 
-        let e_s : I = I::from_hex_str(a_x_hash.result_str());
-        if e != &e_s {
-            return Err("Missmatch between e from client and from server!".to_string());
+        if &I::from_hex_str(a_x_hash.result_str()) != e {
+            return Err(ZKProverError);
         }
 
-        let d_n = I::modinv(&self.n, &phi);
-        let d_p = &d_n % &(&self.p - &I::one());
-        let d_q = &d_n % &(&self.q - &I::one());
+        let dn = I::modinv(&self.n, &phi);
+        let dp = &dn % &(&self.p - &I::one());
+        let dq = &dn % &(&self.q - &I::one());
 
         let mut y_tag_hash = Sha256::new();
 
         let mut k : usize = 0;
         while k < ZK_SECURITY_FACTOR {
-            let c_p = &challenge[k] % &self.p;
-            let c_q = &challenge[k] % &self.q;
-            let m_p = I::modpow(&c_p, &d_p, &self.p);
-            let m_q = I::modpow(&c_q, &d_q, &self.q);
-            let q_inv_p = I::modinv(&self.q, &self.p);
-            let m_tag = &m_q + (&self.q * I::modmul(&q_inv_p, &(&m_p - &m_q), &self.p));
+            let cp = &challenge[k] % &self.p;
+            let mp = I::modpow(&cp, &dp, &self.p);
 
-            let y_tag = m_tag;
-            y_tag_hash.input_str(&I::to_hex_str(&y_tag));
+            let cq = &challenge[k] % &self.q;
+            let mq = I::modpow(&cq, &dq, &self.q);
+
+            let qinvp = I::modinv(&self.q, &self.p);
+            let mtag = &mq + (&self.q * I::modmul(&qinvp, &(&mp - &mq), &self.p));
+
+            y_tag_hash.input_str(&I::to_hex_str(&mtag));
 
             k += 1;
         }
