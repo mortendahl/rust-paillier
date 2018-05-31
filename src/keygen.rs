@@ -2,7 +2,7 @@
 
 use core::Keypair;
 use ::BigInteger as BigInt;
-use ::AbstractScheme;
+use ::Paillier as Paillier;
 use arithimpl::traits::*;
 
 /// Secure generation of fresh key pairs.
@@ -19,8 +19,7 @@ pub trait KeyGeneration<KP>
     fn keypair_with_modulus_size(big_length: usize) -> KP;
 }
 
-impl<S> KeyGeneration<Keypair> for S
-where S: AbstractScheme<BigInteger=BigInt>
+impl KeyGeneration<Keypair> for Paillier
 {
     fn keypair_with_modulus_size(bit_length: usize) -> Keypair {
         let p = BigInt::sample_prime(bit_length/2);
@@ -63,6 +62,99 @@ impl PrimeSampable for BigInt
             }
         }
     }
+}
+
+
+// Runs the following three tests on a given `candidate` to determine
+// primality:
+//
+// 1. Divide the candidate by the first 999 small prime numbers.
+// 2. Run Fermat's Little Theorem against the candidate.
+// 3. Run five rounds of the Miller-Rabin test on the candidate.
+fn is_prime(candidate: &BigInt) -> bool
+{
+    // First, simple trial divide
+    for p in SMALL_PRIMES.into_iter() {
+        let prime = BigInt::from(*p);
+        let r = candidate % &prime;
+        if !r.is_zero() {
+            continue
+        } else {
+            return false
+        }
+    }
+    // Second, do a little Fermat test on the candidate
+    if !fermat(candidate) {
+        return false
+    }
+
+    // Finally, do a Miller-Rabin test
+    // NIST recommendation is 5 rounds for 512 and 1024 bits. For 1536 bits, the recommendation is 4 rounds.
+    if !miller_rabin(candidate, 5) {
+        return false
+    }
+    true
+}
+
+/// Perform test based on Fermat's little theorem
+/// This might be performed more than once, see Handbook of Applied Cryptography [Algorithm 4.9 p136]
+fn fermat(candidate: &BigInt) -> bool
+{
+    let random = BigInt::sample_below(candidate);
+    let result = BigInt::modpow(&random, &(candidate - &BigInt::one()), candidate);
+
+    result == BigInt::one()
+}
+
+/// Perform Miller-Rabin primality test
+fn miller_rabin(candidate: &BigInt, limit: usize) -> bool
+{
+    // Iterations recommended for which  p < (1/2)^{80}
+    //  500 bits => 6 iterations
+    // 1000 bits => 3 iterations
+    // 2000 bits => 2 iterations
+
+    let (s,d) = rewrite(&(candidate - &BigInt::one()));
+    let one = BigInt::one();
+    let two = &one + &one;
+
+    for _ in 0..limit {
+        let basis = BigInt::sample_range(&two, &(candidate-&two));
+        let mut y = BigInt::modpow(&basis, &d, candidate);
+
+        if y == one || y == (candidate - &one) {
+            continue
+        } else {
+            let mut counter = BigInt::one();
+            while counter < (&s-&one){
+                y = BigInt::modpow(&y, &two, candidate);
+                if y == one {
+                    return false
+                } else if y == candidate - &one {
+                    break
+                }
+                counter = counter + BigInt::one();
+            }
+            return false
+        }
+    }
+    true
+}
+
+/// Rewrite a number n = 2^s * d
+/// (i.e., 2^s is the largest power of 2 that divides the candidate).
+fn rewrite(n: &BigInt) -> (BigInt, BigInt)
+{
+     let mut d = n.clone();
+     let mut s = BigInt::zero();
+     let one = BigInt::one();
+
+     while BigInt::is_even(&d) {
+         d = d >> 1_usize;
+         s = &s + &one;
+     }
+
+     (s,d)
 }
 
 // BoringSSL's table.
@@ -255,95 +347,3 @@ static SMALL_PRIMES: [u32; 2048] = [
     17609, 17623, 17627, 17657, 17659, 17669, 17681, 17683, 17707, 17713, 17729,
     17737, 17747, 17749, 17761, 17783, 17789, 17791, 17807, 17827, 17837, 17839,
     17851, 17863 ];
-
-// Runs the following three tests on a given `candidate` to determine
-// primality:
-//
-// 1. Divide the candidate by the first 999 small prime numbers.
-// 2. Run Fermat's Little Theorem against the candidate.
-// 3. Run five rounds of the Miller-Rabin test on the candidate.
-fn is_prime(candidate: &BigInt) -> bool
-{
-    // First, simple trial divide
-    for p in SMALL_PRIMES.into_iter() {
-        let prime = BigInt::from(*p);
-        let r = candidate % &prime;
-        if !r.is_zero() {
-            continue;
-        } else {
-            return false;
-        }
-    }
-    // Second, do a little Fermat test on the candidate
-    if !fermat(candidate) {
-        return false;
-    }
-
-    // Finally, do a Miller-Rabin test
-    // NIST recommendation is 5 rounds for 512 and 1024 bits. For 1536 bits, the recommendation is 4 rounds.
-    if !miller_rabin(candidate, 5) {
-        return false;
-    }
-    true
-}
-
-/// Perform test based on Fermat's little theorem
-/// This might be performed more than once, see Handbook of Applied Cryptography [Algorithm 4.9 p136]
-fn fermat(candidate: &BigInt) -> bool
-{
-    let random = BigInt::sample_below(candidate);
-    let result = BigInt::modpow(&random, &(candidate - &BigInt::one()), candidate);
-
-    result == BigInt::one()
-}
-
-/// Perform Miller-Rabin primality test
-fn miller_rabin(candidate: &BigInt, limit: usize) -> bool
-{
-    // Iterations recommended for which  p < (1/2)^{80}
-    //  500 bits => 6 iterations
-    // 1000 bits => 3 iterations
-    // 2000 bits => 2 iterations
-
-    let (s,d) = rewrite(&(candidate - &BigInt::one()));
-    let one = BigInt::one();
-    let two = &one + &one;
-
-    for _ in 0..limit {
-        let basis = BigInt::sample_range(&two, &(candidate-&two));
-        let mut y = BigInt::modpow(&basis, &d, candidate);
-
-        if y == one || y == (candidate - &one) {
-            continue;
-        } else {
-            let mut counter = BigInt::one();
-            while counter < (&s-&one){
-                y = BigInt::modpow(&y, &two, candidate);
-                if y == one {
-                    return false
-                } else if y == candidate - &one {
-                    break;
-                }
-                counter = counter + BigInt::one();
-            }
-            return false;
-        }
-    }
-    true
-}
-
-/// Rewrite a number n = 2^s * d
-/// (i.e., 2^s is the largest power of 2 that divides the candidate).
-fn rewrite(n: &BigInt) -> (BigInt, BigInt)
-{
-     let mut d = n.clone();
-     let mut s = BigInt::zero();
-     let one = BigInt::one();
-
-     while BigInt::is_even(&d) {
-         d = d >> 1_usize;
-         s = &s + &one;
-     }
-
-     (s,d)
-}

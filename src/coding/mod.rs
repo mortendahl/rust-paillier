@@ -4,8 +4,6 @@ pub mod integral;
 use ::BigInteger as BigInt;
 use arithimpl::traits::ConvertFrom;
 
-use super::*;
-
 pub fn pack<T>(components: &Vec<T>, component_count: usize, component_size: usize) -> BigInt
 where T: Clone, BigInt: From<T>
 {

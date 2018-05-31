@@ -1,4 +1,3 @@
-
 //! Core Paillier encryption scheme supporting ciphertext addition and plaintext multiplication.
 
 use std::fmt;
@@ -15,8 +14,7 @@ pub struct Keypair {
     pub q: BigInt,
 }
 
-impl DefaultKeys for Keypair
-{
+impl DefaultKeys for Keypair {
     type EK = EncryptionKey;
     type DK = DecryptionKey;
 
@@ -29,8 +27,7 @@ impl DefaultKeys for Keypair
     }
 }
 
-impl<'p, 'q> From<(&'p BigInt, &'q BigInt)> for Keypair
-{
+impl<'p, 'q> From<(&'p BigInt, &'q BigInt)> for Keypair {
     fn from((p, q) : (&'p BigInt, &'q BigInt)) -> Keypair {
         Keypair {
             p: p.clone(),
@@ -41,42 +38,17 @@ impl<'p, 'q> From<(&'p BigInt, &'q BigInt)> for Keypair
 
 /// Representation of unencrypted message.
 #[derive(Clone,Debug,PartialEq)]
-pub struct Plaintext(pub BigInt);
+pub struct RawPlaintext(pub BigInt);
 
 /// Representation of encrypted message.
 #[derive(Clone,Debug,PartialEq)]
-pub struct Ciphertext(pub BigInt);
-
-impl From<BigInt> for Plaintext
-{
-    fn from(x: BigInt) -> Plaintext {
-        Plaintext(x)
-    }
-}
-
-impl fmt::Display for Plaintext
-{
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.0.fmt(f)
-    }
-}
+pub struct RawCiphertext(pub BigInt);
 
 /// Encryption key that may be shared publicly.
 #[derive(Debug,Clone)]
 pub struct EncryptionKey {
     pub n: BigInt,  // the modulus
     nn: BigInt, // the modulus squared
-}
-
-impl<'kp> From<&'kp Keypair> for EncryptionKey
-{
-    fn from(keypair: &'kp Keypair) -> EncryptionKey {
-        let ref modulus = &keypair.p * &keypair.q;
-        EncryptionKey {
-            n: modulus.clone(),
-            nn: modulus * modulus,
-        }
-    }
 }
 
 /// Decryption key that should be kept private.
@@ -94,8 +66,131 @@ pub struct DecryptionKey {
     hq: BigInt,
 }
 
-impl<'kp> From<&'kp Keypair> for DecryptionKey 
+
+fn h(p: &BigInt, pp: &BigInt, n: &BigInt) -> BigInt {
+    // here we assume:
+    //  - p \in {P, Q}
+    //  - n = P * Q
+    //  - g = 1 + n
+
+    // compute g^{p-1} mod p^2
+    let gp = (1 - n) % pp;
+    // compute L_p(.)
+    let lp = l(&gp, p);
+    // compute L_p(.)^{-1}
+    let hp = BigInt::modinv(&lp, p);
+    hp
+}
+
+fn l(u: &BigInt, n: &BigInt) -> BigInt {
+    (u - 1) / n
+}
+
+impl<'c> Decrypt<DecryptionKey, &'c RawCiphertext, RawPlaintext> for Paillier {
+    fn decrypt(dk: &DecryptionKey, c: &'c RawCiphertext) -> RawPlaintext {        
+        // process using p
+        let cp = BigInt::modpow(&c.0, &dk.pminusone, &dk.pp);
+        let lp = l(&cp, &dk.p);
+        let mp = (&lp * &dk.hp) % &dk.p;
+        // process using q
+        let cq = BigInt::modpow(&c.0, &dk.qminusone, &dk.qq);
+        let lq = l(&cq, &dk.q);
+        let mq = (&lq * &dk.hq) % &dk.q;
+        // perform CRT
+        let m = crt(&mp, &mq, &dk);
+        RawPlaintext(m)
+    }
+}
+
+fn crt(mp: &BigInt, mq: &BigInt, dk: &DecryptionKey) -> BigInt {
+    let mut mq_minus_mp = (mq-mp) % &dk.q;
+    if NumberTests::is_negative(&mq_minus_mp) {
+        mq_minus_mp = mq_minus_mp + &dk.q;
+    }
+    let u = (mq_minus_mp * &dk.pinvq) % &dk.q;
+    let m = mp + (&u * &dk.p);
+    m % &dk.n
+}
+
+impl<'c> Rerandomize<EncryptionKey, &'c RawCiphertext, RawCiphertext> for Paillier {
+    fn rerandomise(ek: &EncryptionKey, c: &'c RawCiphertext) -> RawCiphertext {
+        let r = BigInt::sample_below(&ek.n);
+        let d = (&c.0 * BigInt::modpow(&r, &ek.n, &ek.nn)) % &ek.nn;
+        RawCiphertext(d)
+    }
+}
+
+impl<'m> Encrypt<EncryptionKey, &'m RawPlaintext, RawCiphertext> for Paillier 
+
 {
+    fn encrypt(ek: &EncryptionKey, m: &'m RawPlaintext) -> RawCiphertext {
+        // here we assume that g = n+1
+        let nm = &m.0 * &ek.n;
+        let gx = (&nm + 1) % &ek.nn;
+        Self::rerandomise(ek, &RawCiphertext(gx))
+    }
+}
+
+impl<PT, CT> Encrypt<EncryptionKey, PT, CT> for EncryptionKey
+where Paillier: Encrypt<EncryptionKey, PT, CT>
+{
+    fn encrypt(ek: &Self, m: PT) -> CT {
+        Paillier::encrypt(ek, m)
+    }
+}
+
+impl<'c1, 'c2> Add<EncryptionKey, &'c1 RawCiphertext, &'c2 RawCiphertext, RawCiphertext> for Paillier {
+    fn add(ek: &EncryptionKey, c1: &'c1 RawCiphertext, c2: &'c2 RawCiphertext) -> RawCiphertext {
+        let c = (&c1.0 * &c2.0) % &ek.nn;
+        RawCiphertext(c)
+    }
+}
+
+impl<'c1, 'm2> Add<EncryptionKey, &'c1 RawCiphertext, &'m2 RawPlaintext, RawCiphertext> for Paillier {
+    fn add(ek: &EncryptionKey, c1: &'c1 RawCiphertext, m2: &'m2 RawPlaintext) -> RawCiphertext {
+        let c2 = Self::encrypt(ek, m2);
+        let c = (&c1.0 * &c2.0) % &ek.nn;
+        RawCiphertext(c)
+    }
+}
+
+impl<'m1, 'c2> Add<EncryptionKey, &'m1 RawPlaintext, &'c2 RawCiphertext, RawCiphertext> for Paillier {
+    fn add(ek: &EncryptionKey, m1: &'m1 RawPlaintext, c2: &'c2 RawCiphertext) -> RawCiphertext {
+        let c1 = Self::encrypt(ek, m1);
+        let c = (&c1.0 * &c2.0) % &ek.nn;
+        RawCiphertext(c)
+    }
+}
+
+impl<'c1, 'm2> Mul<EncryptionKey, &'c1 RawCiphertext, &'m2 RawPlaintext, RawCiphertext> for Paillier {
+    fn mul(ek: &EncryptionKey, c1: &'c1 RawCiphertext, m2: &'m2 RawPlaintext) -> RawCiphertext {
+        let c = BigInt::modpow(&c1.0, &m2.0, &ek.nn);
+        RawCiphertext(c)
+    }
+}
+
+impl<'m1, 'c2> Mul<EncryptionKey, &'m1 RawPlaintext, &'c2 RawCiphertext, RawCiphertext> for Paillier {
+    fn mul(ek: &EncryptionKey, m1: &'m1 RawPlaintext, c2: &'c2 RawCiphertext) -> RawCiphertext {
+        let c = BigInt::modpow(&c2.0, &m1.0, &ek.nn);
+        RawCiphertext(c)
+    }
+}
+
+impl<T> From<T> for RawPlaintext 
+where BigInt: From<T>
+{
+    fn from(x: T) -> RawPlaintext {
+        RawPlaintext(x.into())
+    }
+}
+
+impl fmt::Display for RawPlaintext {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl<'kp> From<&'kp Keypair> for DecryptionKey {
     fn from(keypair: &'kp Keypair) -> DecryptionKey {
         let ref p = keypair.p;
         let ref q = keypair.q;
@@ -121,119 +216,20 @@ impl<'kp> From<&'kp Keypair> for DecryptionKey
     }
 }
 
-fn h(p: &BigInt, pp: &BigInt, n: &BigInt) -> BigInt
-{
-    // here we assume:
-    //  - p \in {P, Q}
-    //  - n = P * Q
-    //  - g = 1 + n
-
-    // compute g^{p-1} mod p^2
-    let gp = (1 - n) % pp;
-    // compute L_p(.)
-    let lp = l(&gp, p);
-    // compute L_p(.)^{-1}
-    let hp = BigInt::modinv(&lp, p);
-    hp
-}
-
-fn l(u: &BigInt, n: &BigInt) -> BigInt {
-    (u - 1) / n
-}
-
-impl Decrypt<DecryptionKey, Ciphertext, Plaintext> for Paillier
-{
-    fn decrypt(dk: &DecryptionKey, c: &Ciphertext) -> Plaintext {
-        // process using p
-        let cp = BigInt::modpow(&c.0, &dk.pminusone, &dk.pp);
-        let lp = l(&cp, &dk.p);
-        let mp = (&lp * &dk.hp) % &dk.p;
-        // process using q
-        let cq = BigInt::modpow(&c.0, &dk.qminusone, &dk.qq);
-        let lq = l(&cq, &dk.q);
-        let mq = (&lq * &dk.hq) % &dk.q;
-        // perform CRT
-        let m = crt(&mp, &mq, &dk);
-        Plaintext(m)
+impl<'kp> From<&'kp Keypair> for EncryptionKey {
+    fn from(keypair: &'kp Keypair) -> EncryptionKey {
+        let ref modulus = &keypair.p * &keypair.q;
+        EncryptionKey {
+            n: modulus.clone(),
+            nn: modulus * modulus,
+        }
     }
 }
 
-fn crt(mp: &BigInt, mq: &BigInt, dk: &DecryptionKey) -> BigInt
-{
-    let mut mq_minus_mp = (mq-mp) % &dk.q;
-    if NumberTests::is_negative(&mq_minus_mp) {
-        mq_minus_mp = mq_minus_mp + &dk.q;
-    }
-    let u = (mq_minus_mp * &dk.pinvq) % &dk.q;
-    let m = mp + (&u * &dk.p);
-    m % &dk.n
-}
-
-impl Rerandomize<EncryptionKey, Ciphertext> for Paillier
-{
-    fn rerandomise(ek: &EncryptionKey, c: &Ciphertext) -> Ciphertext {
-        let r = BigInt::sample_below(&ek.n);
-        let d = (&c.0 * BigInt::modpow(&r, &ek.n, &ek.nn)) % &ek.nn;
-        Ciphertext(d)
-    }
-}
-
-impl Encrypt<EncryptionKey, Plaintext, Ciphertext> for Paillier
-{
-    fn encrypt(ek: &EncryptionKey, m: &Plaintext) -> Ciphertext {
-        // here we assume that g = n+1
-        let nm = &m.0 * &ek.n;
-        let gx = (&nm + 1) % &ek.nn;
-        Self::rerandomise(ek, &Ciphertext(gx))
-    }
-}
-
-impl Add<EncryptionKey, Ciphertext, Ciphertext, Ciphertext> for Paillier
-{
-    fn add(ek: &EncryptionKey, c1: &Ciphertext, c2: &Ciphertext) -> Ciphertext {
-        let c = (&c1.0 * &c2.0) % &ek.nn;
-        Ciphertext(c)
-    }
-}
-
-impl Add<EncryptionKey, Ciphertext, Plaintext, Ciphertext> for Paillier
-{
-    fn add(ek: &EncryptionKey, c1: &Ciphertext, m2: &Plaintext) -> Ciphertext {
-        let c2 = Self::encrypt(ek, m2);
-        let c = (&c1.0 * &c2.0) % &ek.nn;
-        Ciphertext(c)
-    }
-}
-
-impl Add<EncryptionKey, Plaintext, Ciphertext, Ciphertext> for Paillier
-{
-    fn add(ek: &EncryptionKey, m1: &Plaintext, c2: &Ciphertext) -> Ciphertext {
-        let c1 = Self::encrypt(ek, m1);
-        let c = (&c1.0 * &c2.0) % &ek.nn;
-        Ciphertext(c)
-    }
-}
-
-impl Mul<EncryptionKey, Ciphertext, Plaintext, Ciphertext> for Paillier
-{
-    fn mul(ek: &EncryptionKey, c1: &Ciphertext, m2: &Plaintext) -> Ciphertext {
-        let c = BigInt::modpow(&c1.0, &m2.0, &ek.nn);
-        Ciphertext(c)
-    }
-}
-
-impl Mul<EncryptionKey, Plaintext, Ciphertext, Ciphertext> for Paillier
-{
-    fn mul(ek: &EncryptionKey, m1: &Plaintext, c2: &Ciphertext) -> Ciphertext {
-        let c = BigInt::modpow(&c2.0, &m1.0, &ek.nn);
-        Ciphertext(c)
-    }
-}
 
 #[cfg(test)]
 mod tests {
 
-    use ::AbstractPaillier;
     use super::*;
     use ::keygen::KeyGeneration;
 
@@ -250,10 +246,10 @@ mod tests {
     fn test_correct_encryption_decryption() {
         let (ek, dk) = test_keypair().keys();
 
-        let m = Plaintext::from(BigInt::from(10));
-        let c = AbstractPaillier::encrypt(&ek, &m);
+        let m = RawPlaintext::from(10);
+        let c = Paillier::encrypt(&ek, &m);
 
-        let recovered_m = AbstractPaillier::decrypt(&dk, &c);
+        let recovered_m = Paillier::decrypt(&dk, &c);
         assert_eq!(recovered_m, m);
     }
 
@@ -261,38 +257,38 @@ mod tests {
     fn test_correct_addition() {
         let (ek, dk) = test_keypair().keys();
 
-        let m1 = Plaintext::from(BigInt::from(10));
-        let c1 = AbstractPaillier::encrypt(&ek, &m1);
-        let m2 = Plaintext::from(BigInt::from(20));
-        let c2 = AbstractPaillier::encrypt(&ek, &m2);
+        let m1 = RawPlaintext::from(10);
+        let c1 = Paillier::encrypt(&ek, &m1);
+        let m2 = RawPlaintext::from(20);
+        let c2 = Paillier::encrypt(&ek, &m2);
 
-        let c = AbstractPaillier::add(&ek, &c1, &c2);
-        let m = AbstractPaillier::decrypt(&dk, &c);
-        assert_eq!(m, Plaintext::from(BigInt::from(30)));
+        let c = Paillier::add(&ek, &c1, &c2);
+        let m = Paillier::decrypt(&dk, &c);
+        assert_eq!(m, RawPlaintext::from(30));
     }
 
     #[test]
     fn correct_multiplication() {
         let (ek, dk) = test_keypair().keys();
 
-        let m1 = Plaintext::from(BigInt::from(10));
-        let c1 = AbstractPaillier::encrypt(&ek, &m1);
-        let m2 = Plaintext::from(BigInt::from(20));
+        let m1 = RawPlaintext::from(10);
+        let c1 = Paillier::encrypt(&ek, &m1);
+        let m2 = RawPlaintext::from(20);
 
-        let c = AbstractPaillier::mul(&ek, &c1, &m2);
-        let m = AbstractPaillier::decrypt(&dk, &c);
-        assert_eq!(m, Plaintext::from(BigInt::from(200)));
+        let c = Paillier::mul(&ek, &c1, &m2);
+        let m = Paillier::decrypt(&dk, &c);
+        assert_eq!(m, RawPlaintext::from(200));
     }
 
     #[cfg(feature="keygen")]
     #[test]
     fn test_correct_keygen() {
-        let (ek, dk): (EncryptionKey, _) = AbstractPaillier::keypair_with_modulus_size(2048).keys();
+        let (ek, dk): (EncryptionKey, _) = Paillier::keypair_with_modulus_size(2048).keys();
 
-        let m = Plaintext::from(BigInt::from(10));
-        let c = AbstractPaillier::encrypt(&ek, &m);
+        let m = RawPlaintext::from(10);
+        let c = Paillier::encrypt(&ek, &m);
 
-        let recovered_m = AbstractPaillier::decrypt(&dk, &c);
+        let recovered_m = Paillier::decrypt(&dk, &c);
         assert_eq!(recovered_m, m);
     }
 
