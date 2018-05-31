@@ -166,8 +166,9 @@ where
     for<'m> Self: Encrypt<EK, &'m RawPlaintext, RawCiphertext>
 {
     fn encrypt(ek: &EK, m: T) -> ScalarCiphertext<T> {
+        let raw = ScalarPlaintext::from(m).data;
         ScalarCiphertext {
-            data: Self::encrypt(ek, &ScalarPlaintext::from(m).data),
+            data: Self::encrypt(ek, &raw),
             _phantom: PhantomData,
         }
     }
