@@ -66,7 +66,6 @@ pub struct DecryptionKey {
     hq: BigInt,
 }
 
-
 fn h(p: &BigInt, pp: &BigInt, n: &BigInt) -> BigInt {
     // here we assume:
     //  - p \in {P, Q}
@@ -120,9 +119,7 @@ impl<'c> Rerandomize<EncryptionKey, &'c RawCiphertext, RawCiphertext> for Pailli
     }
 }
 
-impl<'m> Encrypt<EncryptionKey, &'m RawPlaintext, RawCiphertext> for Paillier 
-
-{
+impl<'m> Encrypt<EncryptionKey, &'m RawPlaintext, RawCiphertext> for Paillier {
     fn encrypt(ek: &EncryptionKey, m: &'m RawPlaintext) -> RawCiphertext {
         // here we assume that g = n+1
         let nm = &m.0 * &ek.n;
@@ -132,10 +129,10 @@ impl<'m> Encrypt<EncryptionKey, &'m RawPlaintext, RawCiphertext> for Paillier
 }
 
 impl<PT, CT> Encrypt<EncryptionKey, PT, CT> for EncryptionKey
-where Paillier: Encrypt<EncryptionKey, PT, CT>
+where Self: Encrypt<EncryptionKey, PT, CT>
 {
     fn encrypt(ek: &Self, m: PT) -> CT {
-        Paillier::encrypt(ek, m)
+        Self::encrypt(ek, m)
     }
 }
 

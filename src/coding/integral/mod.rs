@@ -287,7 +287,7 @@ where
 impl<'c2, EK, T> Mul<EK, T, &'c2 ScalarCiphertext<T>, ScalarCiphertext<T>> for Paillier
 where 
     ScalarPlaintext<T>: From<T>,
-    for<'m1> Paillier: Mul<EK, &'m1 ScalarPlaintext<T>, &'c2 ScalarCiphertext<T>, ScalarCiphertext<T>>,
+    for<'m1> Self: Mul<EK, &'m1 ScalarPlaintext<T>, &'c2 ScalarCiphertext<T>, ScalarCiphertext<T>>,
 {
     fn mul(ek: &EK, m1: T, c2: &'c2 ScalarCiphertext<T>) -> ScalarCiphertext<T> {
         Self::mul(ek, &ScalarPlaintext::from(m1), c2)
