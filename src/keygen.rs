@@ -1,42 +1,46 @@
+//! Key generation following standard recommendations.
+
+use core::Keypair;
+use ::BigInteger as BigInt;
+use ::Paillier as Paillier;
 use arithimpl::traits::*;
-use std::ops::{Add, Sub, Mul, Div, Rem, Shr, Neg};
-use std::marker::Sized;
-use num_traits::{Zero, One};
 
+/// Secure generation of fresh key pairs.
+pub trait KeyGeneration<KP>
+{
+    /// Generate fresh key pair with currently recommended security level (2048 bit modulus).
+    fn keypair() -> KP {
+        Self::keypair_with_modulus_size(2048)
+    }
 
+    /// Generate fresh key pair with security level specified as the `bit_length` of the modulus.
+    ///
+    /// Currently recommended security level is a minimum of 2048 bits.
+    fn keypair_with_modulus_size(big_length: usize) -> KP;
+}
+
+impl KeyGeneration<Keypair> for Paillier
+{
+    fn keypair_with_modulus_size(bit_length: usize) -> Keypair {
+        let p = BigInt::sample_prime(bit_length/2);
+        let q = BigInt::sample_prime(bit_length/2);
+        Keypair {
+            p: p,
+            q: q,
+        }
+    }
+}
 
 pub trait PrimeSampable {
     fn sample_prime(bitsize: usize) -> Self;
 }
 
-
-impl <I> PrimeSampable for I
-where
-    I: Samplable,
-    I: BitManipulation,
-    I: Clone + Sized,
-    I: From<u32>,
-    I: Eq,
-    I: Ord,
-    I: Zero + One + Neg<Output=I> + NumberTests,
-    for<'a>    &'a I: Mul<I, Output=I>,
-    for<'a,'b> &'a I: Mul<&'b I, Output=I>,
-
-    for<'a,'b> &'a I: Div<&'b I, Output=I>,
-    for<'b>        I: Div<&'b I, Output=I>,
-    for<'a>        I: Rem<&'a I, Output=I>,
-    for<'a,'b> &'a I: Rem<&'b I, Output=I>,
-    for<'a,'b> &'a I: Add<&'b I, Output=I>,
-    for<'b>        I: Add<&'b I, Output=I>,
-                   I: Sub<I, Output=I>,
-    for<'b>        I: Sub<&'b I, Output=I>,
-    for<'a,'b> &'a I: Sub<&'b I, Output=I>,
-    I: Shr<usize, Output=I>,
+impl PrimeSampable for BigInt
 {
     fn sample_prime(bitsize :usize) -> Self {
         // See Practical Considerations section inside the section 11.5 "Prime Number Generation"
         // Applied Cryptography, Bruce Schneier.
-        let one = I::one();
+        let one = BigInt::one();
         let two = &one + &one;
 
         loop {
@@ -61,8 +65,97 @@ where
 }
 
 
+// Runs the following three tests on a given `candidate` to determine
+// primality:
+//
+// 1. Divide the candidate by the first 999 small prime numbers.
+// 2. Run Fermat's Little Theorem against the candidate.
+// 3. Run five rounds of the Miller-Rabin test on the candidate.
+fn is_prime(candidate: &BigInt) -> bool
+{
+    // First, simple trial divide
+    for p in SMALL_PRIMES.into_iter() {
+        let prime = BigInt::from(*p);
+        let r = candidate % &prime;
+        if !r.is_zero() {
+            continue
+        } else {
+            return false
+        }
+    }
+    // Second, do a little Fermat test on the candidate
+    if !fermat(candidate) {
+        return false
+    }
 
+    // Finally, do a Miller-Rabin test
+    // NIST recommendation is 5 rounds for 512 and 1024 bits. For 1536 bits, the recommendation is 4 rounds.
+    if !miller_rabin(candidate, 5) {
+        return false
+    }
+    true
+}
 
+/// Perform test based on Fermat's little theorem
+/// This might be performed more than once, see Handbook of Applied Cryptography [Algorithm 4.9 p136]
+fn fermat(candidate: &BigInt) -> bool
+{
+    let random = BigInt::sample_below(candidate);
+    let result = BigInt::modpow(&random, &(candidate - &BigInt::one()), candidate);
+
+    result == BigInt::one()
+}
+
+/// Perform Miller-Rabin primality test
+fn miller_rabin(candidate: &BigInt, limit: usize) -> bool
+{
+    // Iterations recommended for which  p < (1/2)^{80}
+    //  500 bits => 6 iterations
+    // 1000 bits => 3 iterations
+    // 2000 bits => 2 iterations
+
+    let (s,d) = rewrite(&(candidate - &BigInt::one()));
+    let one = BigInt::one();
+    let two = &one + &one;
+
+    for _ in 0..limit {
+        let basis = BigInt::sample_range(&two, &(candidate-&two));
+        let mut y = BigInt::modpow(&basis, &d, candidate);
+
+        if y == one || y == (candidate - &one) {
+            continue
+        } else {
+            let mut counter = BigInt::one();
+            while counter < (&s-&one){
+                y = BigInt::modpow(&y, &two, candidate);
+                if y == one {
+                    return false
+                } else if y == candidate - &one {
+                    break
+                }
+                counter = counter + BigInt::one();
+            }
+            return false
+        }
+    }
+    true
+}
+
+/// Rewrite a number n = 2^s * d
+/// (i.e., 2^s is the largest power of 2 that divides the candidate).
+fn rewrite(n: &BigInt) -> (BigInt, BigInt)
+{
+     let mut d = n.clone();
+     let mut s = BigInt::zero();
+     let one = BigInt::one();
+
+     while BigInt::is_even(&d) {
+         d = d >> 1_usize;
+         s = &s + &one;
+     }
+
+     (s,d)
+}
 
 // BoringSSL's table.
 // https://boringssl.googlesource.com/boringssl/+/master/crypto/bn/prime.c
@@ -254,157 +347,3 @@ static SMALL_PRIMES: [u32; 2048] = [
     17609, 17623, 17627, 17657, 17659, 17669, 17681, 17683, 17707, 17713, 17729,
     17737, 17747, 17749, 17761, 17783, 17789, 17791, 17807, 17827, 17837, 17839,
     17851, 17863 ];
-
-// Runs the following three tests on a given `candidate` to determine
-// primality:
-//
-// 1. Divide the candidate by the first 999 small prime numbers.
-// 2. Run Fermat's Little Theorem against the candidate.
-// 3. Run five rounds of the Miller-Rabin test on the candidate.
-pub fn is_prime<I>(candidate: &I) -> bool
-where
-    I: Clone + Sized,
-    I: Samplable,
-    I: Eq,
-    I: Ord,
-    I: From<u32>,
-    I: Zero + One + Neg<Output=I> + NumberTests,
-    for<'a>    &'a I: Mul<I, Output=I>,
-    for<'a,'b> &'a I: Mul<&'b I, Output=I>,
-    for<'a,'b> &'a I: Div<&'b I, Output=I>,
-    for<'a>        I: Rem<&'a I, Output=I>,
-    for<'a,'b> &'a I: Rem<&'b I, Output=I>,
-    for<'a,'b> &'a I: Add<&'b I, Output=I>,
-                   I: Sub<I, Output=I>,
-    for<'b>        I: Sub<&'b I, Output=I>,
-    for<'a,'b> &'a I: Sub<&'b I, Output=I>,
-    I: Shr<usize, Output=I>,
-    I: BitManipulation,
-{
-    // First, simple trial divide
-    for p in SMALL_PRIMES.into_iter() {
-        let prime = I::from(*p);
-        let r = candidate % &prime;
-        if !r.is_zero() {
-            continue;
-        } else {
-            return false;
-        }
-    }
-    // Second, do a little Fermat test on the candidate
-    if !fermat(candidate) {
-        return false;
-    }
-
-    // Finally, do a Miller-Rabin test
-    // NIST recommendation is 5 rounds for 512 and 1024 bits. For 1536 bits, the recommendation is 4 rounds.
-    if !miller_rabin(candidate, 5) {
-        return false;
-    }
-    true
-}
-
-fn fermat<I>(candidate: &I) -> bool
-where
-    I: ModPow,
-    I: Clone + Sized,
-    I: Samplable,
-    I: Eq,
-    I: Zero + One + Neg<Output=I> + NumberTests,
-    for<'a>    &'a I: Mul<I, Output=I>,
-    for<'a,'b> &'a I: Mul<&'b I, Output=I>,
-    for<'a,'b> &'a I: Div<&'b I, Output=I>,
-    for<'a>        I: Rem<&'a I, Output=I>,
-    for<'a,'b> &'a I: Rem<&'b I, Output=I>,
-    for<'a,'b> &'a I: Add<&'b I, Output=I>,
-                   I: Sub<I, Output=I>,
-    for<'b>        I: Sub<&'b I, Output=I>,
-    for<'a,'b> &'a I: Sub<&'b I, Output=I>,
-    I: Shr<usize, Output=I>,
-{
-    // Perform Fermat's little theorem
-    // This might be perform more than once. Handbook of Applied Cryptography [Algorithm 4.9 p136]
-    let random = I::sample_below(candidate);
-    let result = I::modpow(&random, &(candidate - &I::one()), candidate);
-
-    result == I::one()
-}
-
-// Iterations recommended for which  p < (1/2)^{80}
-//  500 bits => 6 iterations
-// 1000 bits => 3 iterations
-// 2000 bits => 2 iterations
-fn miller_rabin<I>(candidate: &I, limit: usize) -> bool
-where
-    I: ModPow,
-    I: Clone + Sized,
-    I: Samplable,
-    I: Eq,
-    I: Ord,
-    I: Zero + One + Shr<usize, Output=I>,
-    I: Neg<Output=I>,
-    I: NumberTests,
-    for<'a>    &'a I: Mul<I, Output=I>,
-    for<'a,'b> &'a I: Mul<&'b I, Output=I>,
-    for<'a,'b> &'a I: Div<&'b I, Output=I>,
-    for<'a>        I: Rem<&'a I, Output=I>,
-    for<'a,'b> &'a I: Rem<&'b I, Output=I>,
-    for<'a,'b> &'a I: Add<&'b I, Output=I>,
-                   I: Sub<I, Output=I>,
-    for<'b>        I: Sub<&'b I, Output=I>,
-    for<'a,'b> &'a I: Sub<&'b I, Output=I>,
-{
-    let (s,d) = rewrite(&(candidate - &I::one()));
-    let one = I::one();
-    let two = &one + &one;
-
-    for _ in 0..limit {
-        let basis = I::sample_range(&two, &(candidate-&two));
-        let mut y = I::modpow(&basis, &d, candidate);
-
-        if y == one || y == (candidate - &one) {
-            continue;
-        } else {
-            let mut counter = I::one();
-            while counter < (&s-&one){
-                y = I::modpow(&y, &two, candidate);
-                if y == one {
-                    return false
-                } else if y == candidate - &one {
-                    break;
-                }
-                counter = counter + I::one();
-            }
-            return false;
-        }
-    }
-    true
-}
-
-// rewrites a number n =  2^s * d
-// (i.e., 2^s is the largest power of 2 that divides the candidate).
-fn rewrite<I>(n: &I) -> (I, I)
-where
-    I: Clone + Sized,
-    I: Zero + One + Neg<Output=I> + NumberTests,
-    for<'a>    &'a I: Mul<I, Output=I>,
-    for<'a,'b> &'a I: Mul<&'b I, Output=I>,
-    for<'a,'b> &'a I: Div<&'b I, Output=I>,
-    for<'a>        I: Rem<&'a I, Output=I>,
-    for<'a,'b> &'a I: Rem<&'b I, Output=I>,
-    for<'a,'b> &'a I: Add<&'b I, Output=I>,
-                   I: Sub<I, Output=I>,
-    for<'b>        I: Sub<&'b I, Output=I>,
-    for<'a,'b> &'a I: Sub<&'b I, Output=I>,
-    I: Shr<usize, Output=I>,
-{
-     let mut d = n.clone();
-     let mut s = I::zero();
-     let one = I::one();
-
-     while I::is_even(&d) {
-         d = d >> 1_usize;
-         s = &s + &one;
-     }
-     (s,d)
-}

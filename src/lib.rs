@@ -5,28 +5,23 @@ extern crate test;
 extern crate rand;
 extern crate num_traits;
 
-#[macro_use]
-mod macros;
-
 pub mod arithimpl;
 pub mod traits;
 pub mod core;
 pub mod coding;
+#[cfg(feature="keygen")]
+pub mod keygen;
 
 pub use traits::*;
 pub use coding::*;
-pub use core::Keypair;
-pub use core::standard::EncryptionKey;
-pub use core::crt::DecryptionKey;
+pub use core::{Keypair, EncryptionKey, DecryptionKey, RawPlaintext, RawCiphertext};
+#[cfg(feature="keygen")]
+pub use keygen::*;
 
 
 /// Parameterised type onto which all operations are added (see `Paillier`).
 pub struct AbstractPaillier<I> {
     junk: ::std::marker::PhantomData<I>
-}
-
-impl<I> AbstractScheme for AbstractPaillier<I> {
-    type BigInteger=I;
 }
 
 
