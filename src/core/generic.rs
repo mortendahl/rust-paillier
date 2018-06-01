@@ -99,7 +99,7 @@ mod tests {
     fn test_correct_encryption_decryption() {
         let ref keypair = test_keypair();
         let ek: generic::EncryptionKey<_> = generic::EncryptionKey::from(keypair);
-        let dk: crt::DecryptionKey<_> = crt::DecryptionKey::from(keypair);
+        let dk: standard::DecryptionKey<_> = standard::DecryptionKey::from(keypair);
         let code = integral::Code::default();
 
         let m = code.encode(&10_u64);

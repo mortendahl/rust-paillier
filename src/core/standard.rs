@@ -2,18 +2,9 @@
 //! Standard encryption and decryption.
 
 use super::*;
-
-
-/// Encryption key that may be shared publicly.
-#[derive(Debug,Clone)]
-pub struct EncryptionKey<I> {
-    pub n: I,  // the modulus
-    nn: I, // the modulus squared
-}
-
+use core::EncryptionKey;
 
 impl<I> ::traits::EncryptionKey for EncryptionKey<I> {}
-
 
 impl<'kp, I> From<&'kp Keypair<I>> for EncryptionKey<I>
 where

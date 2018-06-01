@@ -46,9 +46,9 @@ impl ModPow for Mpz {
 }
 
 impl ModMul for Mpz {
-    fn modmul(base: &Self, exponent: &Self, modulus: &Self) -> Self {
-        let base_mod_modulus = base.mod_floor(modulus);
-        let exponent_mod_modulus = exponent.mod_floor(modulus);
+    fn modmul(a: &Self, b: &Self, modulus: &Self) -> Self {
+        let base_mod_modulus = a.mod_floor(modulus);
+        let exponent_mod_modulus = b.mod_floor(modulus);
         let mul_res = base_mod_modulus * exponent_mod_modulus;
 
         mul_res.mod_floor(modulus)
@@ -71,7 +71,7 @@ impl ToString for Mpz {
 }
 
 impl FromString<Mpz> for Mpz {
-    fn from_hex_str(a: String) -> Mpz { Mpz::from_str_radix(&a, 16).unwrap() }
+    fn from_hex_str(a: &str) -> Mpz { Mpz::from_str_radix(a, 16).unwrap() }
 }
 
 impl ConvertFrom<Mpz> for u64 {

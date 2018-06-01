@@ -48,7 +48,7 @@ pub trait ToString {
 }
 
 pub trait FromString<I> {
-    fn from_hex_str(a: String) -> I;
+    fn from_hex_str(a: &str) -> I;
 }
 
 use std::ops::{Add, Sub, Mul, Div, Rem, Shr, Neg};

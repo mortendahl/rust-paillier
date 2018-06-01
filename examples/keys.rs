@@ -10,16 +10,15 @@ fn main() {
 fn main() {
 
     use paillier::*;
-    use paillier::core::*;
 
     // generate a fresh keypair
     let keypair = Paillier::keypair();
 
     // choose type of encryption
-    let ek = standard::EncryptionKey::from(&keypair);
+    let ek = core::EncryptionKey::from(&keypair);
 
     // choose type of decryption
-    let dk = standard::DecryptionKey::from(&keypair);
+    let dk = core::DecryptionKey::from(&keypair);
     // let dk = crt::DecryptionKey::from(&keypair);
 
     // pair keys with integral coding

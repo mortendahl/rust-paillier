@@ -2,25 +2,7 @@
 //! Faster decryption using the Chinese Remainder Theorem.
 
 use super::*;
-use crypto::sha2::Sha256;
-use crypto::digest::Digest;
-use std::error::Error;
-
-/// Decryption key that should be kept private.
-#[derive(Debug,Clone)]
-pub struct DecryptionKey<I> {
-    p: I,  // first prime
-    q: I,  // second prime
-    n: I,  // the modulus (also in public key)
-    pp: I,
-    pminusone: I,
-    qq: I,
-    qminusone: I,
-    pinvq: I,
-    hp: I,
-    hq: I,
-}
-
+use core::DecryptionKey;
 
 impl<I> ::traits::DecryptionKey for DecryptionKey<I> {}
 
@@ -88,102 +70,6 @@ where
         let mq = (&lq * &dk.hq) % &dk.q;
         // perform CRT
         Plaintext(crt(&mp, &mq, &dk))
-    }
-}
-
-impl fmt::Display for ZKProverError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "ZKProverError")
-    }
-}
-
-impl Error for ZKProverError {
-    fn description(&self) -> &str {
-        "Error while proving"
-    }
-}
-
-impl<I> ZKProver<I> for DecryptionKey<I>
-    where
-        I : Samplable,
-        I : Eq,
-        I : One,
-        I : ModPow,
-        I : ModInv,
-        I : ModMul,
-        I : EGCD,
-        I : ToString,
-        I : FromString<I>,
-        for<'a>    &'a I: Add<I, Output=I>,
-        for<'b>        I: Add<&'b I, Output=I>,
-        for<'a,'b> &'a I: Sub<&'b I, Output=I>,
-        for<'a>        I: Rem<&'a I, Output=I>,
-        for<'a,'b> &'a I: Rem<&'b I, Output=I>,
-        for<'a>    &'a I: Mul<I, Output=I>
-{
-
-    fn generate_proof(&self, challenge: &Vec<I>, e: &I, z: &Vec<I>) -> Result<I, ZKProverError> {
-        let phi = (&self.p - &I::one()) * (&self.q - &I::one());
-
-        let mut a : Vec<I> = Vec::new();
-        let mut i : usize = 0;
-        while i < ZK_SECURITY_FACTOR {
-            if I::egcd(&self.n, &z[i]).0 != I::one() ||
-                I::egcd(&self.n, &challenge[i]).0 != I::one() {
-                return Err(ZKProverError);
-            }
-
-            let zn = I::modpow(&z[i], &self.n, &self.n);
-            let cphi = I::modpow(&challenge[i], &phi, &self.n);
-            let cminphi = I::modinv(
-                &I::modpow(&challenge[i], &e, &self.n), &self.n);
-
-            a.push((zn * cphi * cminphi) % &self.n);
-
-            if I::egcd(&self.n, &z[i]).0 != I::one(){
-                return Err(ZKProverError);
-            }
-
-            i += 1;
-        }
-
-        let mut a_x_hash = Sha256::new();
-        a_x_hash.input_str(&I::to_hex_str(&self.n));
-
-        let mut j : usize = 0;
-        while j < ZK_SECURITY_FACTOR {
-            a_x_hash.input_str(&I::to_hex_str(&challenge[j]));
-            a_x_hash.input_str(&I::to_hex_str(&a[j]));
-            j += 1;
-        }
-
-        if &I::from_hex_str(a_x_hash.result_str()) != e {
-            return Err(ZKProverError);
-        }
-
-        let dn = I::modinv(&self.n, &phi);
-        let dp = &dn % &(&self.p - &I::one());
-        let dq = &dn % &(&self.q - &I::one());
-
-        let mut y_tag_hash = Sha256::new();
-
-        let mut k : usize = 0;
-        while k < ZK_SECURITY_FACTOR {
-            let cp = &challenge[k] % &self.p;
-            let mp = I::modpow(&cp, &dp, &self.p);
-
-            let cq = &challenge[k] % &self.q;
-            let mq = I::modpow(&cq, &dq, &self.q);
-
-            let qinvp = I::modinv(&self.q, &self.p);
-            let mtag = &mq + (&self.q * I::modmul(&qinvp, &(&mp - &mq), &self.p));
-
-            y_tag_hash.input_str(&I::to_hex_str(&mtag));
-
-            k += 1;
-        }
-
-        Ok(I::from_hex_str(y_tag_hash.result_str()))
     }
 }
 
