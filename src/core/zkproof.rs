@@ -67,14 +67,11 @@ impl<I, S> ProveCorrectKey<I, EncryptionKey<I>, DecryptionKey<I>> for S
     fn generate_challenge(ek: &EncryptionKey<I>) -> (Vec<I>, CorrectInputProof<I>, Vec<I>) {
         let (mut y, mut challenge) : (Vec<I>, Vec<I>) = (Vec::new(), Vec::new());
 
-        let mut i : usize = 0;
-        while i < ZK_SECURITY_FACTOR {
+        for i in 0..ZK_SECURITY_FACTOR {
             let candidate = I::sample_below(&ek.n);
 
             y.push(candidate);
             challenge.push(I::modpow(&y[i], &ek.n, &ek.n));
-
-            i += 1;
         }
 
         let (mut random, mut a) : (Vec<I>, Vec<I>) = (Vec::new(), Vec::new());
@@ -82,28 +79,23 @@ impl<I, S> ProveCorrectKey<I, EncryptionKey<I>, DecryptionKey<I>> for S
         let mut a_x_hash = Sha256::new();
         a_x_hash.input_str(&I::to_hex_str(&ek.n));
 
-        let mut j : usize = 0;
-        while j < ZK_SECURITY_FACTOR {
+        for i in 0..ZK_SECURITY_FACTOR {
             let candidate = I::sample_below(&ek.n);
             if I::egcd(&ek.n, &candidate).0 != I::one() { continue; }
 
             random.push(candidate);
-            a.push(I::modpow(&random[j], &ek.n, &ek.n));
+            a.push(I::modpow(&random[i], &ek.n, &ek.n));
 
-            a_x_hash.input_str(&I::to_hex_str(&challenge[j]));
-            a_x_hash.input_str(&I::to_hex_str(&a[j]));
-
-            j += 1;
+            a_x_hash.input_str(&I::to_hex_str(&challenge[i]));
+            a_x_hash.input_str(&I::to_hex_str(&a[i]));
         }
 
         let e : I = I::from_hex_str(&a_x_hash.result_str());
 
         let mut z : Vec<I> = Vec::new();
 
-        let mut k : usize = 0;
-        while k < ZK_SECURITY_FACTOR {
-            z.push(((&random[k] % &ek.n) * I::modpow(&y[k], &e, &ek.n)) % &ek.n);
-            k+= 1;
+        for i in 0..ZK_SECURITY_FACTOR {
+            z.push(((&random[i] % &ek.n) * I::modpow(&y[i], &e, &ek.n)) % &ek.n);
         }
 
         (challenge, CorrectInputProof { e, z }, y)
@@ -115,8 +107,7 @@ impl<I, S> ProveCorrectKey<I, EncryptionKey<I>, DecryptionKey<I>> for S
         let phi = (&dk.p - &I::one()) * (&dk.q - &I::one());
 
         let mut a : Vec<I> = Vec::new();
-        let mut i : usize = 0;
-        while i < ZK_SECURITY_FACTOR {
+        for i in 0..ZK_SECURITY_FACTOR {
             if I::egcd(&dk.n, &correct_input_proof.z[i]).0 != I::one() ||
                 I::egcd(&dk.n, &challenge[i]).0 != I::one() {
                 return Err(ProofError);
@@ -132,18 +123,14 @@ impl<I, S> ProveCorrectKey<I, EncryptionKey<I>, DecryptionKey<I>> for S
             if I::egcd(&dk.n, &correct_input_proof.z[i]).0 != I::one(){
                 return Err(ProofError);
             }
-
-            i += 1;
         }
 
         let mut a_x_hash = Sha256::new();
         a_x_hash.input_str(&I::to_hex_str(&dk.n));
 
-        let mut j : usize = 0;
-        while j < ZK_SECURITY_FACTOR {
-            a_x_hash.input_str(&I::to_hex_str(&challenge[j]));
-            a_x_hash.input_str(&I::to_hex_str(&a[j]));
-            j += 1;
+        for i in 0..ZK_SECURITY_FACTOR {
+            a_x_hash.input_str(&I::to_hex_str(&challenge[i]));
+            a_x_hash.input_str(&I::to_hex_str(&a[i]));
         }
 
         if &I::from_hex_str(&a_x_hash.result_str()) != &correct_input_proof.e {
@@ -156,20 +143,17 @@ impl<I, S> ProveCorrectKey<I, EncryptionKey<I>, DecryptionKey<I>> for S
 
         let mut y_tag_hash = Sha256::new();
 
-        let mut k : usize = 0;
-        while k < ZK_SECURITY_FACTOR {
-            let cp = &challenge[k] % &dk.p;
+        for i in 0..ZK_SECURITY_FACTOR {
+            let cp = &challenge[i] % &dk.p;
             let mp = I::modpow(&cp, &dp, &dk.p);
 
-            let cq = &challenge[k] % &dk.q;
+            let cq = &challenge[i] % &dk.q;
             let mq = I::modpow(&cq, &dq, &dk.q);
 
             let qinvp = I::modinv(&dk.q, &dk.p);
             let mtag = &mq + (&dk.q * I::modmul(&qinvp, &(&mp - &mq), &dk.p));
 
             y_tag_hash.input_str(&I::to_hex_str(&mtag));
-
-            k += 1;
         }
 
         Ok(CorrectKeyProof { proof: I::from_hex_str(&y_tag_hash.result_str()) })
