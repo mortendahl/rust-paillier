@@ -15,7 +15,7 @@ pub trait ModPow
 
 pub trait ModMul
 {
-    fn modmul(base: &Self, exponent: &Self, modulus: &Self) -> Self;
+    fn modmul(a: &Self, b: &Self, modulus: &Self) -> Self;
 }
 
 pub trait EGCD
