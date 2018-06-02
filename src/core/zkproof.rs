@@ -10,7 +10,7 @@ use std::error::Error;
 use std::fmt;
 use core::{ EncryptionKey, DecryptionKey };
 
-const ZK_SECURITY_FACTOR : usize = 40;
+const STATISTICAL_ERROR_FACTOR: usize = 40;
 
 #[derive(Debug)]
 pub struct ProofError;
@@ -67,7 +67,7 @@ impl<I, S> ProveCorrectKey<I, EncryptionKey<I>, DecryptionKey<I>> for S
     fn generate_challenge(ek: &EncryptionKey<I>) -> (Vec<I>, CorrectInputProof<I>, Vec<I>) {
         let (mut y, mut challenge) : (Vec<I>, Vec<I>) = (Vec::new(), Vec::new());
 
-        for i in 0..ZK_SECURITY_FACTOR {
+        for i in 0..STATISTICAL_ERROR_FACTOR {
             let candidate = I::sample_below(&ek.n);
 
             y.push(candidate);
@@ -79,7 +79,7 @@ impl<I, S> ProveCorrectKey<I, EncryptionKey<I>, DecryptionKey<I>> for S
         let mut a_x_hash = Sha256::new();
         a_x_hash.input_str(&I::to_hex_str(&ek.n));
 
-        for i in 0..ZK_SECURITY_FACTOR {
+        for i in 0..STATISTICAL_ERROR_FACTOR {
             let candidate = I::sample_below(&ek.n);
             if I::egcd(&ek.n, &candidate).0 != I::one() { continue; }
 
@@ -94,7 +94,7 @@ impl<I, S> ProveCorrectKey<I, EncryptionKey<I>, DecryptionKey<I>> for S
 
         let mut z : Vec<I> = Vec::new();
 
-        for i in 0..ZK_SECURITY_FACTOR {
+        for i in 0..STATISTICAL_ERROR_FACTOR {
             z.push(((&random[i] % &ek.n) * I::modpow(&y[i], &e, &ek.n)) % &ek.n);
         }
 
@@ -107,7 +107,7 @@ impl<I, S> ProveCorrectKey<I, EncryptionKey<I>, DecryptionKey<I>> for S
         let phi = (&dk.p - &I::one()) * (&dk.q - &I::one());
 
         let mut a : Vec<I> = Vec::new();
-        for i in 0..ZK_SECURITY_FACTOR {
+        for i in 0..STATISTICAL_ERROR_FACTOR {
             if I::egcd(&dk.n, &correct_input_proof.z[i]).0 != I::one() ||
                 I::egcd(&dk.n, &challenge[i]).0 != I::one() {
                 return Err(ProofError);
@@ -128,7 +128,7 @@ impl<I, S> ProveCorrectKey<I, EncryptionKey<I>, DecryptionKey<I>> for S
         let mut a_x_hash = Sha256::new();
         a_x_hash.input_str(&I::to_hex_str(&dk.n));
 
-        for i in 0..ZK_SECURITY_FACTOR {
+        for i in 0..STATISTICAL_ERROR_FACTOR {
             a_x_hash.input_str(&I::to_hex_str(&challenge[i]));
             a_x_hash.input_str(&I::to_hex_str(&a[i]));
         }
@@ -143,7 +143,7 @@ impl<I, S> ProveCorrectKey<I, EncryptionKey<I>, DecryptionKey<I>> for S
 
         let mut y_tag_hash = Sha256::new();
 
-        for i in 0..ZK_SECURITY_FACTOR {
+        for i in 0..STATISTICAL_ERROR_FACTOR {
             let cp = &challenge[i] % &dk.p;
             let mp = I::modpow(&cp, &dp, &dk.p);
 
@@ -163,7 +163,7 @@ impl<I, S> ProveCorrectKey<I, EncryptionKey<I>, DecryptionKey<I>> for S
         let mut y_hash = Sha256::new();
 
         let mut v : usize = 0;
-        while v < ZK_SECURITY_FACTOR {
+        while v < STATISTICAL_ERROR_FACTOR {
             y_hash.input_str(&I::to_hex_str(&y[v]));
             v += 1;
         }
@@ -196,20 +196,14 @@ mod tests {
 
     #[test]
     fn test_correct_zk_proof() {
-        let mut attempt : usize = 10;
+        let (ek, dk) = test_keypair().keys();
 
-        while attempt > 0 {
-            let (ek, dk) = test_keypair().keys();
+        let (challenge, correct_input_proof, y) = AbstractPaillier::generate_challenge(&ek);
+        let proof_results = AbstractPaillier::prove(&dk, &challenge, &correct_input_proof);
+        assert!(proof_results.is_ok());
 
-            let (challenge, correct_input_proof, y) = AbstractPaillier::generate_challenge(&ek);
-            let proof_results = AbstractPaillier::prove(&dk, &challenge, &correct_input_proof);
-            assert!(proof_results.is_ok());
-
-            let result = AbstractPaillier::verify(&proof_results.unwrap(), &y);
-            assert!(result.is_ok());
-
-            attempt -= 1;
-        }
+        let result = AbstractPaillier::verify(&proof_results.unwrap(), &y);
+        assert!(result.is_ok());
     }
 
     #[test]
