@@ -49,13 +49,10 @@ impl ModPow for Mpz {
 
 impl ModMul for Mpz {
     fn modmul(a: &Self, b: &Self, modulus: &Self) -> Self {
-        let base_mod_modulus = a.mod_floor(modulus);
-        let exponent_mod_modulus = b.mod_floor(modulus);
-        let mul_res = base_mod_modulus * exponent_mod_modulus;
-
-        mul_res.mod_floor(modulus)
+        (a.mod_floor(modulus) * b.mod_floor(modulus)).mod_floor(modulus)
     }
 }
+
 impl ModInv for Mpz {
     fn modinv(a: &Self, modulus: &Self) -> Self {
         a.invert(modulus).unwrap()
