@@ -3,8 +3,7 @@ use super::*;
 use num_traits::{Zero, One};
 use std::ops::{Sub, Mul, Rem};
 
-use crypto::sha2::Sha256;
-use crypto::digest::Digest;
+use ring::digest::{Context, SHA256};
 
 use std::error::Error;
 use std::fmt;
@@ -76,8 +75,8 @@ impl<I, S> ProveCorrectKey<I, EncryptionKey<I>, DecryptionKey<I>> for S
 
         let (mut random, mut a) : (Vec<I>, Vec<I>) = (Vec::new(), Vec::new());
 
-        let mut a_x_hash = Sha256::new();
-        a_x_hash.input_str(&I::to_hex_str(&ek.n));
+        let mut a_x_context = Context::new(&SHA256);
+        a_x_context.update(I::to_hex_str(&ek.n).as_bytes());
 
         for i in 0..STATISTICAL_ERROR_FACTOR {
             let candidate = I::sample_below(&ek.n);
@@ -86,11 +85,11 @@ impl<I, S> ProveCorrectKey<I, EncryptionKey<I>, DecryptionKey<I>> for S
             random.push(candidate);
             a.push(I::modpow(&random[i], &ek.n, &ek.n));
 
-            a_x_hash.input_str(&I::to_hex_str(&challenge[i]));
-            a_x_hash.input_str(&I::to_hex_str(&a[i]));
+            a_x_context.update(I::to_hex_str(&challenge[i]).as_bytes());
+            a_x_context.update(I::to_hex_str(&a[i]).as_bytes());
         }
 
-        let e : I = I::from_hex_str(&a_x_hash.result_str());
+        let e = I::get_from_digest(a_x_context.finish());
 
         let mut z : Vec<I> = Vec::new();
 
@@ -125,15 +124,15 @@ impl<I, S> ProveCorrectKey<I, EncryptionKey<I>, DecryptionKey<I>> for S
             }
         }
 
-        let mut a_x_hash = Sha256::new();
-        a_x_hash.input_str(&I::to_hex_str(&dk.n));
+        let mut a_x_context = Context::new(&SHA256);
+        a_x_context.update(I::to_hex_str(&dk.n).as_bytes());
 
         for i in 0..STATISTICAL_ERROR_FACTOR {
-            a_x_hash.input_str(&I::to_hex_str(&challenge[i]));
-            a_x_hash.input_str(&I::to_hex_str(&a[i]));
+            a_x_context.update(I::to_hex_str(&challenge[i]).as_bytes());
+            a_x_context.update(I::to_hex_str(&a[i]).as_bytes());
         }
 
-        if &I::from_hex_str(&a_x_hash.result_str()) != &correct_input_proof.e {
+        if &I::get_from_digest(a_x_context.finish()) != &correct_input_proof.e {
             return Err(ProofError);
         }
 
@@ -141,7 +140,7 @@ impl<I, S> ProveCorrectKey<I, EncryptionKey<I>, DecryptionKey<I>> for S
         let dp = &dn % &(&dk.p - &I::one());
         let dq = &dn % &(&dk.q - &I::one());
 
-        let mut y_tag_hash = Sha256::new();
+        let mut y_tag_context = Context::new(&SHA256);
 
         for i in 0..STATISTICAL_ERROR_FACTOR {
             let cp = &challenge[i] % &dk.p;
@@ -153,22 +152,21 @@ impl<I, S> ProveCorrectKey<I, EncryptionKey<I>, DecryptionKey<I>> for S
             let qinvp = I::modinv(&dk.q, &dk.p);
             let mtag = &mq + (&dk.q * I::modmul(&qinvp, &(&mp - &mq), &dk.p));
 
-            y_tag_hash.input_str(&I::to_hex_str(&mtag));
+            y_tag_context.update(I::to_hex_str(&mtag).as_bytes());
         }
 
-        Ok(CorrectKeyProof { proof: I::from_hex_str(&y_tag_hash.result_str()) })
+        Ok(CorrectKeyProof { proof: I::get_from_digest(y_tag_context.finish()) })
     }
 
     fn verify(correct_key_proof: &CorrectKeyProof<I>, y: &Vec<I>) -> Result<(), ProofError> {
-        let mut y_hash = Sha256::new();
+        let mut y_context = Context::new(&SHA256);
 
-        let mut v : usize = 0;
-        while v < STATISTICAL_ERROR_FACTOR {
-            y_hash.input_str(&I::to_hex_str(&y[v]));
-            v += 1;
+
+        for i in 0..STATISTICAL_ERROR_FACTOR {
+            y_context.update(I::to_hex_str(&y[i]).as_bytes());
         }
 
-        if &I::from_hex_str(&y_hash.result_str()) != &correct_key_proof.proof {
+        if &I::get_from_digest(y_context.finish()) != &correct_key_proof.proof {
             Err(ProofError)
         } else {
             Ok(())

@@ -5,6 +5,8 @@ extern crate gmp;
 use super::traits::*;
 use self::gmp::mpz::Mpz;
 use rand::{OsRng, Rng};
+use ring::digest::Digest;
+use data_encoding::HEXLOWER;
 
 impl Samplable for Mpz {
 
@@ -72,6 +74,10 @@ impl ToString for Mpz {
 
 impl FromString<Mpz> for Mpz {
     fn from_hex_str(a: &str) -> Mpz { Mpz::from_str_radix(a, 16).unwrap() }
+
+    fn get_from_digest(digest: Digest) -> Mpz {
+        Mpz::from_hex_str(HEXLOWER.encode(digest.as_ref()).as_str())
+    }
 }
 
 impl ConvertFrom<Mpz> for u64 {
