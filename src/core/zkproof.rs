@@ -112,6 +112,7 @@ impl<I, S> ProveCorrectKey<I, EncryptionKey<I>, DecryptionKey<I>> for S
             .collect();
 
         // Compute non-interactive proof of knowledge of the n-roots in the above
+        // TODO[Morten] introduce new proof type for this that can be used independently?
 
         let r: Vec<_> = (0..STATISTICAL_ERROR_FACTOR)
             .map(|_| I::sample_below(&ek.n))
@@ -140,8 +141,6 @@ impl<I, S> ProveCorrectKey<I, EncryptionKey<I>, DecryptionKey<I>> for S
 
     fn prove(dk: &DecryptionKey<I>, challenge: &Challenge<I>) -> Result<CorrectKeyProof<I>, ProofError>
     {
-        let phi = (&dk.p - &I::one()) * (&dk.q - &I::one());
-
         // check x co-prime with n
         if challenge.x.iter().any(|xi| I::egcd(&dk.n, xi).0 != I::one()) {
             return Err(ProofError)
@@ -153,13 +152,13 @@ impl<I, S> ProveCorrectKey<I, EncryptionKey<I>, DecryptionKey<I>> for S
         }
 
         // reconstruct a
-        let a: Vec<_> = challenge.z.iter()
-            .zip(challenge.x.iter())
+        let phi = (&dk.p - &I::one()) * (&dk.q - &I::one());
+        let phimine = &phi - &(&challenge.e % &phi);
+        let a: Vec<_> = challenge.z.iter().zip(challenge.x.iter())
             .map(|(zi, xi)| {
                 let zn = I::modpow(zi, &dk.n, &dk.n);
-                let cphi = I::modpow(xi, &phi, &dk.n);
-                let cminphi = I::modinv(&I::modpow(xi, &challenge.e, &dk.n), &dk.n);
-                (zn * cphi * cminphi) % &dk.n
+                let xphi = I::modpow(xi, &phimine, &dk.n);
+                (zn * xphi) % &dk.n
             })
             .collect();
 
@@ -169,35 +168,42 @@ impl<I, S> ProveCorrectKey<I, EncryptionKey<I>, DecryptionKey<I>> for S
         }
 
         // check that e was computed correctly
-        if challenge.e != compute_digest(
+        let e = compute_digest(
             iter::once(&dk.n)
                 .chain(&challenge.x)
                 .chain(&a)
-        ) {
+        );
+        if challenge.e != e {
             return Err(ProofError)
         }
 
+        // compute proof in the form of a hash of the recovered roots
+
+        // TODO[Morten]
+        // some of these are already stored in the key
         let dn = I::modinv(&dk.n, &phi);
         let dp = &dn % &(&dk.p - &I::one());
         let dq = &dn % &(&dk.q - &I::one());
         let qinvp = I::modinv(&dk.q, &dk.p);
 
-        // compute proof in the form of a hash of the recovered roots
+        // TODO[Morten]
+        // move to public method for etracting randomness
+
         // TODO[Morten]
         // there should be no need to `collect` first, simply
         // pass iterator directly to `compute_digest`; need to
         // convert that iterator into one that returns references
         // first though
+
         let foo: Vec<_> = challenge.x.iter()
             .map(|xi| {
-                let cp = xi % &dk.p;
-                let mp = I::modpow(&cp, &dp, &dk.p);
+                let xp = xi % &dk.p;
+                let mp = I::modpow(&xp, &dp, &dk.p);
 
-                let cq = xi % &dk.q;
-                let mq = I::modpow(&cq, &dq, &dk.q);
+                let xq = xi % &dk.q;
+                let mq = I::modpow(&xq, &dq, &dk.q);
 
                 let yi = &mq + (&dk.q * I::modmul(&qinvp, &(&mp - &mq), &dk.p));
-
                 yi
             })
             .collect();
@@ -207,8 +213,8 @@ impl<I, S> ProveCorrectKey<I, EncryptionKey<I>, DecryptionKey<I>> for S
     }
 
     fn verify(proof: &CorrectKeyProof<I>, va: &VerificationAid<I>) -> Result<(), ProofError> {
-        let ref expected_y_digest = va.y_digest;
-        let ref actual_y_digest = proof.y_digest;
+        let expected_y_digest = &va.y_digest;
+        let actual_y_digest = &proof.y_digest;
 
         if actual_y_digest == expected_y_digest {
             Ok(())
