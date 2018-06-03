@@ -4,6 +4,8 @@
 extern crate test;
 extern crate rand;
 extern crate num_traits;
+extern crate ring;
+extern crate data_encoding;
 
 #[macro_use]
 mod macros;
@@ -15,10 +17,7 @@ pub mod coding;
 
 pub use traits::*;
 pub use coding::*;
-pub use core::Keypair;
-pub use core::standard::EncryptionKey;
-pub use core::crt::DecryptionKey;
-
+pub use core::*;
 
 /// Parameterised type onto which all operations are added (see `Paillier`).
 pub struct AbstractPaillier<I> {

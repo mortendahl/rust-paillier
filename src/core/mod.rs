@@ -7,6 +7,27 @@ use std::ops::{Add, Sub, Mul, Div, Rem};
 use num_traits::{One};
 use arithimpl::traits::*;
 
+/// Encryption key that may be shared publicly.
+#[derive(Debug,Clone)]
+pub struct EncryptionKey<I> {
+    pub n: I,  // the modulus
+    nn: I, // the modulus squared
+}
+
+/// Decryption key that should be kept private.
+#[derive(Debug,Clone)]
+pub struct DecryptionKey<I> {
+    p: I,  // first prime
+    q: I,  // second prime
+    n: I,  // the modulus (also in public key)
+    pp: I,
+    pminusone: I,
+    qq: I,
+    qminusone: I,
+    pinvq: I,
+    hp: I,
+    hq: I,
+}
 
 /// Representation of a keypair from which encryption and decryption keys can be derived.
 pub struct Keypair<I> {
@@ -56,15 +77,15 @@ where // TODO clean up bounds
     for<'a>        I: Rem<&'a I, Output=I>,
     for<'a,'b> &'a I: Rem<&'b I, Output=I>,
  {
-    type EK = standard::EncryptionKey<I>;
-    type DK = crt::DecryptionKey<I>;
+    type EK = EncryptionKey<I>;
+    type DK = DecryptionKey<I>;
 
     fn encryption_key(&self) -> Self::EK {
-        standard::EncryptionKey::from(self)
+        EncryptionKey::from(self)
     }
 
     fn decryption_key(&self) -> Self::DK {
-        crt::DecryptionKey::from(self)
+        DecryptionKey::from(self)
     }
 }
 
@@ -124,6 +145,7 @@ where
 pub mod generic;
 pub mod standard;
 pub mod crt;
+pub mod zkproof;
 
 #[cfg(feature="keygen")]
 pub mod keygen;
@@ -191,7 +213,7 @@ mod tests {
     #[cfg(feature="keygen")]
     #[test]
     fn test_correct_keygen() {
-        let (ek, dk): (standard::EncryptionKey<I>, _) = AbstractPaillier::keypair_with_modulus_size(2048).keys();
+        let (ek, dk): (EncryptionKey<I>, _) = AbstractPaillier::keypair_with_modulus_size(2048).keys();
 
         let m = Plaintext::from(10);
         let c = AbstractPaillier::encrypt(&ek, &m);

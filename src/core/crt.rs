@@ -2,26 +2,9 @@
 //! Faster decryption using the Chinese Remainder Theorem.
 
 use super::*;
-
-
-/// Decryption key that should be kept private.
-#[derive(Debug,Clone)]
-pub struct DecryptionKey<I> {
-    p: I,  // first prime
-    q: I,  // second prime
-    n: I,  // the modulus (also in public key)
-    pp: I,
-    pminusone: I,
-    qq: I,
-    qminusone: I,
-    pinvq: I,
-    hp: I,
-    hq: I,
-}
-
+use core::DecryptionKey;
 
 impl<I> ::traits::DecryptionKey for DecryptionKey<I> {}
-
 
 impl<'kp, I> From<&'kp Keypair<I>> for DecryptionKey<I>
 where
@@ -80,6 +63,7 @@ where
         let cp = I::modpow(&c.0, &dk.pminusone, &dk.pp);
         let lp = l(&cp, &dk.p);
         let mp = (&lp * &dk.hp) % &dk.p;
+
         // process using q
         let cq = I::modpow(&c.0, &dk.qminusone, &dk.qq);
         let lq = l(&cq, &dk.q);
@@ -88,7 +72,6 @@ where
         Plaintext(crt(&mp, &mq, &dk))
     }
 }
-
 
 fn h<I>(p: &I, pp: &I, n: &I) -> I
 where

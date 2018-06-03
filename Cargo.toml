@@ -38,10 +38,12 @@ defaultgmp = []
 [dependencies]
 rand = "0.3"
 num-traits = "0.1"
+ring = "0.12.1"
 ramp = { version="0.3", optional=true }
 framp = { version="0.3", optional=true }
 num = { version="0.1", optional=true }
 rust-gmp = { version="0.4", optional=true }
+data-encoding = "2.1.1"
 
 [dev-dependencies]
 bencher = "0.1"

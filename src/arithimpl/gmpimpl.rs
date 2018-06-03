@@ -5,6 +5,8 @@ extern crate gmp;
 use super::traits::*;
 use self::gmp::mpz::Mpz;
 use rand::{OsRng, Rng};
+use ring::digest::Digest;
+use data_encoding::HEXLOWER;
 
 impl Samplable for Mpz {
 
@@ -45,6 +47,12 @@ impl ModPow for Mpz {
     }
 }
 
+impl ModMul for Mpz {
+    fn modmul(a: &Self, b: &Self, modulus: &Self) -> Self {
+        (a.mod_floor(modulus) * b.mod_floor(modulus)).mod_floor(modulus)
+    }
+}
+
 impl ModInv for Mpz {
     fn modinv(a: &Self, modulus: &Self) -> Self {
         a.invert(modulus).unwrap()
@@ -54,6 +62,18 @@ impl ModInv for Mpz {
 impl EGCD for Mpz {
     fn egcd(a: &Self, b: &Self) -> (Self, Self, Self) {
         a.gcdext(b)
+    }
+}
+
+impl ToString for Mpz {
+    fn to_hex_str(a: &Self) -> String { a.to_str_radix(16) }
+}
+
+impl FromString<Mpz> for Mpz {
+    fn from_hex_str(a: &str) -> Mpz { Mpz::from_str_radix(a, 16).unwrap() }
+
+    fn get_from_digest(digest: Digest) -> Mpz {
+        Mpz::from_hex_str(HEXLOWER.encode(digest.as_ref()).as_str())
     }
 }
 
