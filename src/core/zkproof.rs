@@ -2,6 +2,7 @@ use super::*;
 
 use num_traits::{Zero, One};
 use std::ops::{Sub, Mul, Rem};
+use std::iter;
 
 use ring::digest::{Context, SHA256};
 
@@ -26,20 +27,51 @@ impl Error for ProofError {
     }
 }
 
-pub struct CorrectInputProof<I> {
-    pub e : I,
-    pub z : Vec<I>,
+pub struct Challenge<I> {
+    x: Vec<I>,
+    e: I,
+    z: Vec<I>,
+}
+
+pub struct VerificationAid<I> {
+    y_digest: I
 }
 
 pub struct CorrectKeyProof<I> {
-    pub proof : I,
+    y_digest : I
 }
 
+/// Zero-knowledge proof of co-primality between the encryption modulus and its order.
+///
+/// The sub-protocol for proving knowledge of challenge plaintexts is made non-interactive
+/// using the [Fiat-Shamir heuristic](https://en.wikipedia.org/wiki/Fiat%E2%80%93Shamir_heuristic).
+///
+/// References:
+/// - section 3.1 in [Lindell'17](https://eprint.iacr.org/2017/552)
+/// - section 3.3 in [HMRTN'12](https://eprint.iacr.org/2011/494)
+/// - section 4.2 in [DJ'01](http://www.brics.dk/RS/00/45/BRICS-RS-00-45.pdf)
 pub trait ProveCorrectKey<I, EK, DK> {
-    fn generate_challenge(ek: &EK) -> (Vec<I>, CorrectInputProof<I>, Vec<I>);
-    fn prove(dk: &DK, challenge: &Vec<I>, correct_input_proof: &CorrectInputProof<I>)
-        -> Result<CorrectKeyProof<I>, ProofError>;
-    fn verify(correct_key_proof: &CorrectKeyProof<I>, y: &Vec<I>) -> Result<(), ProofError>;
+    /// Generate challenge for given encryption key.
+    fn challenge(ek: &EK) -> (Challenge<I>, VerificationAid<I>);
+
+    /// Generate proof given decryption key.
+    fn prove(dk: &DK, challenge: &Challenge<I>) -> Result<CorrectKeyProof<I>, ProofError>;
+
+    /// Verify proof.
+    fn verify(proof: &CorrectKeyProof<I>, aid: &VerificationAid<I>) -> Result<(), ProofError>;
+}
+
+fn compute_digest<'i, IT, I: 'i>(values: IT) -> I
+where
+    IT: Iterator<Item=&'i I>,
+    I: ToString + FromString<I>,
+{
+    // TODO[Morten] use https://github.com/fizyk20/rust-gmp/pull/4/files instead of convertion to hex?
+    let mut digest = Context::new(&SHA256);
+    for value in values {
+        digest.update(ToString::to_hex_str(value).as_bytes());
+    }
+    I::get_from_digest(digest.finish())
 }
 
 impl<I, S> ProveCorrectKey<I, EncryptionKey<I>, DecryptionKey<I>> for S
@@ -63,113 +95,125 @@ impl<I, S> ProveCorrectKey<I, EncryptionKey<I>, DecryptionKey<I>> for S
         for<'a,'b> &'a I: Rem<&'b I, Output=I>,
         for<'a>    &'a I: Mul<I, Output=I>,
 {
-    fn generate_challenge(ek: &EncryptionKey<I>) -> (Vec<I>, CorrectInputProof<I>, Vec<I>) {
-        let (mut y, mut challenge) : (Vec<I>, Vec<I>) = (Vec::new(), Vec::new());
+    fn challenge(ek: &EncryptionKey<I>) -> (Challenge<I>, VerificationAid<I>) {
 
-        for i in 0..STATISTICAL_ERROR_FACTOR {
-            let candidate = I::sample_below(&ek.n);
+        // TODO[Morten] 
+        // most of these could probably be run in parallel with Rayon
+        // after simplification (using `into_par_iter` in some cases)
 
-            y.push(candidate);
-            challenge.push(I::modpow(&y[i], &ek.n, &ek.n));
-        }
+        // Compute challenges in the form of n-powers
 
-        let (mut random, mut a) : (Vec<I>, Vec<I>) = (Vec::new(), Vec::new());
+        let y: Vec<_> = (0..STATISTICAL_ERROR_FACTOR)
+            .map(|_| I::sample_below(&ek.n))
+            .collect();
 
-        let mut a_x_context = Context::new(&SHA256);
-        a_x_context.update(I::to_hex_str(&ek.n).as_bytes());
+        let x: Vec<_> = y.iter()
+            .map(|yi| I::modpow(yi, &ek.n, &ek.n))
+            .collect();
 
-        for i in 0..STATISTICAL_ERROR_FACTOR {
-            let candidate = I::sample_below(&ek.n);
-            if I::egcd(&ek.n, &candidate).0 != I::one() { continue; }
+        // Compute non-interactive proof of knowledge of the n-roots in the above
 
-            random.push(candidate);
-            a.push(I::modpow(&random[i], &ek.n, &ek.n));
+        let r: Vec<_> = (0..STATISTICAL_ERROR_FACTOR)
+            .map(|_| I::sample_below(&ek.n))
+            .collect();
 
-            a_x_context.update(I::to_hex_str(&challenge[i]).as_bytes());
-            a_x_context.update(I::to_hex_str(&a[i]).as_bytes());
-        }
+        let a : Vec<_> = r.iter()
+            .map(|ri| I::modpow(ri, &ek.n, &ek.n))
+            .collect();
 
-        let e = I::get_from_digest(a_x_context.finish());
+        let e = compute_digest(
+            iter::once(&ek.n)
+                .chain(&x)
+                .chain(&a)
+        );
 
-        let mut z : Vec<I> = Vec::new();
+        let z: Vec<_> = r.iter()
+            .zip(y.iter())
+            .map(|(ri, yi)| (ri * I::modpow(yi, &e, &ek.n)) % &ek.n)
+            .collect();
 
-        for i in 0..STATISTICAL_ERROR_FACTOR {
-            z.push(((&random[i] % &ek.n) * I::modpow(&y[i], &e, &ek.n)) % &ek.n);
-        }
+        // Compute expected result for equality test in verification
+        let y_digest: I = compute_digest(y.iter());
 
-        (challenge, CorrectInputProof { e, z }, y)
+        (Challenge { x, e, z }, VerificationAid { y_digest })
     }
 
-    fn prove(dk: &DecryptionKey<I>, challenge: &Vec<I>, correct_input_proof: &CorrectInputProof<I>)
-        -> Result<CorrectKeyProof<I>, ProofError>
+    fn prove(dk: &DecryptionKey<I>, challenge: &Challenge<I>) -> Result<CorrectKeyProof<I>, ProofError>
     {
         let phi = (&dk.p - &I::one()) * (&dk.q - &I::one());
 
-        let mut a : Vec<I> = Vec::new();
-        for i in 0..STATISTICAL_ERROR_FACTOR {
-            if I::egcd(&dk.n, &correct_input_proof.z[i]).0 != I::one() ||
-                I::egcd(&dk.n, &challenge[i]).0 != I::one() {
-                return Err(ProofError);
-            }
-
-            let zn = I::modpow(&correct_input_proof.z[i], &dk.n, &dk.n);
-            let cphi = I::modpow(&challenge[i], &phi, &dk.n);
-            let cminphi = I::modinv(
-                &I::modpow(&challenge[i], &correct_input_proof.e, &dk.n), &dk.n);
-
-            a.push((zn * cphi * cminphi) %& dk.n);
-
-            if I::egcd(&dk.n, &correct_input_proof.z[i]).0 != I::one(){
-                return Err(ProofError);
-            }
+        // check x co-prime with n
+        if challenge.x.iter().any(|xi| I::egcd(&dk.n, xi).0 != I::one()) {
+            return Err(ProofError)
         }
 
-        let mut a_x_context = Context::new(&SHA256);
-        a_x_context.update(I::to_hex_str(&dk.n).as_bytes());
-
-        for i in 0..STATISTICAL_ERROR_FACTOR {
-            a_x_context.update(I::to_hex_str(&challenge[i]).as_bytes());
-            a_x_context.update(I::to_hex_str(&a[i]).as_bytes());
+        // check z co-prime with n
+        if challenge.z.iter().any(|zi| I::egcd(&dk.n, zi).0 != I::one()) {
+            return Err(ProofError)
         }
 
-        if &I::get_from_digest(a_x_context.finish()) != &correct_input_proof.e {
-            return Err(ProofError);
+        // reconstruct a
+        let a: Vec<_> = challenge.z.iter()
+            .zip(challenge.x.iter())
+            .map(|(zi, xi)| {
+                let zn = I::modpow(zi, &dk.n, &dk.n);
+                let cphi = I::modpow(xi, &phi, &dk.n);
+                let cminphi = I::modinv(&I::modpow(xi, &challenge.e, &dk.n), &dk.n);
+                (zn * cphi * cminphi) % &dk.n
+            })
+            .collect();
+
+        // check a co-prime with n
+        if a.iter().any(|ai| I::egcd(&dk.n, ai).0 != I::one()) {
+            return Err(ProofError)
+        }
+
+        // check that e was computed correctly
+        if challenge.e != compute_digest(
+            iter::once(&dk.n)
+                .chain(&challenge.x)
+                .chain(&a)
+        ) {
+            return Err(ProofError)
         }
 
         let dn = I::modinv(&dk.n, &phi);
         let dp = &dn % &(&dk.p - &I::one());
         let dq = &dn % &(&dk.q - &I::one());
+        let qinvp = I::modinv(&dk.q, &dk.p);
 
-        let mut y_tag_context = Context::new(&SHA256);
+        // compute proof in the form of a hash of the recovered roots
+        // TODO[Morten]
+        // there should be no need to `collect` first, simply
+        // pass iterator directly to `compute_digest`; need to
+        // convert that iterator into one that returns references
+        // first though
+        let foo: Vec<_> = challenge.x.iter()
+            .map(|xi| {
+                let cp = xi % &dk.p;
+                let mp = I::modpow(&cp, &dp, &dk.p);
 
-        for i in 0..STATISTICAL_ERROR_FACTOR {
-            let cp = &challenge[i] % &dk.p;
-            let mp = I::modpow(&cp, &dp, &dk.p);
+                let cq = xi % &dk.q;
+                let mq = I::modpow(&cq, &dq, &dk.q);
 
-            let cq = &challenge[i] % &dk.q;
-            let mq = I::modpow(&cq, &dq, &dk.q);
+                let yi = &mq + (&dk.q * I::modmul(&qinvp, &(&mp - &mq), &dk.p));
 
-            let qinvp = I::modinv(&dk.q, &dk.p);
-            let mtag = &mq + (&dk.q * I::modmul(&qinvp, &(&mp - &mq), &dk.p));
+                yi
+            })
+            .collect();
+        let y_digest: I = compute_digest(foo.iter());
 
-            y_tag_context.update(I::to_hex_str(&mtag).as_bytes());
-        }
-
-        Ok(CorrectKeyProof { proof: I::get_from_digest(y_tag_context.finish()) })
+        Ok(CorrectKeyProof { y_digest })
     }
 
-    fn verify(correct_key_proof: &CorrectKeyProof<I>, y: &Vec<I>) -> Result<(), ProofError> {
-        let mut y_context = Context::new(&SHA256);
+    fn verify(proof: &CorrectKeyProof<I>, va: &VerificationAid<I>) -> Result<(), ProofError> {
+        let ref expected_y_digest = va.y_digest;
+        let ref actual_y_digest = proof.y_digest;
 
-
-        for i in 0..STATISTICAL_ERROR_FACTOR {
-            y_context.update(I::to_hex_str(&y[i]).as_bytes());
-        }
-
-        if &I::get_from_digest(y_context.finish()) != &correct_key_proof.proof {
-            Err(ProofError)
-        } else {
+        if actual_y_digest == expected_y_digest {
             Ok(())
+        } else {
+            Err(ProofError)
         }
     }
 }
@@ -196,11 +240,11 @@ mod tests {
     fn test_correct_zk_proof() {
         let (ek, dk) = test_keypair().keys();
 
-        let (challenge, correct_input_proof, y) = AbstractPaillier::generate_challenge(&ek);
-        let proof_results = AbstractPaillier::prove(&dk, &challenge, &correct_input_proof);
+        let (challenge, verification_aid) = AbstractPaillier::challenge(&ek);
+        let proof_results = AbstractPaillier::prove(&dk, &challenge);
         assert!(proof_results.is_ok());
 
-        let result = AbstractPaillier::verify(&proof_results.unwrap(), &y);
+        let result = AbstractPaillier::verify(&proof_results.unwrap(), &verification_aid);
         assert!(result.is_ok());
     }
 
@@ -208,22 +252,24 @@ mod tests {
     fn test_incorrect_zk_proof() {
         let (ek, dk) = test_keypair().keys();
 
-        let (_challenge, correct_input_proof, y) = AbstractPaillier::generate_challenge(&ek);
-        let proof_results = AbstractPaillier::prove(&dk, &y, &correct_input_proof);
+        let (mut challenge, _verification_aid) = AbstractPaillier::challenge(&ek);
+        challenge.e += 1;
+        let proof_results = AbstractPaillier::prove(&dk, &challenge);
 
-        assert!(proof_results.is_err()); // ERROR expected because of the use of y instead of challenge
+        assert!(proof_results.is_err()); // ERROR expected because of manipulated challenge
     }
 
     #[test]
     fn test_incorrect_zk_proof_2() {
         let (ek, dk) = test_keypair().keys();
 
-        let (challenge, correct_input_proof, _y) = AbstractPaillier::generate_challenge(&ek);
-        let proof_results = AbstractPaillier::prove(&dk, &challenge, &correct_input_proof);
+        let (challenge, mut verification_aid) = AbstractPaillier::challenge(&ek);
+        let proof_results = AbstractPaillier::prove(&dk, &challenge);
         assert!(proof_results.is_ok());
 
-        let result = AbstractPaillier::verify(&proof_results.unwrap(), &challenge);
-        assert!(result.is_err()); // ERROR expected becasue use of challenge instead of y
+        verification_aid.y_digest += 1;
+        let result = AbstractPaillier::verify(&proof_results.unwrap(), &verification_aid);
+        assert!(result.is_err()); // ERROR expected because of manipulated aid
     }
 
 });
