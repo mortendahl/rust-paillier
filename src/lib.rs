@@ -13,12 +13,14 @@ pub mod core;
 pub mod coding;
 #[cfg(feature="keygen")]
 pub mod keygen;
+pub mod proof;
 
 pub use traits::*;
 pub use coding::*;
-pub use core::{Keypair, EncryptionKey, DecryptionKey, RawPlaintext, RawCiphertext};
+pub use core::{Keypair, RawPlaintext, RawCiphertext};
 #[cfg(feature="keygen")]
 pub use keygen::*;
+pub use proof::*;
 
 
 /// Parameterised type onto which all operations are added (see `Paillier`).
@@ -101,3 +103,26 @@ mod numinstance
 }
 #[cfg(feature="inclnum")]
 pub use self::numinstance::*;
+
+
+/// Encryption key that may be shared publicly.
+#[derive(Debug,Clone)]
+pub struct EncryptionKey {
+    pub n: BigInteger,  // the modulus
+    nn: BigInteger, // the modulus squared
+}
+
+/// Decryption key that should be kept private.
+#[derive(Debug,Clone)]
+pub struct DecryptionKey {
+    p: BigInteger,  // first prime
+    q: BigInteger,  // second prime
+    n: BigInteger,  // the modulus (also in public key)
+    pp: BigInteger,
+    pminusone: BigInteger,
+    qq: BigInteger,
+    qminusone: BigInteger,
+    pinvq: BigInteger,
+    hp: BigInteger,
+    hq: BigInteger,
+}

@@ -6,7 +6,7 @@ use ::traits::*;
 use ::arithimpl::traits::*;
 use ::BigInteger as BigInt;
 use ::Paillier as Paillier;
-
+use ::{EncryptionKey, DecryptionKey};
 
 /// Representation of a keypair from which encryption and decryption keys can be derived.
 pub struct Keypair {
@@ -43,28 +43,6 @@ pub struct RawPlaintext(pub BigInt);
 /// Representation of encrypted message.
 #[derive(Clone,Debug,PartialEq)]
 pub struct RawCiphertext(pub BigInt);
-
-/// Encryption key that may be shared publicly.
-#[derive(Debug,Clone)]
-pub struct EncryptionKey {
-    pub n: BigInt,  // the modulus
-    nn: BigInt, // the modulus squared
-}
-
-/// Decryption key that should be kept private.
-#[derive(Debug,Clone)]
-pub struct DecryptionKey {
-    p: BigInt,  // first prime
-    q: BigInt,  // second prime
-    n: BigInt,  // the modulus (also in public key)
-    pp: BigInt,
-    pminusone: BigInt,
-    qq: BigInt,
-    qminusone: BigInt,
-    pinvq: BigInt,
-    hp: BigInt,
-    hq: BigInt,
-}
 
 fn h(p: &BigInt, pp: &BigInt, n: &BigInt) -> BigInt {
     // here we assume:
