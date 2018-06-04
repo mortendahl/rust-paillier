@@ -13,6 +13,7 @@ pub mod core;
 pub mod coding;
 #[cfg(feature="keygen")]
 pub mod keygen;
+#[cfg(feature="proofs")]
 pub mod proof;
 
 pub use traits::*;
@@ -20,6 +21,7 @@ pub use coding::*;
 pub use core::{Keypair, RawPlaintext, RawCiphertext};
 #[cfg(feature="keygen")]
 pub use keygen::*;
+#[cfg(feature="proofs")]
 pub use proof::*;
 
 

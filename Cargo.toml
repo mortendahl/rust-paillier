@@ -24,8 +24,9 @@ categories = ["cryptography"]
 #travis-ci = { repository = "mortendahl/rust-paillier" }
 
 [features]
-default = ["inclgmp", "defaultgmp", "keygen"]
+default = ["inclgmp", "defaultgmp", "keygen", "proofs"]
 keygen = []
+proofs = []
 inclramp = ["ramp"]
 inclframp = ["framp"]
 inclnum = ["num"]
