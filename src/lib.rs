@@ -4,6 +4,8 @@
 extern crate test;
 extern crate rand;
 extern crate num_traits;
+extern crate ring;
+extern crate data_encoding;
 
 pub mod arithimpl;
 pub mod traits;
