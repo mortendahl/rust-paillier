@@ -35,12 +35,6 @@ pub trait DefaultKeys {
     }
 }
 
-/// Marker trait for encryption keys.
-// pub trait EncryptionKey {}
-
-/// Marker trait for decryption keys.
-// pub trait DecryptionKey {}
-
 /// Encryption of plaintext.
 pub trait Encrypt<EK, PT, CT> {
     /// Encrypt plaintext `m` under key `ek` into a ciphertext.
@@ -72,40 +66,4 @@ pub trait Rerandomize<EK, CT1, CT> {
     /// Rerandomise ciphertext `c` to hide any history of which homomorphic operations were
     /// used to compute it, making it look exactly like a fresh encryption of the same plaintext.
     fn rerandomise(ek: &EK, c: CT1) -> CT;
-}
-
-/// Marker trait to avoid conflicting implementations.
-// Future support for negative traits could void this.
-pub trait EncodableType {}
-// Heuristics for what constitutes an encodable type:
-// impl<T: Into<u64>> EncodableType for T {}
-impl<T: Into<u64>> EncodableType for Vec<T> {}
-// impl EncodableType for usize {}
-// impl EncodableType for u8 {}
-// impl EncodableType for u16 {}
-// impl EncodableType for u32 {}
-impl EncodableType for u64 {}
-
-/// Encoding into plaintexts.
-pub trait Encoder<T>
-{
-    type Target;
-
-    /// Encode `T` types into `Target` types.
-    fn encode(&self, x: &T) -> Self::Target;
-}
-
-/// Decoding from plaintexts.
-pub trait Decoder<T>
-{
-    type Source;
-
-    /// Decode `Source` types into `T` types.
-    fn decode(&self, y: &Self::Source) -> T;
-}
-
-pub trait Encode<T>
-{
-    type Target;
-    fn encode(x: T) -> Self::Target;
 }

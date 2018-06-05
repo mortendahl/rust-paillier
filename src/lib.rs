@@ -109,14 +109,14 @@ mod numinstance
 pub use self::numinstance::*;
 
 
-/// Encryption key that may be shared publicly.
+/// Public encryption key.
 #[derive(Debug,Clone)]
 pub struct EncryptionKey {
-    pub n: BigInteger,  // the modulus
+    n: BigInteger,  // the modulus
     nn: BigInteger, // the modulus squared
 }
 
-/// Decryption key that should be kept private.
+/// Private decryption key.
 #[derive(Debug,Clone)]
 pub struct DecryptionKey {
     p: BigInteger,  // first prime
