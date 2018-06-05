@@ -133,8 +133,8 @@ impl ProveCorrectKey<EncryptionKey, DecryptionKey> for Paillier
         }
 
         // reconstruct a
-        let phi = (&dk.p - &BigInt::one()) * (&dk.q - &BigInt::one());
-        let phimine = &phi - &(&challenge.e % &phi);
+        let phi = (&dk.p - BigInt::one()) * (&dk.q - BigInt::one());
+        let phimine = &phi - (&challenge.e % &phi);
         let a: Vec<_> = challenge.z.iter().zip(challenge.x.iter())
             .map(|(zi, xi)| {
                 let zn = BigInt::modpow(zi, &dk.n, &dk.n);
@@ -163,8 +163,8 @@ impl ProveCorrectKey<EncryptionKey, DecryptionKey> for Paillier
         // TODO[Morten]
         // some of these are already stored in the key
         let dn = BigInt::modinv(&dk.n, &phi);
-        let dp = &dn % &(&dk.p - &BigInt::one());
-        let dq = &dn % &(&dk.q - &BigInt::one());
+        let dp = &dn % &(&dk.p - 1);
+        let dq = &dn % &(&dk.q - 1);
         let qinvp = BigInt::modinv(&dk.q, &dk.p);
 
         // TODO[Morten]
