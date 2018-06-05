@@ -78,6 +78,9 @@ impl ProveCorrectKey<EncryptionKey, DecryptionKey> for Paillier
 {
     fn challenge(ek: &EncryptionKey) -> (Challenge, VerificationAid) {
 
+        // FIXME[Morten]
+        // settle the question of whether using n instead of n^2 is okay
+
         // TODO[Morten] 
         // most of these could probably be run in parallel with Rayon
         // after simplification (using `into_par_iter` in some cases)

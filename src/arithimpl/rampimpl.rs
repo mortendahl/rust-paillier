@@ -1,4 +1,4 @@
-#![cfg(feature="inclramp")]
+#![cfg(feature="useramp")]
 
 extern crate ramp;
 use rand::{OsRng};

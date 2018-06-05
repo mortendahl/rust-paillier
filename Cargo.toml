@@ -24,17 +24,13 @@ categories = ["cryptography"]
 #travis-ci = { repository = "mortendahl/rust-paillier" }
 
 [features]
-default = ["inclgmp", "defaultgmp", "keygen", "proofs"]
+default = ["usegmp", "keygen", "proofs"]
 keygen = []
 proofs = ["ring", "data-encoding"]
-inclramp = ["ramp"]
-inclframp = ["framp"]
-inclnum = ["num"]
-inclgmp = ["rust-gmp"]
-defaultramp = []
-defaultframp = []
-defaultnum = []
-defaultgmp = []
+useramp = ["ramp"]
+useframp = ["framp"]
+usenum = ["num"]
+usegmp = ["rust-gmp"]
 
 [dependencies]
 rand = "0.3"
