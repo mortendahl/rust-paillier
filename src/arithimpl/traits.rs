@@ -1,6 +1,4 @@
-
 use std::marker::Sized;
-use ring::digest::Digest;
 
 pub trait NumberTests {
     fn is_zero(&Self) -> bool;
@@ -42,15 +40,6 @@ pub trait BitManipulation {
 
 pub trait ConvertFrom<T> {
     fn _from(&T) -> Self;
-}
-
-pub trait ToString {
-    fn to_hex_str(a: &Self) -> String;
-}
-
-pub trait FromString<I> {
-    fn from_hex_str(a: &str) -> I;
-    fn get_from_digest(digest: Digest) -> I;
 }
 
 use std::ops::{Add, Sub, Mul, Div, Rem, Shr, Neg};

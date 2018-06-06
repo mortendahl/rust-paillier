@@ -66,12 +66,12 @@ pub trait ProveCorrectKey<EK, DK> {
 fn compute_digest<IT>(values: IT) -> BigInt
 where  IT: Iterator, IT::Item: Borrow<BigInt>
 {
-    // TODO[Morten] use https://github.com/fizyk20/rust-gmp/pull/4/files instead of convertion to hex?
     let mut digest = Context::new(&SHA256);
     for value in values {
-        digest.update(ToString::to_hex_str(value.borrow()).as_bytes());
+        let bytes: Vec<u8> = value.borrow().into();
+        digest.update(&bytes);
     }
-    BigInt::get_from_digest(digest.finish())
+    BigInt::from(digest.finish().as_ref())
 }
 
 impl ProveCorrectKey<EncryptionKey, DecryptionKey> for Paillier
