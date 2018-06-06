@@ -1,4 +1,4 @@
-#![cfg(feature="inclgmp")]
+#![cfg(feature="usegmp")]
 
 extern crate gmp;
 
@@ -65,6 +65,62 @@ impl EGCD for Mpz {
     }
 }
 
+impl ConvertFrom<Mpz> for u8 {
+    fn _from(x: &Mpz) -> u8 {
+        let foo: Option<u64> = x.into();
+        foo.unwrap() as u8
+    }
+}
+
+impl ConvertFrom<Mpz> for u16 {
+    fn _from(x: &Mpz) -> u16 {
+        let foo: Option<u64> = x.into();
+        foo.unwrap() as u16
+    }
+}
+
+impl ConvertFrom<Mpz> for u32 {
+    fn _from(x: &Mpz) -> u32 {
+        let foo: Option<u64> = x.into();
+        foo.unwrap() as u32
+    }
+}
+
+impl ConvertFrom<Mpz> for u64 {
+    fn _from(x: &Mpz) -> u64 {
+        let foo: Option<u64> = x.into();
+        foo.unwrap()
+    }
+}
+
+impl ConvertFrom<Mpz> for i8 {
+    fn _from(x: &Mpz) -> i8 {
+        let foo: Option<u64> = x.into();
+        foo.unwrap() as i8
+    }
+}
+
+impl ConvertFrom<Mpz> for i16 {
+    fn _from(x: &Mpz) -> i16 {
+        let foo: Option<u64> = x.into();
+        foo.unwrap() as i16
+    }
+}
+
+impl ConvertFrom<Mpz> for i32 {
+    fn _from(x: &Mpz) -> i32 {
+        let foo: Option<u64> = x.into();
+        foo.unwrap() as i32
+    }
+}
+
+impl ConvertFrom<Mpz> for i64 {
+    fn _from(x: &Mpz) -> i64 {
+        let foo: Option<u64> = x.into();
+        foo.unwrap() as i64
+    }
+}
+
 impl ToString for Mpz {
     fn to_hex_str(a: &Self) -> String { a.to_str_radix(16) }
 }
@@ -77,13 +133,6 @@ impl FromString<Mpz> for Mpz {
     }
 }
 
-impl ConvertFrom<Mpz> for u64 {
-    fn _from(x: &Mpz) -> u64 {
-        let foo: Option<u64> = x.into();
-        foo.unwrap()
-    }
-}
-
 impl BitManipulation for Mpz {
     fn set_bit(self: &mut Self, bit: usize, bit_val: bool) {
         if bit_val {
@@ -93,6 +142,5 @@ impl BitManipulation for Mpz {
         }
     }
 }
-
 
 pub type BigInteger = Mpz;

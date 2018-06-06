@@ -4,102 +4,61 @@
 extern crate test;
 extern crate rand;
 extern crate num_traits;
+#[cfg(feature="proofs")]
 extern crate ring;
+#[cfg(feature="proofs")]
 extern crate data_encoding;
-
-#[macro_use]
-mod macros;
 
 pub mod arithimpl;
 pub mod traits;
 pub mod core;
 pub mod coding;
+#[cfg(feature="keygen")]
+pub mod keygen;
+#[cfg(feature="proofs")]
+pub mod proof;
 
 pub use traits::*;
-pub use coding::*;
 pub use core::*;
+pub use coding::*;
+#[cfg(feature="keygen")]
+pub use keygen::*;
+#[cfg(feature="proofs")]
+pub use proof::*;
 
-/// Parameterised type onto which all operations are added (see `Paillier`).
-pub struct AbstractPaillier<I> {
-    junk: ::std::marker::PhantomData<I>
+/// Main struct onto which most operations are added.
+pub struct Paillier {}
+
+#[cfg(feature="useramp")]
+pub use arithimpl::rampimpl::BigInteger as BigInteger;
+
+#[cfg(feature="useframp")]
+pub use arithimpl::frampimpl::BigInteger as BigInteger;
+
+#[cfg(feature="usegmp")]
+pub use arithimpl::gmpimpl::BigInteger as BigInteger;
+
+#[cfg(feature="usenum")]
+pub use arithimpl::numimpl::BigInteger as BigInteger;
+
+/// Public encryption key.
+#[derive(Debug,Clone)]
+pub struct EncryptionKey {
+    n: BigInteger,  // the modulus
+    nn: BigInteger, // the modulus squared
 }
 
-impl<I> AbstractScheme for AbstractPaillier<I> {
-    type BigInteger=I;
+/// Private decryption key.
+#[derive(Debug,Clone)]
+pub struct DecryptionKey {
+    p: BigInteger,  // first prime
+    q: BigInteger,  // second prime
+    n: BigInteger,  // the modulus (also in public key)
+    pp: BigInteger,
+    pminusone: BigInteger,
+    qq: BigInteger,
+    qminusone: BigInteger,
+    pinvq: BigInteger,
+    hp: BigInteger,
+    hq: BigInteger,
 }
-
-
-/*************************
-  Ramp instance
- *************************/
-
-#[cfg(feature="inclramp")]
-mod rampinstance
-{
-    pub use arithimpl::rampimpl::BigInteger as RampBigInteger;
-    pub type RampPaillier = ::AbstractPaillier<RampBigInteger>;
-
-    #[cfg(feature="defaultramp")]
-    pub type BigInteger = RampBigInteger;
-    #[cfg(feature="defaultramp")]
-    pub type Paillier = RampPaillier;
-}
-#[cfg(feature="inclramp")]
-pub use self::rampinstance::*;
-
-
-/*************************
-  Framp instance
- *************************/
-
-#[cfg(feature="inclframp")]
-mod frampinstance
-{
-    pub use arithimpl::frampimpl::BigInteger as FrampBigInteger;
-    pub type FrampPaillier = ::AbstractPaillier<FrampBigInteger>;
-
-    #[cfg(feature="defaultframp")]
-    pub type BigInteger = FrampBigInteger;
-    #[cfg(feature="defaultframp")]
-    pub type Paillier = FrampPaillier;
-}
-#[cfg(feature="inclframp")]
-pub use self::frampinstance::*;
-
-
-/**************
-  GMP instance
- **************/
-
-#[cfg(feature="inclgmp")]
-mod gmpinstance
-{
-    pub use arithimpl::gmpimpl::BigInteger as GmpBigInteger;
-    pub type GmpPaillier = ::AbstractPaillier<GmpBigInteger>;
-
-    #[cfg(feature="defaultgmp")]
-    pub type BigInteger = GmpBigInteger;
-    #[cfg(feature="defaultgmp")]
-    pub type Paillier = GmpPaillier;
-}
-#[cfg(feature="inclgmp")]
-pub use self::gmpinstance::*;
-
-
-/**************
-  Num instance
- **************/
-
-#[cfg(feature="inclnum")]
-mod numinstance
-{
-    pub use arithimpl::numimpl::BigInteger as NumBigInteger;
-    pub type NumPaillier = ::AbstractPaillier<NumBigInteger>;
-
-    #[cfg(feature="defaultnum")]
-    pub type BigInteger = NumBigInteger;
-    #[cfg(feature="defaultnum")]
-    pub type Paillier = NumPaillier;
-}
-#[cfg(feature="inclnum")]
-pub use self::numinstance::*;

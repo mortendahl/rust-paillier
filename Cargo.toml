@@ -1,6 +1,6 @@
 [package]
 name = "paillier"
-version = "0.1.8-pre"
+version = "0.2.0-pre"
 authors = [
   "Mario Cornejo <mario.cornejo@snips.ai>",
   "Morten Dahl <mortendahlcs@gmail.com>",
@@ -24,26 +24,23 @@ categories = ["cryptography"]
 #travis-ci = { repository = "mortendahl/rust-paillier" }
 
 [features]
-default = ["inclgmp", "defaultgmp", "keygen"]
+default = ["usegmp", "keygen", "proofs"]
 keygen = []
-inclramp = ["ramp"]
-inclframp = ["framp"]
-inclnum = ["num"]
-inclgmp = ["rust-gmp"]
-defaultramp = []
-defaultframp = []
-defaultnum = []
-defaultgmp = []
+proofs = ["ring", "data-encoding"]
+useramp = ["ramp"]
+useframp = ["framp"]
+usenum = ["num"]
+usegmp = ["rust-gmp"]
 
 [dependencies]
 rand = "0.3"
 num-traits = "0.1"
-ring = "0.12.1"
 ramp = { version="0.3", optional=true }
 framp = { version="0.3", optional=true }
 num = { version="0.1", optional=true }
 rust-gmp = { version="0.4", optional=true }
-data-encoding = "2.1.1"
+ring = { version="0.12", optional=true }
+data-encoding = { version="2.1", optional=true }
 
 [dev-dependencies]
 bencher = "0.1"
