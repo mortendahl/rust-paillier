@@ -6,8 +6,6 @@ extern crate rand;
 extern crate num_traits;
 #[cfg(feature="proofs")]
 extern crate ring;
-#[cfg(feature="proofs")]
-extern crate data_encoding;
 
 pub mod arithimpl;
 pub mod traits;
