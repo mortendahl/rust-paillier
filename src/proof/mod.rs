@@ -1,14 +1,15 @@
-use ::arithimpl::traits::*;
-use ::BigInteger as BigInt;
-use ::Paillier as Paillier;
-use ::{EncryptionKey, DecryptionKey};
-
 use std::fmt;
 use std::iter;
 use std::error::Error;
 use std::borrow::Borrow;
 
 use ring::digest::{Context, SHA256};
+
+use ::arithimpl::traits::*;
+use ::BigInteger as BigInt;
+use core::extract_randomness;
+use ::Paillier as Paillier;
+use ::{EncryptionKey, DecryptionKey};
 
 
 const STATISTICAL_ERROR_FACTOR: usize = 40;
@@ -136,8 +137,7 @@ impl ProveCorrectKey<EncryptionKey, DecryptionKey> for Paillier
         }
 
         // reconstruct a
-        let phi = (&dk.p - BigInt::one()) * (&dk.q - BigInt::one());
-        let phimine = &phi - (&challenge.e % &phi);
+        let phimine = &dk.phi - (&challenge.e % &dk.phi);
         let a: Vec<_> = challenge.z.iter().zip(challenge.x.iter())
             .map(|(zi, xi)| {
                 let zn = BigInt::modpow(zi, &dk.n, &dk.n);
@@ -162,29 +162,9 @@ impl ProveCorrectKey<EncryptionKey, DecryptionKey> for Paillier
         }
 
         // compute proof in the form of a hash of the recovered roots
-
-        // TODO[Morten]
-        // some of these are already stored in the key
-        let dn = BigInt::modinv(&dk.n, &phi);
-        let dp = &dn % &(&dk.p - 1);
-        let dq = &dn % &(&dk.q - 1);
-        let qinvp = BigInt::modinv(&dk.q, &dk.p);
-
-        // TODO[Morten]
-        // move to public method for etracting randomness
-
         let y_digest = compute_digest(
             challenge.x.iter()
-                .map(|xi| {
-                    let xp = xi % &dk.p;
-                    let mp = BigInt::modpow(&xp, &dp, &dk.p);
-
-                    let xq = xi % &dk.q;
-                    let mq = BigInt::modpow(&xq, &dq, &dk.q);
-
-                    let yi = &mq + (&dk.q * BigInt::modmul(&qinvp, &(&mp - &mq), &dk.p));
-                    yi
-                }));
+                .map(|xi| extract_randomness(dk, xi)));
 
         Ok(CorrectKeyProof { y_digest })
     }
