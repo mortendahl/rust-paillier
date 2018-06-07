@@ -6,6 +6,7 @@ extern crate rand;
 extern crate num_traits;
 #[cfg(feature="proofs")]
 extern crate ring;
+extern crate rayon;
 
 #[cfg(feature="proofs")]
 extern crate rayon;
