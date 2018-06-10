@@ -10,6 +10,7 @@ use std::borrow::Borrow;
 
 use ring::digest::{Context, SHA256};
 
+use rayon::prelude::*;
 
 const STATISTICAL_ERROR_FACTOR: usize = 40;
 
@@ -91,7 +92,7 @@ impl ProveCorrectKey<EncryptionKey, DecryptionKey> for Paillier
             .map(|_| BigInt::sample_below(&ek.n))
             .collect();
 
-        let x: Vec<_> = y.iter()
+        let x: Vec<_> = y.par_iter()
             .map(|yi| BigInt::modpow(yi, &ek.n, &ek.n))
             .collect();
 
@@ -102,7 +103,7 @@ impl ProveCorrectKey<EncryptionKey, DecryptionKey> for Paillier
             .map(|_| BigInt::sample_below(&ek.n))
             .collect();
 
-        let a : Vec<_> = r.iter()
+        let a : Vec<_> = r.par_iter()
             .map(|ri| BigInt::modpow(ri, &ek.n, &ek.n))
             .collect();
 
@@ -112,8 +113,8 @@ impl ProveCorrectKey<EncryptionKey, DecryptionKey> for Paillier
                 .chain(&a)
         );
 
-        let z: Vec<_> = r.iter()
-            .zip(y.iter())
+        let z: Vec<_> = r.par_iter()
+            .zip(y.par_iter())
             .map(|(ri, yi)| (ri * BigInt::modpow(yi, &e, &ek.n)) % &ek.n)
             .collect();
 
@@ -126,19 +127,19 @@ impl ProveCorrectKey<EncryptionKey, DecryptionKey> for Paillier
     fn prove(dk: &DecryptionKey, challenge: &Challenge) -> Result<CorrectKeyProof, ProofError>
     {
         // check x co-prime with n
-        if challenge.x.iter().any(|xi| BigInt::egcd(&dk.n, xi).0 != BigInt::one()) {
+        if challenge.x.par_iter().any(|xi| BigInt::egcd(&dk.n, xi).0 != BigInt::one()) {
             return Err(ProofError)
         }
 
         // check z co-prime with n
-        if challenge.z.iter().any(|zi| BigInt::egcd(&dk.n, zi).0 != BigInt::one()) {
+        if challenge.z.par_iter().any(|zi| BigInt::egcd(&dk.n, zi).0 != BigInt::one()) {
             return Err(ProofError)
         }
 
         // reconstruct a
         let phi = (&dk.p - BigInt::one()) * (&dk.q - BigInt::one());
         let phimine = &phi - (&challenge.e % &phi);
-        let a: Vec<_> = challenge.z.iter().zip(challenge.x.iter())
+        let a: Vec<_> = challenge.z.par_iter().zip(challenge.x.par_iter())
             .map(|(zi, xi)| {
                 let zn = BigInt::modpow(zi, &dk.n, &dk.n);
                 let xphi = BigInt::modpow(xi, &phimine, &dk.n);
@@ -147,7 +148,7 @@ impl ProveCorrectKey<EncryptionKey, DecryptionKey> for Paillier
             .collect();
 
         // check a co-prime with n
-        if a.iter().any(|ai| BigInt::egcd(&dk.n, ai).0 != BigInt::one()) {
+        if a.par_iter().any(|ai| BigInt::egcd(&dk.n, ai).0 != BigInt::one()) {
             return Err(ProofError)
         }
 
