@@ -56,7 +56,10 @@ pub struct DecryptionKey {
     pminusone: BigInteger,
     qq: BigInteger,
     qminusone: BigInteger,
-    pinvq: BigInteger,
+    phi: BigInteger,
+    dp: BigInteger,
+    dq: BigInteger,
+    pinv: BigInteger,
     hp: BigInteger,
     hq: BigInteger,
 }

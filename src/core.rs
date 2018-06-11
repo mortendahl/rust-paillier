@@ -1,6 +1,7 @@
 //! Core Paillier encryption scheme supporting ciphertext addition and plaintext multiplication.
 
 use std::fmt;
+use std::borrow::Borrow;
 
 use ::traits::*;
 use ::arithimpl::traits::*;
@@ -64,29 +65,49 @@ fn l(u: &BigInt, n: &BigInt) -> BigInt {
 }
 
 impl<'c> Decrypt<DecryptionKey, &'c RawCiphertext, RawPlaintext> for Paillier {
-    fn decrypt(dk: &DecryptionKey, c: &'c RawCiphertext) -> RawPlaintext {        
+    fn decrypt(dk: &DecryptionKey, c: &'c RawCiphertext) -> RawPlaintext {
+        let (cp, cq) = crt_decompose(&c.0, &dk.pp, &dk.qq);
         // process using p
-        let cp = BigInt::modpow(&c.0, &dk.pminusone, &dk.pp);
-        let lp = l(&cp, &dk.p);
+        let dp = BigInt::modpow(&cp, &dk.pminusone, &dk.pp);
+        let lp = l(&dp, &dk.p);
         let mp = (&lp * &dk.hp) % &dk.p;
         // process using q
-        let cq = BigInt::modpow(&c.0, &dk.qminusone, &dk.qq);
-        let lq = l(&cq, &dk.q);
+        let dq = BigInt::modpow(&cq, &dk.qminusone, &dk.qq);
+        let lq = l(&dq, &dk.q);
         let mq = (&lq * &dk.hq) % &dk.q;
         // perform CRT
-        let m = crt(&mp, &mq, &dk);
+        let m = crt_recombine(mp, mq, &dk.p, &dk.q, &dk.pinv);
         RawPlaintext(m)
     }
 }
 
-fn crt(mp: &BigInt, mq: &BigInt, dk: &DecryptionKey) -> BigInt {
-    let mut mq_minus_mp = (mq-mp) % &dk.q;
-    if NumberTests::is_negative(&mq_minus_mp) {
-        mq_minus_mp = mq_minus_mp + &dk.q;
+fn crt_decompose<X, M1, M2>(x: X, m1: M1, m2: M2) -> (BigInt, BigInt)
+where X: Borrow<BigInt>, M1: Borrow<BigInt>, M2: Borrow<BigInt>
+{
+    (x.borrow() % m1.borrow(), x.borrow() % m2.borrow())
+}
+
+fn crt_recombine<X1, X2, M1, M2, I>(x1: X1, x2: X2, m1: M1, m2: M2, m1inv: I) -> BigInt 
+where X1: Borrow<BigInt>, X2: Borrow<BigInt>, M1: Borrow<BigInt>, M2: Borrow<BigInt>, I: Borrow<BigInt>
+{
+    let mut diff = (x2.borrow() - x1.borrow()) % m2.borrow();
+    if NumberTests::is_negative(&diff) {
+        diff += m2.borrow();
     }
-    let u = (mq_minus_mp * &dk.pinvq) % &dk.q;
-    let m = mp + (&u * &dk.p);
-    m % &dk.n
+    let u = (diff * m1inv.borrow()) % m2.borrow();
+    let x = x1.borrow() + (u * m1.borrow());
+    x
+}
+
+/// Extract randomness component of a zero ciphertext.
+pub fn extract_nroot(dk: &DecryptionKey, z: &BigInt) -> BigInt {
+    let (zp, zq) = crt_decompose(z, &dk.p, &dk.q);
+
+    let rp = BigInt::modpow(&zp, &dk.dp, &dk.p);
+    let rq = BigInt::modpow(&zq, &dk.dq, &dk.q);
+
+    let r = crt_recombine(rp, rq, &dk.p, &dk.q, &dk.pinv);
+    r
 }
 
 impl<'c> Rerandomize<EncryptionKey, &'c RawCiphertext, RawCiphertext> for Paillier {
@@ -167,26 +188,31 @@ impl fmt::Display for RawPlaintext {
 
 impl<'kp> From<&'kp Keypair> for DecryptionKey {
     fn from(keypair: &'kp Keypair) -> DecryptionKey {
-        let ref p = keypair.p;
-        let ref q = keypair.q;
-        let ref pp = p * p;
-        let ref qq = q * q;
-        let ref n = p * q;
+        let p = keypair.p.clone();
+        let q = keypair.q.clone();
+        let pp = &p * &p;
+        let qq = &q * &q;
+        let n = &p * &q;
+
+        let pminusone = &p - 1;
+        let qminusone = &q - 1;
+        let phi = &pminusone * &qminusone;
+
+        let dn = BigInt::modinv(&n, &phi);
+        let (dp, dq) = crt_decompose(dn, &pminusone, &qminusone);
+
+        let pinv = BigInt::modinv(&p, &q);
+
+        let hp = h(&p, &pp, &n);
+        let hq = h(&q, &qq, &n);
+
         DecryptionKey {
-            p: p.clone(), // TODO store ref to keypair instead
-            q: q.clone(),
-
-            pp: pp.clone(),
-            pminusone: p - 1,
-
-            qq: qq.clone(),
-            qminusone: q - 1,
-
-            pinvq: BigInt::modinv(p, q),
-            hp: h(p, pp, n),
-            hq: h(q, qq, n),
-
-            n: n.clone()
+            p, pp, pminusone, pinv,
+            q, qq, qminusone,
+            n,
+            phi,
+            dp, dq,
+            hp, hq,
         }
     }
 }
