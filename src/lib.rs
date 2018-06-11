@@ -6,8 +6,7 @@ extern crate rand;
 extern crate num_traits;
 #[cfg(feature="proofs")]
 extern crate ring;
-#[cfg(feature="proofs")]
-extern crate data_encoding;
+
 #[cfg(feature="proofs")]
 extern crate rayon;
 
@@ -61,7 +60,10 @@ pub struct DecryptionKey {
     pminusone: BigInteger,
     qq: BigInteger,
     qminusone: BigInteger,
-    pinvq: BigInteger,
+    phi: BigInteger,
+    dp: BigInteger,
+    dq: BigInteger,
+    pinv: BigInteger,
     hp: BigInteger,
     hq: BigInteger,
 }
