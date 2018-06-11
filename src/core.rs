@@ -77,7 +77,7 @@ impl<'c> Decrypt<DecryptionKey, &'c RawCiphertext, RawPlaintext> for Paillier {
         let mq = (&lq * &dk.hq) % &dk.q;
         // perform CRT
         let m = crt_recombine(mp, mq, &dk.p, &dk.q, &dk.pinv);
-        RawPlaintext(m % &dk.n)
+        RawPlaintext(m)
     }
 }
 
