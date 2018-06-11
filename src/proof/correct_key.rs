@@ -7,7 +7,7 @@ use ring::digest::{Context, SHA256};
 
 use ::arithimpl::traits::*;
 use ::BigInteger as BigInt;
-use core::extract_randomness;
+use core::extract_nroot;
 use ::Paillier as Paillier;
 use ::{EncryptionKey, DecryptionKey};
 
@@ -164,7 +164,7 @@ impl ProveCorrectKey<EncryptionKey, DecryptionKey> for Paillier
         // compute proof in the form of a hash of the recovered roots
         let y_digest = compute_digest(
             challenge.x.iter()
-                .map(|xi| extract_randomness(dk, xi)));
+                .map(|xi| extract_nroot(dk, xi)));
 
         Ok(CorrectKeyProof { y_digest })
     }

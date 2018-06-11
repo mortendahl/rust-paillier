@@ -100,7 +100,7 @@ where X1: Borrow<BigInt>, X2: Borrow<BigInt>, M1: Borrow<BigInt>, M2: Borrow<Big
 }
 
 /// Extract randomness component of a zero ciphertext.
-pub fn extract_randomness(dk: &DecryptionKey, z: &BigInt) -> BigInt {
+pub fn extract_nroot(dk: &DecryptionKey, z: &BigInt) -> BigInt {
     let (zp, zq) = crt_decompose(z, &dk.p, &dk.q);
 
     let rp = BigInt::modpow(&zp, &dk.dp, &dk.p);
