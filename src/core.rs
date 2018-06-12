@@ -113,27 +113,63 @@ pub fn extract_nroot(dk: &DecryptionKey, z: &BigInt) -> BigInt {
 impl<'c> Rerandomize<EncryptionKey, &'c RawCiphertext, RawCiphertext> for Paillier {
     fn rerandomise(ek: &EncryptionKey, c: &'c RawCiphertext) -> RawCiphertext {
         let r = BigInt::sample_below(&ek.n);
-        let d = (&c.0 * BigInt::modpow(&r, &ek.n, &ek.nn)) % &ek.nn;
-        RawCiphertext(d)
+        let rn = (&c.0 * BigInt::modpow(&r, &ek.n, &ek.nn)) % &ek.nn;
+        RawCiphertext(rn)
     }
 }
 
 impl<'m> Encrypt<EncryptionKey, &'m RawPlaintext, RawCiphertext> for Paillier {
     fn encrypt(ek: &EncryptionKey, m: &'m RawPlaintext) -> RawCiphertext {
-        // here we assume that g = n+1
-        let nm = &m.0 * &ek.n;
-        let gx = (&nm + 1) % &ek.nn;
-        Self::rerandomise(ek, &RawCiphertext(gx))
+        let r = BigInt::sample_below(&ek.n);
+        Self::encrypt_with_chosen_randomness(ek, m, &r)
     }
 }
 
-impl<PT, CT> Encrypt<EncryptionKey, PT, CT> for EncryptionKey
-where Self: Encrypt<EncryptionKey, PT, CT>
-{
-    fn encrypt(ek: &Self, m: PT) -> CT {
-        Self::encrypt(ek, m)
+pub trait EncryptWithChosenRandomness<EK, P, R, C> {
+    fn encrypt_with_chosen_randomness(ek: EK, m: P, r: R) -> C;
+}
+
+impl<'ek, 'm, 'r> EncryptWithChosenRandomness<&'ek EncryptionKey, &'m RawPlaintext, &'r BigInt, RawCiphertext> for Paillier {
+    fn encrypt_with_chosen_randomness(ek: &'ek EncryptionKey, m: &'m RawPlaintext, r: &'r BigInt) -> RawCiphertext {
+        // here we assume that g = n+1
+        let gm = (1 + &m.0 * &ek.n) % &ek.nn;
+        let rn = BigInt::modpow(&r, &ek.n, &ek.nn);
+        let c = (gm * rn) % &ek.nn;
+        RawCiphertext(c)
     }
 }
+
+// impl<PT, CT> Encrypt<EncryptionKey, PT, CT> for EncryptionKey
+// where Self: Encrypt<EncryptionKey, PT, CT>
+// {
+//     fn encrypt(ek: &Self, m: PT) -> CT {
+//         Self::encrypt(ek, m)
+//     }
+// }
+
+// pub struct PrecomputedRandomness<'ek> {
+//     ek: &'ek EncryptionKey,
+//     rn: BigInt
+// }
+
+// pub trait PrecomputeRandomness<EK, T, U> {
+//     fn precompute(ek: EK, x: T) -> U;
+// }
+
+// impl<'ek, 'r> Precompute<&'ek EncryptionKey, &'r BigInt, PrecomputedRandomness<'ek>> for Paillier {
+//     fn precompute(ek: &'ek EncryptionKey, r: &'r BigInt) -> PrecomputedRandomness<'ek> {
+//         let rn = BigInt::modpow(r, &ek.n, &ek.nn);
+//         PrecomputedRandomness { ek, rn }
+//     }
+// }
+
+
+
+// impl<'m, 'r> EncryptWithChosenRandomness<EncryptionKey, &'m RawPlaintext, &'r PrecomputedRandomness, RawCiphertext> for Paillier {
+//     fn encrypt_with_randomness(ek: &EncryptionKey, m: &'m RawPlaintext, r: &'r PrecomputedRandomness) -> RawCiphertext {
+//         unimplemented!()
+//     }
+// }
 
 impl<'c1, 'c2> Add<EncryptionKey, &'c1 RawCiphertext, &'c2 RawCiphertext, RawCiphertext> for Paillier {
     fn add(ek: &EncryptionKey, c1: &'c1 RawCiphertext, c2: &'c2 RawCiphertext) -> RawCiphertext {
