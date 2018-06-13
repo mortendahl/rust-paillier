@@ -132,7 +132,7 @@ impl<'c> Rerandomize<EncryptionKey, &'c RawCiphertext, RawCiphertext> for Pailli
 
 impl<'m> Encrypt<EncryptionKey, &'m RawPlaintext, RawCiphertext> for Paillier {
     fn encrypt(ek: &EncryptionKey, m: &'m RawPlaintext) -> RawCiphertext {
-        let r = BigInt::sample_below(&ek.n);
+        let r = Randomness(BigInt::sample_below(&ek.n));
         Self::encrypt_with_chosen_randomness(ek, m, &r)
     }
 }
@@ -141,11 +141,11 @@ pub trait EncryptWithChosenRandomness<EK, P, R, C> {
     fn encrypt_with_chosen_randomness(ek: EK, m: P, r: R) -> C;
 }
 
-impl<'ek, 'm, 'r> EncryptWithChosenRandomness<&'ek EncryptionKey, &'m RawPlaintext, &'r BigInt, RawCiphertext> for Paillier {
-    fn encrypt_with_chosen_randomness(ek: &'ek EncryptionKey, m: &'m RawPlaintext, r: &'r BigInt) -> RawCiphertext {
+impl<'ek, 'm, 'r> EncryptWithChosenRandomness<&'ek EncryptionKey, &'m RawPlaintext, &'r Randomness, RawCiphertext> for Paillier {
+    fn encrypt_with_chosen_randomness(ek: &'ek EncryptionKey, m: &'m RawPlaintext, r: &'r Randomness) -> RawCiphertext {
         // here we assume that g = n+1
         let gm = (1 + &m.0 * &ek.n) % &ek.nn;
-        let rn = BigInt::modpow(&r, &ek.n, &ek.nn);
+        let rn = BigInt::modpow(&r.0, &ek.n, &ek.nn);
         let c = (gm * rn) % &ek.nn;
         RawCiphertext(c)
     }
@@ -307,11 +307,9 @@ mod tests {
         let (ek, dk) = test_keypair().keys();
 
         let c = Paillier::encrypt(&ek, &RawPlaintext::from(10));
-
         let (m, r) = Paillier::open(&dk, &c);
-
-        // TODO
-        // assert_eq!(c, BigInt( ek.);
+        let d = Paillier::encrypt_with_chosen_randomness(&ek, &m, &r);
+        assert_eq!(c, d);
     }
 
     #[test]
