@@ -47,6 +47,14 @@ pub trait Decrypt<DK, CT, PT> {
     fn decrypt(ek: &DK, c: CT) -> PT;
 }
 
+/// Opening of ciphertext.
+///
+/// Unlike decryption this also returns the randomness used.
+pub trait Open<DK, CT, PT, R> {
+    /// Open ciphertext `c` using key `dk` into a plaintext and a randomness.
+    fn open(dk: &DK, c: CT) -> (PT, R);
+}
+
 /// Addition of two ciphertexts.
 pub trait Add<EK, CT1, CT2, CT> {
     /// Homomorphically combine ciphertexts `c1` and `c2` to obtain a ciphertext containing

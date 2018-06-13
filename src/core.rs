@@ -81,6 +81,18 @@ impl<'c> Decrypt<DecryptionKey, &'c RawCiphertext, RawPlaintext> for Paillier {
     }
 }
 
+pub struct Randomness(BigInt);
+
+impl<'c> Open<DecryptionKey, &'c RawCiphertext, RawPlaintext, Randomness> for Paillier {
+    fn open(dk: &DecryptionKey, c: &'c RawCiphertext) -> (RawPlaintext, Randomness) {
+        let m = Self::decrypt(dk, c);
+        let gm = (1 + &m.0 * &dk.n) % &dk.nn;
+        let rn = &c.0 * BigInt::modinv(&gm, &dk.nn);
+        let r = extract_nroot(dk, &rn);
+        (m, Randomness(r))
+    }
+}
+
 fn crt_decompose<X, M1, M2>(x: X, m1: M1, m2: M2) -> (BigInt, BigInt)
 where X: Borrow<BigInt>, M1: Borrow<BigInt>, M2: Borrow<BigInt>
 {
@@ -229,6 +241,7 @@ impl<'kp> From<&'kp Keypair> for DecryptionKey {
         let pp = &p * &p;
         let qq = &q * &q;
         let n = &p * &q;
+        let nn = &n * &n;
 
         let pminusone = &p - 1;
         let qminusone = &q - 1;
@@ -245,7 +258,7 @@ impl<'kp> From<&'kp Keypair> for DecryptionKey {
         DecryptionKey {
             p, pp, pminusone, pinv,
             q, qq, qminusone,
-            n,
+            n, nn,
             phi,
             dp, dq,
             hp, hq,
@@ -287,6 +300,18 @@ mod tests {
 
         let recovered_m = Paillier::decrypt(&dk, &c);
         assert_eq!(recovered_m, m);
+    }
+
+    #[test]
+    fn test_correct_opening() {
+        let (ek, dk) = test_keypair().keys();
+
+        let c = Paillier::encrypt(&ek, &RawPlaintext::from(10));
+
+        let (m, r) = Paillier::open(&dk, &c);
+
+        // TODO
+        // assert_eq!(c, BigInt( ek.);
     }
 
     #[test]

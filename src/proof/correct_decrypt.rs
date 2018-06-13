@@ -2,6 +2,12 @@
 use ::BigInteger as BigInt;
 use ::Paillier as Paillier;
 
+/// Correct opening of ciphertext.
+pub trait CorrectOpening<EK, DK, CT, PT, R> {
+    fn prove(dk: &DK, c: CT) -> (PT, R);
+    fn verify(ek: &EK, c: CT, m: PT, r: R) -> bool;
+}
+
 pub struct CorrectDecryptProof {
     m: BigInt,
     r: BigInt,
