@@ -16,6 +16,7 @@ const STATISTICAL_ERROR_FACTOR: usize = 40;
 
 
 #[derive(Debug)]
+// TODO: generelize the error string and move the struct to a common location where all other proofs can use it as well
 pub struct ProofError;
 
 impl fmt::Display for ProofError {
@@ -64,8 +65,9 @@ pub trait ProveCorrectKey<EK, DK> {
     fn verify(proof: &CorrectKeyProof, aid: &VerificationAid) -> Result<(), ProofError>;
 }
 
+//TODO: compute digest is being used by other proofs, consider changing it to public or move it to some utility file.
 fn compute_digest<IT>(values: IT) -> BigInt
-where  IT: Iterator, IT::Item: Borrow<BigInt>
+    where  IT: Iterator, IT::Item: Borrow<BigInt>
 {
     let mut digest = Context::new(&SHA256);
     for value in values {
@@ -82,7 +84,7 @@ impl ProveCorrectKey<EncryptionKey, DecryptionKey> for Paillier
         // FIXME[Morten]
         // settle the question of whether using n instead of n^2 is okay
 
-        // TODO[Morten] 
+        // TODO[Morten]
         // most of these could probably be run in parallel with Rayon
         // after simplification (using `into_par_iter` in some cases)
 
@@ -129,6 +131,8 @@ impl ProveCorrectKey<EncryptionKey, DecryptionKey> for Paillier
         // check x co-prime with n
         if challenge.x.iter().any(|xi| BigInt::egcd(&dk.n, xi).0 != BigInt::one()) {
             return Err(ProofError)
+            //TODO: could lead to timing analysis. please follow the poc code: return from the function only once,
+            // at the end, after completing all calculation. in case one of the calculations was bad - return error.
         }
 
         // check z co-prime with n
