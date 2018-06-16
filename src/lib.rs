@@ -7,6 +7,9 @@ extern crate num_traits;
 #[cfg(feature="proofs")]
 extern crate ring;
 
+#[cfg(feature="proofs")]
+extern crate rayon;
+
 pub mod arithimpl;
 pub mod traits;
 pub mod core;
@@ -23,6 +26,7 @@ pub use coding::*;
 pub use keygen::*;
 #[cfg(feature="proofs")]
 pub use proof::*;
+
 
 /// Main struct onto which most operations are added.
 pub struct Paillier {}
