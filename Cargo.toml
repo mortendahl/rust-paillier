@@ -47,6 +47,22 @@ rayon = "1.0"
 [dev-dependencies]
 bencher = "0.1.5"
 
+# [[bench]]
+# name = "algo"
+# harness = false
+
+[[bench]]
+name = "arith"
+harness = false
+
+[[bench]]
+name = "encryption"
+harness = false
+
+[[bench]]
+name = "keygen"
+harness = false
+
 [[bench]]
 name = "proof"
 harness = false

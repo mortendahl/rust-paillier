@@ -5,187 +5,83 @@ extern crate num_traits;
 
 use bencher::Bencher;
 use paillier::*;
-use paillier::core::*;
 
-#[macro_use]
-mod macros;
 mod helpers;
 use helpers::*;
 
-pub fn bench_encryption<S, EK>(b: &mut Bencher)
-where
-    S : AbstractScheme,
-    S : TestKeyGeneration<<S as AbstractScheme>::BigInteger>,
-    for<'kp> EK : From<&'kp Keypair<<S as AbstractScheme>::BigInteger>>,
-    S : Encryption<
-            EK,
-            Plaintext<<S as AbstractScheme>::BigInteger>,
-            Ciphertext<<S as AbstractScheme>::BigInteger>>,
-    <S as AbstractScheme>::BigInteger : From<u32>,
-{
-    let ref keypair = S::test_keypair();
-    let ek = EK::from(keypair);
-    let m = Plaintext::from(10);
+pub fn bench_encryption<KS: KeySize>(b: &mut Bencher) {
+    let ref keypair = KS::keypair();
+    let ek = EncryptionKey::from(keypair);
+    let m = RawPlaintext::from(10);
     b.iter(|| {
-        let _ = S::encrypt(&ek, &m);
+        let _ = Paillier::encrypt(&ek, &m);
     });
 }
 
-pub fn bench_decryption<S, EK, DK>(b: &mut Bencher)
-where
-    S : AbstractScheme,
-    for<'kp> EK : From<&'kp Keypair<<S as AbstractScheme>::BigInteger>>,
-    for<'kp> DK : From<&'kp Keypair<<S as AbstractScheme>::BigInteger>>,
-    S : Encryption<
-            EK,
-            Plaintext<<S as AbstractScheme>::BigInteger>,
-            Ciphertext<<S as AbstractScheme>::BigInteger>>,
-    S : Decryption<
-            DK,
-            Ciphertext<<S as AbstractScheme>::BigInteger>,
-            Plaintext<<S as AbstractScheme>::BigInteger>>,
-    S : TestKeyGeneration<<S as AbstractScheme>::BigInteger>,
-    <S as AbstractScheme>::BigInteger : From<u32>,
-{
-    let ref keypair = S::test_keypair();
-    let ek = EK::from(keypair);
-    let dk = DK::from(keypair);
-    let m = Plaintext::from(10);
-    let c = S::encrypt(&ek, &m);
+pub fn bench_decryption<KS: KeySize>(b: &mut Bencher) {
+    let ref keypair = KS::keypair();
+    let ek = EncryptionKey::from(keypair);
+    let dk = DecryptionKey::from(keypair);
+    let m = RawPlaintext::from(10);
+    let c = Paillier::encrypt(&ek, &m);
     b.iter(|| {
-        let _ = S::decrypt(&dk, &c);
+        let _ = Paillier::decrypt(&dk, &c);
     });
 }
 
-pub fn bench_rerandomisation<S, EK>(b: &mut Bencher)
-where
-    S : AbstractScheme,
-    S : Encryption<
-            EK,
-            Plaintext<<S as AbstractScheme>::BigInteger>,
-            Ciphertext<<S as AbstractScheme>::BigInteger>>,
-    S : Rerandomisation<
-            EK,
-            Ciphertext<<S as AbstractScheme>::BigInteger>>,
-    S : TestKeyGeneration<<S as AbstractScheme>::BigInteger>,
-    for<'kp> EK : From<&'kp Keypair<<S as AbstractScheme>::BigInteger>>,
-    <S as AbstractScheme>::BigInteger : From<u32>,
-{
-    let ref keypair = S::test_keypair();
-    let ek = EK::from(keypair);
-    let m = Plaintext::from(10);
-    let c = S::encrypt(&ek, &m);
+pub fn bench_rerandomisation<KS: KeySize>(b: &mut Bencher) {
+    let ref keypair = KS::keypair();
+    let ek = EncryptionKey::from(keypair);
+    let m = RawPlaintext::from(10);
+    let c = Paillier::encrypt(&ek, &m);
     b.iter(|| {
-        let _ = S::rerandomise(&ek, &c);
+        let _ = Paillier::rerandomise(&ek, &c);
     });
 }
 
-pub fn bench_addition<S, EK>(b: &mut Bencher)
-where
-    S : AbstractScheme,
-    S : Encryption<
-            EK,
-            Plaintext<<S as AbstractScheme>::BigInteger>,
-            Ciphertext<<S as AbstractScheme>::BigInteger>>,
-    S : Addition<
-            EK,
-            Ciphertext<<S as AbstractScheme>::BigInteger>,
-            Ciphertext<<S as AbstractScheme>::BigInteger>,
-            Ciphertext<<S as AbstractScheme>::BigInteger>>,
-    S : TestKeyGeneration<<S as AbstractScheme>::BigInteger>,
-    for<'kp> EK : From<&'kp Keypair<<S as AbstractScheme>::BigInteger>>,
-    <S as AbstractScheme>::BigInteger : From<u32>,
-{
-    let ref keypair = S::test_keypair();
-    let ek = EK::from(keypair);
+pub fn bench_addition<KS: KeySize>(b: &mut Bencher) {
+    let ref keypair = KS::keypair();
+    let ek = EncryptionKey::from(keypair);
 
-    let m1 = Plaintext::from(10);
-    let c1 = S::encrypt(&ek, &m1);
+    let m1 = RawPlaintext::from(10);
+    let c1 = Paillier::encrypt(&ek, &m1);
 
-    let m2 = Plaintext::from(20);
-    let c2 = S::encrypt(&ek, &m2);
+    let m2 = RawPlaintext::from(20);
+    let c2 = Paillier::encrypt(&ek, &m2);
 
     b.iter(|| {
-        let _ = S::add(&ek, &c1, &c2);
+        let _ = Paillier::add(&ek, &c1, &c2);
     });
 }
 
-pub fn bench_multiplication<S, EK>(b: &mut Bencher)
-where
-    S : AbstractScheme,
-    S : Encryption<
-            EK,
-            Plaintext<<S as AbstractScheme>::BigInteger>,
-            Ciphertext<<S as AbstractScheme>::BigInteger>>,
-    S : Multiplication<
-            EK,
-            Ciphertext<<S as AbstractScheme>::BigInteger>,
-            Plaintext<<S as AbstractScheme>::BigInteger>,
-            Ciphertext<<S as AbstractScheme>::BigInteger>>,
-    S : TestKeyGeneration<<S as AbstractScheme>::BigInteger>,
-    for<'kp> EK : From<&'kp Keypair<<S as AbstractScheme>::BigInteger>>,
-    <S as AbstractScheme>::BigInteger : From<u32>,
-{
-    let ref keypair = S::test_keypair();
-    let ek = EK::from(keypair);
+pub fn bench_multiplication<KS: KeySize>(b: &mut Bencher) {
+    let ref keypair = KS::keypair();
+    let ek = EncryptionKey::from(keypair);
 
-    let m1 = Plaintext::from(10);
-    let c1 = S::encrypt(&ek, &m1);
+    let m1 = RawPlaintext::from(10);
+    let c1 = Paillier::encrypt(&ek, &m1);
 
-    let m2 = Plaintext::from(20);
+    let m2 = RawPlaintext::from(20);
 
     b.iter(|| {
-        let _ = S::mul(&ek, &c1, &m2);
+        let _ = Paillier::mul(&ek, &c1, &m2);
     });
 }
 
-#[cfg(feature="inclramp")]
-benchmark_group!(ramp,
-    self::bench_encryption<RampPaillier, standard::EncryptionKey<RampBigInteger>>,
-    self::bench_encryption<RampPaillier, generic::EncryptionKey<RampBigInteger>>,
-    self::bench_decryption<RampPaillier, standard::EncryptionKey<RampBigInteger>, crt::DecryptionKey<RampBigInteger>>,
-    self::bench_rerandomisation<RampPaillier, standard::EncryptionKey<RampBigInteger>>,
-    self::bench_addition<RampPaillier, standard::EncryptionKey<RampBigInteger>>,
-    self::bench_multiplication<RampPaillier, standard::EncryptionKey<RampBigInteger>>
+benchmark_group!(ks_1024,
+    self::bench_encryption<KeySize1024>,
+    self::bench_decryption<KeySize1024>,
+    self::bench_rerandomisation<KeySize1024>,
+    self::bench_addition<KeySize1024>,
+    self::bench_multiplication<KeySize1024>
 );
 
-#[cfg(feature="inclframp")]
-benchmark_group!(ramp,
-    self::bench_encryption<FrampPaillier, standard::EncryptionKey<FrampBigInteger>>,
-    self::bench_encryption<FrampPaillier, generic::EncryptionKey<FrampBigInteger>>,
-    self::bench_decryption<FrampPaillier, standard::EncryptionKey<FrampBigInteger>, crt::DecryptionKey<FrampBigInteger>>,
-    self::bench_rerandomisation<FrampPaillier, standard::EncryptionKey<FrampBigInteger>>,
-    self::bench_addition<FrampPaillier, standard::EncryptionKey<FrampBigInteger>>,
-    self::bench_multiplication<FrampPaillier, standard::EncryptionKey<FrampBigInteger>>
+benchmark_group!(ks_2048,
+    self::bench_encryption<KeySize2048>,
+    self::bench_decryption<KeySize2048>,
+    self::bench_rerandomisation<KeySize2048>,
+    self::bench_addition<KeySize2048>,
+    self::bench_multiplication<KeySize2048>
 );
 
-#[cfg(feature="inclnum")]
-benchmark_group!(num,
-    self::bench_encryption<NumPaillier, standard::EncryptionKey<NumBigInteger>>,
-    self::bench_decryption<NumPaillier, standard::EncryptionKey<NumBigInteger>, crt::DecryptionKey<NumBigInteger>>,
-    self::bench_rerandomisation<NumPaillier, standard::EncryptionKey<NumBigInteger>>,
-    self::bench_addition<NumPaillier, standard::EncryptionKey<NumBigInteger>>,
-    self::bench_multiplication<NumPaillier, standard::EncryptionKey<NumBigInteger>>
-);
-
-#[cfg(feature="inclgmp")]
-benchmark_group!(gmp,
-    self::bench_encryption<GmpPaillier, standard::EncryptionKey<GmpBigInteger>>,
-    self::bench_decryption<GmpPaillier, standard::EncryptionKey<GmpBigInteger>, crt::DecryptionKey<GmpBigInteger>>,
-    self::bench_rerandomisation<GmpPaillier, standard::EncryptionKey<GmpBigInteger>>,
-    self::bench_addition<GmpPaillier, standard::EncryptionKey<GmpBigInteger>>,
-    self::bench_multiplication<GmpPaillier, standard::EncryptionKey<GmpBigInteger>>
-);
-
-pub fn dummy(_: &mut Bencher) {}
-
-#[cfg(not(feature="inclramp"))]
-benchmark_group!(ramp, dummy);
-
-#[cfg(not(feature="inclnum"))]
-benchmark_group!(num, dummy);
-
-#[cfg(not(feature="inclgmp"))]
-benchmark_group!(gmp, dummy);
-
-benchmark_main!(ramp, num, gmp);
+benchmark_main!(ks_1024, ks_2048);

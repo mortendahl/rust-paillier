@@ -24,8 +24,6 @@ pub use core::*;
 pub use coding::*;
 #[cfg(feature="keygen")]
 pub use keygen::*;
-#[cfg(feature="proofs")]
-pub use proof::*;
 
 
 /// Main struct onto which most operations are added.
