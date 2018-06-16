@@ -41,6 +41,10 @@ pub trait Encrypt<EK, PT, CT> {
     fn encrypt(ek: &EK, m: PT) -> CT;
 }
 
+pub trait EncryptWithChosenRandomness<EK, PT, R, CT> {
+    fn encrypt_with_chosen_randomness(ek: &EK, m: PT, r: R) -> CT;
+}
+
 /// Decryption of ciphertext.
 pub trait Decrypt<DK, CT, PT> {
     /// Decrypt ciphertext `c` using key `dk` into a plaintext.
