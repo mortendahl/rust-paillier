@@ -1,5 +1,5 @@
-mod correct_decrypt;
-pub use self::correct_decrypt::*;
+mod correct_opening;
+pub use self::correct_opening::*;
 
 mod correct_key;
 pub use self::correct_key::*;

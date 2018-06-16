@@ -81,6 +81,18 @@ impl<'c> Decrypt<DecryptionKey, &'c RawCiphertext, RawPlaintext> for Paillier {
     }
 }
 
+pub struct Randomness(BigInt);
+
+impl<'c> Open<DecryptionKey, &'c RawCiphertext, RawPlaintext, Randomness> for Paillier {
+    fn open(dk: &DecryptionKey, c: &'c RawCiphertext) -> (RawPlaintext, Randomness) {
+        let m = Self::decrypt(dk, c);
+        let gminv = (1 - &m.0 * &dk.n) % &dk.nn;
+        let rn = &c.0 * gminv % &dk.nn;
+        let r = extract_nroot(dk, &rn);
+        (m, Randomness(r))
+    }
+}
+
 fn crt_decompose<X, M1, M2>(x: X, m1: M1, m2: M2) -> (BigInt, BigInt)
 where X: Borrow<BigInt>, M1: Borrow<BigInt>, M2: Borrow<BigInt>
 {
@@ -113,25 +125,48 @@ pub fn extract_nroot(dk: &DecryptionKey, z: &BigInt) -> BigInt {
 impl<'c> Rerandomize<EncryptionKey, &'c RawCiphertext, RawCiphertext> for Paillier {
     fn rerandomise(ek: &EncryptionKey, c: &'c RawCiphertext) -> RawCiphertext {
         let r = BigInt::sample_below(&ek.n);
-        let d = (&c.0 * BigInt::modpow(&r, &ek.n, &ek.nn)) % &ek.nn;
+        let rn = BigInt::modpow(&r, &ek.n, &ek.nn);
+        let d = (&c.0 * rn) % &ek.nn;
         RawCiphertext(d)
     }
 }
 
 impl<'m> Encrypt<EncryptionKey, &'m RawPlaintext, RawCiphertext> for Paillier {
     fn encrypt(ek: &EncryptionKey, m: &'m RawPlaintext) -> RawCiphertext {
-        // here we assume that g = n+1
-        let nm = &m.0 * &ek.n;
-        let gx = (&nm + 1) % &ek.nn;
-        Self::rerandomise(ek, &RawCiphertext(gx))
+        let r = Randomness(BigInt::sample_below(&ek.n));
+        Self::encrypt_with_chosen_randomness(ek, m, &r)
     }
 }
 
-impl<PT, CT> Encrypt<EncryptionKey, PT, CT> for EncryptionKey
-where Self: Encrypt<EncryptionKey, PT, CT>
-{
-    fn encrypt(ek: &Self, m: PT) -> CT {
-        Self::encrypt(ek, m)
+impl<'m, 'r> EncryptWithChosenRandomness<EncryptionKey, &'m RawPlaintext, &'r Randomness, RawCiphertext> for Paillier {
+    fn encrypt_with_chosen_randomness(ek: &EncryptionKey, m: &'m RawPlaintext, r: &'r Randomness) -> RawCiphertext {
+        let rn = PrecomputedRandomness(BigInt::modpow(&r.0, &ek.n, &ek.nn));
+        Self::encrypt_with_chosen_randomness(ek, m, &rn)
+    }
+}
+
+impl<'m, 'r> EncryptWithChosenRandomness<EncryptionKey, &'m RawPlaintext, &'r PrecomputedRandomness, RawCiphertext> for Paillier {
+    fn encrypt_with_chosen_randomness(ek: &EncryptionKey, m: &'m RawPlaintext, rn: &'r PrecomputedRandomness) -> RawCiphertext {
+        let gm = (1 + &m.0 * &ek.n) % &ek.nn;
+        let c = (gm * &rn.0) % &ek.nn;
+        RawCiphertext(c)
+    }
+}
+
+// impl<PT, CT> Encrypt<EncryptionKey, PT, CT> for EncryptionKey
+// where Self: Encrypt<EncryptionKey, PT, CT>
+// {
+//     fn encrypt(ek: &Self, m: PT) -> CT {
+//         Self::encrypt(ek, m)
+//     }
+// }
+
+pub struct PrecomputedRandomness(BigInt);
+
+impl<'ek, 'r> PrecomputeRandomness<&'ek EncryptionKey, &'r BigInt, PrecomputedRandomness> for Paillier {
+    fn precompute(ek: &'ek EncryptionKey, r: &'r BigInt) -> PrecomputedRandomness {
+        let rn = BigInt::modpow(r, &ek.n, &ek.nn);
+        PrecomputedRandomness(rn)
     }
 }
 
@@ -193,6 +228,7 @@ impl<'kp> From<&'kp Keypair> for DecryptionKey {
         let pp = &p * &p;
         let qq = &q * &q;
         let n = &p * &q;
+        let nn = &n * &n;
 
         let pminusone = &p - 1;
         let qminusone = &q - 1;
@@ -209,7 +245,7 @@ impl<'kp> From<&'kp Keypair> for DecryptionKey {
         DecryptionKey {
             p, pp, pminusone, pinv,
             q, qq, qminusone,
-            n,
+            n, nn,
             phi,
             dp, dq,
             hp, hq,
@@ -251,6 +287,16 @@ mod tests {
 
         let recovered_m = Paillier::decrypt(&dk, &c);
         assert_eq!(recovered_m, m);
+    }
+
+    #[test]
+    fn test_correct_opening() {
+        let (ek, dk) = test_keypair().keys();
+
+        let c = Paillier::encrypt(&ek, &RawPlaintext::from(10));
+        let (m, r) = Paillier::open(&dk, &c);
+        let d = Paillier::encrypt_with_chosen_randomness(&ek, &m, &r);
+        assert_eq!(c, d);
     }
 
     #[test]

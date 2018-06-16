@@ -56,6 +56,7 @@ pub struct DecryptionKey {
     p: BigInteger,  // first prime
     q: BigInteger,  // second prime
     n: BigInteger,  // the modulus (also in public key)
+    nn: BigInteger,
     pp: BigInteger,
     pminusone: BigInteger,
     qq: BigInteger,
