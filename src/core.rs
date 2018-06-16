@@ -125,8 +125,9 @@ pub fn extract_nroot(dk: &DecryptionKey, z: &BigInt) -> BigInt {
 impl<'c> Rerandomize<EncryptionKey, &'c RawCiphertext, RawCiphertext> for Paillier {
     fn rerandomise(ek: &EncryptionKey, c: &'c RawCiphertext) -> RawCiphertext {
         let r = BigInt::sample_below(&ek.n);
-        let rn = (&c.0 * BigInt::modpow(&r, &ek.n, &ek.nn)) % &ek.nn;
-        RawCiphertext(rn)
+        let rn = BigInt::modpow(&r, &ek.n, &ek.nn);
+        let d = (&c.0 * rn) % &ek.nn;
+        RawCiphertext(d)
     }
 }
 
@@ -161,10 +162,6 @@ impl<'m, 'r> EncryptWithChosenRandomness<EncryptionKey, &'m RawPlaintext, &'r Pr
 // }
 
 pub struct PrecomputedRandomness(BigInt);
-
-pub trait PrecomputeRandomness<EK, R, PR> {
-    fn precompute(ek: EK, r: R) -> PR;
-}
 
 impl<'ek, 'r> PrecomputeRandomness<&'ek EncryptionKey, &'r BigInt, PrecomputedRandomness> for Paillier {
     fn precompute(ek: &'ek EncryptionKey, r: &'r BigInt) -> PrecomputedRandomness {

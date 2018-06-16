@@ -35,6 +35,10 @@ pub trait DefaultKeys {
     }
 }
 
+pub trait PrecomputeRandomness<EK, R, PR> {
+    fn precompute(ek: EK, r: R) -> PR;
+}
+
 /// Encryption of plaintext.
 pub trait Encrypt<EK, PT, CT> {
     /// Encrypt plaintext `m` under key `ek` into a ciphertext.
