@@ -35,16 +35,32 @@ pub trait DefaultKeys {
     }
 }
 
+pub trait PrecomputeRandomness<EK, R, PR> {
+    fn precompute(ek: EK, r: R) -> PR;
+}
+
 /// Encryption of plaintext.
 pub trait Encrypt<EK, PT, CT> {
     /// Encrypt plaintext `m` under key `ek` into a ciphertext.
     fn encrypt(ek: &EK, m: PT) -> CT;
 }
 
+pub trait EncryptWithChosenRandomness<EK, PT, R, CT> {
+    fn encrypt_with_chosen_randomness(ek: &EK, m: PT, r: R) -> CT;
+}
+
 /// Decryption of ciphertext.
 pub trait Decrypt<DK, CT, PT> {
     /// Decrypt ciphertext `c` using key `dk` into a plaintext.
     fn decrypt(ek: &DK, c: CT) -> PT;
+}
+
+/// Opening of ciphertext.
+///
+/// Unlike decryption this also returns the randomness used.
+pub trait Open<DK, CT, PT, R> {
+    /// Open ciphertext `c` using key `dk` into a plaintext and a randomness.
+    fn open(dk: &DK, c: CT) -> (PT, R);
 }
 
 /// Addition of two ciphertexts.

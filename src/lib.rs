@@ -7,6 +7,9 @@ extern crate num_traits;
 #[cfg(feature="proofs")]
 extern crate ring;
 
+#[cfg(feature="proofs")]
+extern crate rayon;
+
 pub mod arithimpl;
 pub mod traits;
 pub mod core;
@@ -23,6 +26,7 @@ pub use coding::*;
 pub use keygen::*;
 #[cfg(feature="proofs")]
 pub use proof::*;
+
 
 /// Main struct onto which most operations are added.
 pub struct Paillier {}
@@ -52,6 +56,7 @@ pub struct DecryptionKey {
     p: BigInteger,  // first prime
     q: BigInteger,  // second prime
     n: BigInteger,  // the modulus (also in public key)
+    nn: BigInteger,
     pp: BigInteger,
     pminusone: BigInteger,
     qq: BigInteger,

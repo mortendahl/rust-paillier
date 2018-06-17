@@ -39,9 +39,17 @@ impl NumberTests for Mpz {
 
 pub use num_traits::{Zero, One};
 
+#[cfg(feature="gmp_nonsec")]
 impl ModPow for Mpz {
     fn modpow(base: &Self, exponent: &Self, modulus: &Self) -> Self {
         base.powm(exponent, modulus)
+    }
+}
+
+#[cfg(not(feature="gmp_nonsec"))]
+impl ModPow for Mpz {
+    fn modpow(base: &Self, exponent: &Self, modulus: &Self) -> Self {
+        base.powm_sec(exponent, modulus)
     }
 }
 
