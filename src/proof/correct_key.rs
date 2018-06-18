@@ -63,7 +63,7 @@ pub trait ProveCorrectKey<EK, DK> {
     fn prove(dk: &DK, challenge: &Challenge) -> Result<CorrectKeyProof, ProofError>;
 
     /// Verify proof.
-    fn verify(proof: &CorrectKeyProof, aid: &VerificationAid) -> Result<(), ProofError>;
+    fn verify_correctKey(proof: &CorrectKeyProof, aid: &VerificationAid) -> Result<(), ProofError>;
 }
 
 //TODO: compute digest is being used by other proofs, consider changing it to public or move it to some utility file.
@@ -174,7 +174,7 @@ impl ProveCorrectKey<EncryptionKey, DecryptionKey> for Paillier
         Ok(CorrectKeyProof { y_digest })
     }
 
-    fn verify(proof: &CorrectKeyProof, va: &VerificationAid) -> Result<(), ProofError> {
+    fn verify_correctKey(proof: &CorrectKeyProof, va: &VerificationAid) -> Result<(), ProofError> {
         // compare actual with expected
         if proof.y_digest == va.y_digest {
             Ok(())
@@ -208,7 +208,7 @@ mod tests {
         let proof_results = Paillier::prove(&dk, &challenge);
         assert!(proof_results.is_ok());
 
-        let result = Paillier::verify(&proof_results.unwrap(), &verification_aid);
+        let result = Paillier::verify_correctKey(&proof_results.unwrap(), &verification_aid);
         assert!(result.is_ok());
     }
 
@@ -232,7 +232,7 @@ mod tests {
         assert!(proof_results.is_ok());
 
         verification_aid.y_digest += 1;
-        let result = Paillier::verify(&proof_results.unwrap(), &verification_aid);
+        let result = Paillier::verify_correctKey(&proof_results.unwrap(), &verification_aid);
         assert!(result.is_err()); // ERROR expected because of manipulated aid
     }
 
