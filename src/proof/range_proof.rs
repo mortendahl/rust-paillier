@@ -10,6 +10,7 @@ use ::arithimpl::traits::*;
 use ::BigInteger as BigInt;
 use ::Paillier as Paillier;
 use ::core::*;
+use proof::correct_key::*;
 use ::traits::*;
 use ::{EncryptionKey, DecryptionKey};
 
@@ -70,12 +71,18 @@ impl RangeProof<EncryptionKey, DecryptionKey,RawPlaintext,Randomness,RawCipherte
     fn verifier_commit() -> (BigInt, BigInt, Vec<u8>)
     {
 
-        let e: Vec<_> = (0..STATISTICAL_ERROR_FACTOR_IN_BYTES)
-            .map(|_| random::<u8>())
-            .collect();
-        let m = <Paillier as Trait>::correct_key::compute_digest(&BigInt::from_bytes_be(BigInt::Sign::Plus, e)) ;
-        let r =  BigInt::sample_below(&2.pow(SECURITY_PARAM));
+         let mut e: Vec<_> = (0..STATISTICAL_ERROR_FACTOR_IN_BYTES)
+             .map(|_| random::<u8>())
+              .collect();
+        let mut digest = Context::new(&SHA256);
+        digest.update(&e);
+        let m =  BigInt::from(digest.finish().as_ref());
+        let two = BigInt::from(2u32);
+        let r =  BigInt::sample_below(&two.pow(SECURITY_PARAM as u32));
         let com = get_hash_commitment(&m, &r);
+        println!("com = {:?}", com);
+        println!("e = {:?}", e);
+        println!("r = {:?}", r);
         (com,r,e)
 
     }
@@ -101,8 +108,7 @@ impl RangeProof<EncryptionKey, DecryptionKey,RawPlaintext,Randomness,RawCipherte
             c1: Vec::new(),
             c2: Vec::new(),
         };
-        println!("w1_before = {:?}", w1);
-        println!("w2_before = {:?}", w2);
+
         for i in 0..STATISTICAL_ERROR_FACTOR {
             // with probability 1/2 switch between w1i and w2i
             if random() {
@@ -156,6 +162,7 @@ mod tests {
     fn test_prover_generate_encrypted_pairs() {
         let (ek, dk) = test_keypair().keys();
         let range = BigInt::from(0xFFFFFFFFFFFFFi64);
-        Paillier::prover_generate_encrypted_pairs(&ek,&range);
+        Paillier::prover_generate_encrypted_pairs(&ek, &range);
+        //Paillier::verifier_commit();
     }
 }
