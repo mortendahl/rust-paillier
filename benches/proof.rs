@@ -49,13 +49,6 @@ mod bench {
         });
     }
 
-    benchmark_group!(zk_1024,
-        self::bench_zk_proof_challenge<KeySize1024>,
-        self::bench_zk_proof_prove<KeySize1024>,
-        self::bench_zk_proof_prove_and_verify<KeySize1024>,
-        self::bench_zk_proof_prove_all<KeySize1024>
-    );
-
     benchmark_group!(zk_2048,
         self::bench_zk_proof_challenge<KeySize2048>,
         self::bench_zk_proof_prove<KeySize2048>,
@@ -63,10 +56,17 @@ mod bench {
         self::bench_zk_proof_prove_all<KeySize2048>
     );
 
+    benchmark_group!(zk_4096,
+        self::bench_zk_proof_challenge<KeySize4096>,
+        self::bench_zk_proof_prove<KeySize4096>,
+        self::bench_zk_proof_prove_and_verify<KeySize4096>,
+        self::bench_zk_proof_prove_all<KeySize4096>
+    );
+
 }
 
 #[cfg(feature="proofs")]
-benchmark_main!(bench::zk_1024, bench::zk_2048);
+benchmark_main!(bench::zk_2048, bench::zk_4096);
 
 #[cfg(not(feature="proofs"))]
 fn main() {}

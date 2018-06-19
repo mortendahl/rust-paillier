@@ -68,14 +68,6 @@ pub fn bench_multiplication<KS: KeySize>(b: &mut Bencher) {
     });
 }
 
-benchmark_group!(ks_1024,
-    self::bench_encryption<KeySize1024>,
-    self::bench_decryption<KeySize1024>,
-    self::bench_rerandomisation<KeySize1024>,
-    self::bench_addition<KeySize1024>,
-    self::bench_multiplication<KeySize1024>
-);
-
 benchmark_group!(ks_2048,
     self::bench_encryption<KeySize2048>,
     self::bench_decryption<KeySize2048>,
@@ -84,4 +76,12 @@ benchmark_group!(ks_2048,
     self::bench_multiplication<KeySize2048>
 );
 
-benchmark_main!(ks_1024, ks_2048);
+benchmark_group!(ks_4096,
+    self::bench_encryption<KeySize4096>,
+    self::bench_decryption<KeySize4096>,
+    self::bench_rerandomisation<KeySize4096>,
+    self::bench_addition<KeySize4096>,
+    self::bench_multiplication<KeySize4096>
+);
+
+benchmark_main!(ks_2048, ks_4096);
