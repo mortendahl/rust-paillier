@@ -9,7 +9,7 @@ mod bench {
 
     use bencher::*;
     use paillier::*;
-    use paillier::proof::ProveCorrectKey;
+    use paillier::proof::CorrectKey;
 
     use helpers::*;
 
