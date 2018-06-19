@@ -45,7 +45,8 @@ rayon = "1.0"
 
 
 [dev-dependencies]
-bencher = "0.1.5"
+# bencher = "0.1"
+bencher = { git="https://github.com/snipsco-forks/bencher" }
 
 # [[bench]]
 # name = "algo"
