@@ -66,8 +66,7 @@ pub trait ProveCorrectKey<EK, DK> {
     fn verify_correctKey(proof: &CorrectKeyProof, aid: &VerificationAid) -> Result<(), ProofError>;
 }
 
-//TODO: compute digest is being used by other proofs, consider changing it to public or move it to some utility file.
-fn compute_digest<IT>(values: IT) -> BigInt
+pub fn compute_digest<IT>(values: IT) -> BigInt
     where  IT: Iterator, IT::Item: Borrow<BigInt>
 {
     let mut digest = Context::new(&SHA256);

@@ -2,7 +2,6 @@ use std::fmt;
 use std::iter;
 use std::str;
 use std::mem;
-
 use std::error::Error;
 use std::borrow::Borrow;
 use ring::digest::{Context, SHA256};
@@ -16,6 +15,8 @@ use ::{EncryptionKey, DecryptionKey};
 
 use proof::correct_key::ProofError;
 const STATISTICAL_ERROR_FACTOR: usize = 40;
+const STATISTICAL_ERROR_FACTOR_IN_BYTES: usize = 5;
+const SECURITY_PARAM : usize  = 256;
 
 pub struct encrypted_pairs {
     c1: Vec<RawCiphertext>,
@@ -32,12 +33,12 @@ pub struct encrypted_pairs {
 /// - section 1.2.2 in [Boudot '00](https://www.iacr.org/archive/eurocrypt2000/1807/18070437-new.pdf)
 
 pub trait RangeProof<EK, DK,PT, R, CT> {
-/*
+
     /// Verifier commit to a t-bits vector e where e is STATISTICAL_ERROR_FACTOR.
-   // fn verifier_commit() -> (BigInt, BigInt, Vec<bool>); // (commitment, randomness, e), commitment is public
+    fn verifier_commit() -> (BigInt, BigInt, Vec<u8>); // (commitment, randomness, e), commitment is public
     // TODO: decide on commitment scheme to use. Assuming ROM we can use correct_key::compute_digest
     // but need to restrict it for two inputs and make sure randomness is greater or equal the size of the message
-*/
+
     /// Prover generates t random pairs, each pair encrypts a number in {q/3, 2q/3} and a number in {0, q/3}
     fn prover_generate_encrypted_pairs(ek: &EK, range: &BigInt) -> encrypted_pairs;
 /*
@@ -51,25 +52,33 @@ pub trait RangeProof<EK, DK,PT, R, CT> {
  //   fn verifier_output(z: &Vec<BigInt>,range: &BigInt) -> Result<(), ProofError>; // (randomness, e)
 */
 }
-
-//TODO: compute digest is being used by other proofs, consider changing it to public or move it to some utility file.
-fn compute_digest<IT>(values: IT) -> BigInt
-    where  IT: Iterator, IT::Item: Borrow<BigInt>
-{
+/// hash based commitment scheme : digest = H(m||r), works under random oracle model. |r| is of length security parameter
+pub fn get_hash_commitment(x: &BigInt, r: &BigInt) -> BigInt {
     let mut digest = Context::new(&SHA256);
-    for value in values {
-        let bytes: Vec<u8> = value.borrow().into();
-        digest.update(&bytes);
-    }
+    let bytes_x: Vec<u8> = x.into();
+    digest.update(&bytes_x);
+
+    let bytes_r: Vec<u8> = r.into();
+    digest.update(&bytes_r);
     BigInt::from(digest.finish().as_ref())
 }
 
 
-impl RangeProof<EncryptionKey, DecryptionKey,RawPlaintext,Randomness,RawCiphertext> for Paillier {
-    ///  fn verifier_commit() -> (BigInt, BigInt, Vec<bool>)
-    //  {
 
-    //  }
+impl RangeProof<EncryptionKey, DecryptionKey,RawPlaintext,Randomness,RawCiphertext> for Paillier {
+
+    fn verifier_commit() -> (BigInt, BigInt, Vec<u8>)
+    {
+
+        let e: Vec<_> = (0..STATISTICAL_ERROR_FACTOR_IN_BYTES)
+            .map(|_| random::<u8>())
+            .collect();
+        let m = <Paillier as Trait>::correct_key::compute_digest(&BigInt::from_bytes_be(BigInt::Sign::Plus, e)) ;
+        let r =  BigInt::sample_below(&2.pow(SECURITY_PARAM));
+        let com = get_hash_commitment(&m, &r);
+        (com,r,e)
+
+    }
     fn prover_generate_encrypted_pairs(ek: &EncryptionKey, range: &BigInt) -> encrypted_pairs
 
     {
