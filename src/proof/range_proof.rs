@@ -80,9 +80,6 @@ impl RangeProof<EncryptionKey, DecryptionKey,RawPlaintext,Randomness,RawCipherte
         let two = BigInt::from(2u32);
         let r =  BigInt::sample_below(&two.pow(SECURITY_PARAM as u32));
         let com = get_hash_commitment(&m, &r);
-        println!("com = {:?}", com);
-        println!("e = {:?}", e);
-        println!("r = {:?}", r);
         (com,r,e)
 
     }
