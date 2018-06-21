@@ -32,7 +32,7 @@ pub fn bench_zk_proof_prove_and_verify_1024(b: &mut Bencher) {
 
     b.iter(|| {
         let proof_results = Paillier::prove(&dk, &challenge);
-        let _result = Paillier::verify(&proof_results.unwrap(), &verification_aid);
+        let _result = Paillier::verify_correctKey(&proof_results.unwrap(), &verification_aid);
     });
 }
 
@@ -41,7 +41,7 @@ pub fn bench_zk_proof_prove_all_1024(b: &mut Bencher) {
     b.iter(|| {
         let (challenge, verification_aid) = Paillier::challenge(&ek);
         let proof_results = Paillier::prove(&dk, &challenge);
-        let _result = Paillier::verify(&proof_results.unwrap(), &verification_aid);
+        let _result = Paillier::verify_correctKey(&proof_results.unwrap(), &verification_aid);
     });
 }
 
@@ -50,7 +50,8 @@ pub fn bench_zk_proof_prove_all_2048(b: &mut Bencher) {
     b.iter(|| {
         let (challenge, verification_aid) = Paillier::challenge(&ek);
         let proof_results = Paillier::prove(&dk, &challenge);
-        let _result = Paillier::verify(&proof_results.unwrap(), &verification_aid);
+        let _result = Paillier::verify_correctKey(&proof_results.unwrap(), &verification_aid);
+
     });
 }
 
