@@ -62,9 +62,37 @@ impl ConvertFrom<ramp::Int> for u64 {
     }
 }
 
+impl ConvertFrom<ramp::Int> for i8 {
+    fn _from(x: &ramp::Int) -> i8 {
+        i8::from(x)
+    }
+}
+
+impl ConvertFrom<ramp::Int> for i16 {
+    fn _from(x: &ramp::Int) -> i16 {
+        i16::from(x)
+    }
+}
+
+impl ConvertFrom<ramp::Int> for i32 {
+    fn _from(x: &ramp::Int) -> i32 {
+        i32::from(x)
+    }
+}
+
+impl ConvertFrom<ramp::Int> for i64 {
+    fn _from(x: &ramp::Int) -> i64 {
+        i64::from(x)
+    }
+}
+
 impl BitManipulation for ramp::Int {
     fn set_bit(self: &mut Self, bit: usize, bit_val: bool) {
         self.set_bit(bit as u32, bit_val);
+    }
+
+    fn test_bit(self: &Self, bit: usize) -> bool {
+        self.bit(bit as u32)
     }
 }
 
