@@ -54,7 +54,7 @@ pub struct CorrectKeyProof {
 /// - section 3.1 in [Lindell'17](https://eprint.iacr.org/2017/552)
 /// - section 3.3 in [HMRTN'12](https://eprint.iacr.org/2011/494)
 /// - section 4.2 in [DJ'01](http://www.brics.dk/RS/00/45/BRICS-RS-00-45.pdf)
-pub trait ProveCorrectKey<EK, DK> {
+pub trait CorrectKey<EK, DK> {
     /// Generate challenge for given encryption key.
     fn challenge(ek: &EK) -> (Challenge, VerificationAid);
 
@@ -76,7 +76,7 @@ where  IT: Iterator, IT::Item: Borrow<BigInt>
     BigInt::from(digest.finish().as_ref())
 }
 
-impl ProveCorrectKey<EncryptionKey, DecryptionKey> for Paillier
+impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
 {
     fn challenge(ek: &EncryptionKey) -> (Challenge, VerificationAid) {
 
