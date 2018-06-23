@@ -20,8 +20,8 @@ documentation = "https://docs.rs/paillier"
 license = "MIT/Apache-2.0"
 categories = ["cryptography"]
 
-#[badges]
-#travis-ci = { repository = "mortendahl/rust-paillier" }
+[badges]
+travis-ci = { repository = "mortendahl/rust-paillier" }
 
 [features]
 default = ["usegmp", "keygen", "proofs"]
@@ -48,9 +48,9 @@ rayon = "1.0"
 # bencher = "0.1"
 bencher = { git="https://github.com/snipsco-forks/bencher" }
 
-# [[bench]]
-# name = "algo"
-# harness = false
+[[bench]]
+name = "algo"
+harness = false
 
 [[bench]]
 name = "arith"

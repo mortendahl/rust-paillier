@@ -135,6 +135,10 @@ impl BitManipulation for Mpz {
             self.clrbit(bit);
         }
     }
+
+    fn test_bit(self: &Self, bit: usize) -> bool {
+        self.tstbit(bit)
+    }
 }
 
 pub type BigInteger = Mpz;
