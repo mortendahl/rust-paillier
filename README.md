@@ -1,11 +1,11 @@
 # Paillier
 
-[![Build Status](https://travis-ci.org/snipsco/rust-paillier.svg)](https://travis-ci.org/snipsco/rust-paillier)
+[![Build Status](https://travis-ci.org/mortendahl/rust-paillier.svg)](https://travis-ci.org/mortendahl/rust-paillier)
 [![Latest version](https://img.shields.io/crates/v/paillier.svg)](https://img.shields.io/crates/v/paillier.svg)
 [![License: MIT/Apache2](https://img.shields.io/badge/license-MIT%2fApache2-blue.svg)](https://img.shields.io/badge/license-MIT%2fApache2-blue.svg)
 
 Efficient pure-Rust library for the [Paillier](https://en.wikipedia.org/wiki/Paillier_cryptosystem) partially homomorphic encryption scheme, offering encoding of both scalars and vectors (for encrypting several values together).
-Supports several underlying arbitrary precision libraries, including [RAMP](https://github.com/Aatch/ramp) (default), [GMP](https://github.com/fizyk20/rust-gmp), and [num](https://github.com/rust-num/num).
+Supports several underlying arbitrary precision libraries, including [RAMP](https://github.com/Aatch/ramp), [GMP](https://github.com/fizyk20/rust-gmp), and [num](https://github.com/rust-num/num).
 
 **Important**: while we have followed recommendations regarding the scheme itself, this library should currently be seen as an experimental implementation. In particular, no particular efforts have so far been made to harden it against non-cryptographic attacks, including side-channel attacks.
 
@@ -55,7 +55,7 @@ Note that some functionality is *not* included by default; see the [Building](#b
 
 ## GitHub
 ```bash
-git clone https://github.com/snipsco/rust-paillier
+git clone https://github.com/mortendahl/rust-paillier
 cd rust-paillier
 cargo build --release
 ```
@@ -77,17 +77,17 @@ The library supports the use of different arithmetic libraries, currently defaul
 
 For [RAMP](https://github.com/Aatch/ramp)-only compilation use `cargo` parameters
 ```
---no-default-features --features "inclramp defaultramp keygen"
-```
-
-For [num](https://github.com/rust-num/num)-only compilation use
-```
---no-default-features --features "inclnum defaultnum"
+--no-default-features --features "useramp"
 ```
 
 For [GMP](https://github.com/fizyk20/rust-gmp)-only compilation use
 ```
---no-default-features --features "inclgmp defaultgmp keygen"
+--no-default-features --features "usegmp"
+```
+
+For [num](https://github.com/rust-num/num)-only compilation use
+```
+--no-default-features --features "usenum"
 ```
 
 Finally, use
@@ -111,8 +111,6 @@ in which case one or more arithmetic libraries must be specified as well as a de
 as shown in [above](#arithmetic) .
 
 
-
-
 # Performance
 
 Several benches are included, testing both the underlying arithmetic libraries as well as the operations of the scheme. All may be run using
@@ -123,7 +121,7 @@ and including either several arithmetic libraries and key generation as discusse
 
 # License
 
-Licensed under either of
+Fork of [`snipsco/rust-paillier`](https://github.com/snipsco/rust-paillier) with additional functionality. Licensed under either of
 
  * Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
  * MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
