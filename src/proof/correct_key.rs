@@ -93,7 +93,6 @@ impl ProveCorrectKey<EncryptionKey, DecryptionKey> for Paillier
         let y: Vec<_> = (0..STATISTICAL_ERROR_FACTOR)
             .map(|_| BigInt::sample_below(&ek.n))
             .collect();
-
         let x: Vec<_> = y.par_iter()
             .map(|yi| BigInt::modpow(yi, &ek.n, &ek.n))
             .collect();

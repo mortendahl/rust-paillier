@@ -286,6 +286,7 @@ mod tests {
     use core::Keypair;
     use traits::*;
     use Paillier;
+    use test::Bencher;
 
     fn test_keypair() -> Keypair {
         let p = str::parse("148677972634832330983979593310074301486537017973460461278300587514468301043894574906886127642530475786889672304776052879927627556769456140664043088700743909632312483413393134504352834240399191134336344285483935856491230340093391784574980688823380828143810804684752914935441384845195613674104960646037368551517").unwrap();
@@ -343,6 +344,31 @@ mod tests {
         /// verifier:
         let result = Paillier::verifier_output(&ek,&e,&encrypted_pairs,&z_vector,&range,&cipher_x );
         assert!(result.is_ok());
+    }
+
+    #[bench]
+    fn bench_range_proof(b: &mut Bencher){
+        // TODO: bench range for 256bit range.
+        b.iter(|| {
+            /// common:
+            let range = BigInt::from(0xFFFFFFFFFFFFFi64);
+            /// prover:
+            let (ek, dk) = test_keypair().keys();
+            /// verifier:
+            let (com,r,e) = Paillier::verifier_commit();
+            /// prover:
+            let (encrypted_pairs, data_and_randmoness_pairs) = Paillier::generate_encrypted_pairs(&ek, &range);
+            /// prover:
+            let secret_r = BigInt::sample_below(&ek.n);
+            let secret_x = BigInt::from(0xFFFFFFFi64);
+            /// common:
+            let cipher_x = Paillier::encrypt_with_chosen_randomness(&ek, &RawPlaintext::from( secret_x.clone()), &Randomness(secret_r.clone()));
+            // verifer decommits (tested in test_commit_decommit)
+            /// prover:
+            let z_vector= Paillier::generate_proof(&ek,&secret_x,&secret_r,&e,&range,&data_and_randmoness_pairs);
+            /// verifier:
+            let result = Paillier::verifier_output(&ek,&e,&encrypted_pairs,&z_vector,&range,&cipher_x );
+        });
     }
 
 }
