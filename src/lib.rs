@@ -1,15 +1,12 @@
 #![feature(test)]
 #![feature(specialization)]
 
+extern crate num_traits;
 extern crate test;
 extern crate rand;
-extern crate num_traits;
+extern crate rayon;
 #[cfg(feature="proofs")]
 extern crate ring;
-extern crate rayon;
-
-#[cfg(feature="proofs")]
-extern crate rayon;
 
 pub mod arithimpl;
 pub mod traits;
