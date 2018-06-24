@@ -17,7 +17,7 @@ const STATISTICAL_ERROR_FACTOR: usize = 40;
 
 
 #[derive(Debug)]
-// TODO: generelize the error string and move the struct to a common location where all other proofs can use it as well
+// TODO: generalize the error string and move the struct to a common location where all other proofs can use it as well
 pub struct ProofError;
 
 impl fmt::Display for ProofError {
@@ -63,9 +63,9 @@ pub trait ProveCorrectKey<EK, DK> {
     fn prove(dk: &DK, challenge: &Challenge) -> Result<CorrectKeyProof, ProofError>;
 
     /// Verify proof.
-    fn verify_correctKey(proof: &CorrectKeyProof, aid: &VerificationAid) -> Result<(), ProofError>;
+    fn verify(proof: &CorrectKeyProof, aid: &VerificationAid) -> Result<(), ProofError>;
 }
-
+// TODO: extract to utility:
 pub fn compute_digest<IT>(values: IT) -> BigInt
     where  IT: Iterator, IT::Item: Borrow<BigInt>
 {
@@ -130,7 +130,7 @@ impl ProveCorrectKey<EncryptionKey, DecryptionKey> for Paillier
         // check x co-prime with n
         if challenge.x.par_iter().any(|xi| BigInt::egcd(&dk.n, xi).0 != BigInt::one()) {
             return Err(ProofError)
-            //TODO: could lead to timing analysis. please follow the poc code: return from the function only once,
+            // TODO: could lead to timing analysis. please follow the poc code: return from the function only once,
             // at the end, after completing all calculation. in case one of the calculations was bad - return error.
         }
 
@@ -172,7 +172,7 @@ impl ProveCorrectKey<EncryptionKey, DecryptionKey> for Paillier
         Ok(CorrectKeyProof { y_digest })
     }
 
-    fn verify_correctKey(proof: &CorrectKeyProof, va: &VerificationAid) -> Result<(), ProofError> {
+    fn verify(proof: &CorrectKeyProof, va: &VerificationAid) -> Result<(), ProofError> {
         // compare actual with expected
         if proof.y_digest == va.y_digest {
             Ok(())
@@ -206,7 +206,7 @@ mod tests {
         let proof_results = Paillier::prove(&dk, &challenge);
         assert!(proof_results.is_ok());
 
-        let result = Paillier::verify_correctKey(&proof_results.unwrap(), &verification_aid);
+        let result = Paillier::verify(&proof_results.unwrap(), &verification_aid);
         assert!(result.is_ok());
     }
 
@@ -230,7 +230,7 @@ mod tests {
         assert!(proof_results.is_ok());
 
         verification_aid.y_digest += 1;
-        let result = Paillier::verify_correctKey(&proof_results.unwrap(), &verification_aid);
+        let result = Paillier::verify(&proof_results.unwrap(), &verification_aid);
         assert!(result.is_err()); // ERROR expected because of manipulated aid
     }
 
