@@ -4,6 +4,7 @@ use std::error::Error;
 use std::borrow::Borrow;
 
 use ring::digest::{Context, SHA256};
+use rayon::prelude::*;
 
 use ::arithimpl::traits::*;
 use ::BigInteger as BigInt;
@@ -11,13 +12,13 @@ use core::extract_nroot;
 use ::Paillier as Paillier;
 use ::{EncryptionKey, DecryptionKey};
 
-use rayon::prelude::*;
 
 const STATISTICAL_ERROR_FACTOR: usize = 40;
 
 
-#[derive(Debug)]
 // TODO: generalize the error string and move the struct to a common location where all other proofs can use it as well
+// TODO[Morten]: better: use errorchain!
+#[derive(Debug)]
 pub struct ProofError;
 
 impl fmt::Display for ProofError {
@@ -64,17 +65,6 @@ pub trait CorrectKey<EK, DK> {
 
     /// Verify proof.
     fn verify(proof: &CorrectKeyProof, aid: &VerificationAid) -> Result<(), ProofError>;
-}
-// TODO: extract to utility:
-pub fn compute_digest<IT>(values: IT) -> BigInt
-    where  IT: Iterator, IT::Item: Borrow<BigInt>
-{
-    let mut digest = Context::new(&SHA256);
-    for value in values {
-        let bytes: Vec<u8> = value.borrow().into();
-        digest.update(&bytes);
-    }
-    BigInt::from(digest.finish().as_ref())
 }
 
 impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
@@ -180,6 +170,18 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
             Err(ProofError)
         }
     }
+}
+
+// TODO[Morten] generalise and move to super
+fn compute_digest<IT>(values: IT) -> BigInt
+where IT: Iterator, IT::Item: Borrow<BigInt>
+{
+    let mut digest = Context::new(&SHA256);
+    for value in values {
+        let bytes: Vec<u8> = value.borrow().into();
+        digest.update(&bytes);
+    }
+    BigInt::from(digest.finish().as_ref())
 }
 
 #[cfg(test)]

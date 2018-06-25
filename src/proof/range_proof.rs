@@ -1,11 +1,12 @@
-use std::fmt;
-use std::iter;
-use std::str;
 use std::mem;
-use std::error::Error;
 use std::borrow::Borrow;
+
+use itertools::Itertools;
+use rand::{random, Rng, OsRng};
+use rayon::prelude::*;
 use ring::digest::{Context, SHA256};
-use rand::random;
+use bit_vec::BitVec;
+
 use ::arithimpl::traits::*;
 use ::BigInteger as BigInt;
 use ::Paillier as Paillier;
@@ -15,17 +16,18 @@ use ::traits::*;
 use ::{EncryptionKey, DecryptionKey};
 use proof::correct_key::ProofError;
 
-const STATISTICAL_ERROR_FACTOR: usize = 40;
-const STATISTICAL_ERROR_FACTOR_IN_BYTES: usize = 5; // STATISTICAL_ERROR_FACTOR / 8
+const STATISTICAL_ERROR_FACTOR : usize = 40;
 const RANGE_BITS : usize = 256; //for elliptic curves with 256bits for example
-const BITS_IN_BYTE: usize = 8; //bits in a byte
+const BITS_IN_BYTE : usize = 8; //bits in a byte
 
-pub struct encrypted_pairs {
+#[derive(Default)]
+pub struct EncryptedPairs {
     c1: Vec<RawCiphertext>,
     c2: Vec<RawCiphertext>,
 }
 
-pub struct data_and_randmoness_pairs {
+#[derive(Default)]
+pub struct DataRandomnessPairs {
     w1: Vec<BigInt>,
     w2: Vec<BigInt>,
     r1: Vec<BigInt>,
@@ -33,47 +35,240 @@ pub struct data_and_randmoness_pairs {
 }
 
 // z_i = (j, x+wi, r*ri modN)
-pub struct masked_witness{
+#[derive(Default)]
+pub struct MaskedWitness {
     j: Vec<u8>,
     masked_x: Vec<BigInt>,
     masked_r: Vec<BigInt>,
 }
 
-pub struct z_vector{
-    map: Vec<bool>,
-    z1: data_and_randmoness_pairs,
-    z2: masked_witness,
+// TODO[Morten] find better name
+pub enum Response {
+    Open { w1: BigInt, r1: BigInt, w2: BigInt, r2: BigInt },
+    Mask { j: u8, masked_x: BigInt, masked_r: BigInt },
 }
-/// zero-knowledge range proof that a value x<q/3 lies in interval [0,q].
+
+pub struct Proof(Vec<Response>);
+
+pub struct Commitment(BigInt);
+
+pub struct Challenge(Vec<u8>);
+
+impl Challenge {
+    fn sample(big_length: usize) -> Challenge {
+        let mut rng = OsRng::new().unwrap();
+        let mut bytes: Vec<u8> = vec![0; big_length/8];
+        rng.fill_bytes(&mut bytes);
+        Challenge(bytes)
+    }
+}
+
+pub struct ChallengeRandomness(BigInt);
+
+/// Zero-knowledge range proof that a value x<q/3 lies in interval [0,q].
+/// 
 /// The verifier is given only c = ENC(ek,x).
 /// The prover has input x, dk, r (randomness used for calculating c)
 /// It is assumed that q is known to both.
-
+///
 /// References:
 /// - Appendix A in [Lindell'17](https://eprint.iacr.org/2017/552)
-/// - section 1.2.2 in [Boudot '00](https://www.iacr.org/archive/eurocrypt2000/1807/18070437-new.pdf)
-pub trait RangeProof<EK, DK,PT, R, CT> {
+/// - Section 1.2.2 in [Boudot '00](https://www.iacr.org/archive/eurocrypt2000/1807/18070437-new.pdf)
+pub trait RangeProof<PT, R, CT> {
 
-    /// Verifier commit to a t-bits vector e where e is STATISTICAL_ERROR_FACTOR.
-    fn verifier_commit() -> (BigInt, BigInt, Vec<u8>); // (commitment, randomness, e), commitment is public
+    /// Verifier commits to a t-bit vector e where e is STATISTICAL_ERROR_FACTOR.
+    fn verifier_commit() -> (Commitment, ChallengeRandomness, Challenge); // commitment is public
+
     // TODO: decide on commitment scheme to use. Assuming ROM we can use correct_key::compute_digest
     // but need to restrict it for two inputs and make sure randomness is greater or equal the size of the message
 
     /// Prover generates t random pairs, each pair encrypts a number in {q/3, 2q/3} and a number in {0, q/3}
-    fn generate_encrypted_pairs(ek: &EK, range: &BigInt) -> (encrypted_pairs, data_and_randmoness_pairs);
+    fn generate_encrypted_pairs(ek: &EncryptionKey, range: &BigInt) -> (EncryptedPairs, DataRandomnessPairs);
 
     /// Verifier decommits to vector e. Prover check correctness using:
-    fn verify_commit(com: &BigInt, r: &BigInt, e: &Vec<u8>) -> bool; // (randomness, e)
+    fn verify_commit(com: &Commitment, r: &ChallengeRandomness, e: &Challenge) -> Result<(), ProofError>;
 
-    /// prover calcuate z_i according to bit e_i and return a vector z
-    fn generate_proof(ek: &EncryptionKey, secret_x: &BigInt ,secret_r: &BigInt ,e:  &Vec<u8>,range: &BigInt, data: &data_and_randmoness_pairs) -> z_vector;
+    /// Prover calcuate z_i according to bit e_i and returns a vector z
+    fn generate_proof(ek: &EncryptionKey, secret_x: &BigInt, secret_r: &BigInt, e: &Challenge, range: &BigInt, data: &DataRandomnessPairs) -> Proof;
 
     /// Verifier verifies the proof
-    fn verifier_output(ek: &EncryptionKey, e:  &Vec<u8>, encrypted_pairs: &encrypted_pairs,  z: &z_vector,range: &BigInt, cipher_x: &RawCiphertext) -> Result<(), ProofError>; // (randomness, e)
+    fn verifier_output(ek: &EncryptionKey, e: &Challenge, encrypted_pairs: &EncryptedPairs, z: &Proof, range: &BigInt, cipher_x: &RawCiphertext) -> Result<(), ProofError>;
 
 }
+
+impl RangeProof<RawPlaintext, ChallengeRandomness, RawCiphertext> for Paillier {
+
+    fn verifier_commit() -> (Commitment, ChallengeRandomness, Challenge) {
+        let e = Challenge::sample(STATISTICAL_ERROR_FACTOR);
+
+        // commit to challenge
+        let m = compute_digest(&e.0);
+        let r = BigInt::sample(RANGE_BITS);
+        let com = get_hash_commitment(&m, &r);
+
+        (Commitment(com), ChallengeRandomness(r), e)
+    }
+
+    fn generate_encrypted_pairs(ek: &EncryptionKey, range: &BigInt) -> (EncryptedPairs, DataRandomnessPairs) {
+        let range_scaled_third = range.div_floor(&BigInt::from(3));
+        let range_scaled_two_thirds = BigInt::from(2) * &range_scaled_third;
+
+        let mut w1: Vec<_> = (0..STATISTICAL_ERROR_FACTOR).into_par_iter()
+            .map(|_| BigInt::sample_range(&range_scaled_third, &range_scaled_two_thirds))
+            .collect();
+
+        let mut w2: Vec<_> = w1.par_iter()
+            .map(|x| x - &range_scaled_third)
+            .collect();
+
+        // with probability 1/2 switch between w1i and w2i
+        for i in 0..STATISTICAL_ERROR_FACTOR {
+            // TODO[Morten] need secure randomness?
+            if random() {
+                mem::swap(&mut w2[i], &mut w1[i]);
+            }
+        }
+
+        let r1: Vec<_> = (0..STATISTICAL_ERROR_FACTOR).into_par_iter()
+            .map(|_| BigInt::sample_below(&ek.n))
+            .collect();
+
+        let r2: Vec<_> = (0..STATISTICAL_ERROR_FACTOR).into_par_iter()
+            .map(|_| BigInt::sample_below(&ek.n))
+            .collect();
+
+        let c1: Vec<_> = w1.par_iter().zip(&r1)
+            .map(|(wi, ri)| {
+                Paillier::encrypt_with_chosen_randomness(
+                    ek,
+                    &RawPlaintext::from(wi.clone()), 
+                    &Randomness::from(ri)
+                )
+            })
+            .collect();
+
+        let c2: Vec<_> = w2.par_iter().zip(&r2)
+            .map(|(wi, ri)| {
+                Paillier::encrypt_with_chosen_randomness(
+                    ek,
+                    &RawPlaintext::from(wi.clone()), 
+                    &Randomness::from(ri)
+                )
+            })
+            .collect();
+
+        (EncryptedPairs { c1, c2 }, DataRandomnessPairs { w1, w2, r1, r2 })
+    }
+
+    fn verify_commit(com: &Commitment, r: &ChallengeRandomness, e: &Challenge) -> Result<(), ProofError> {
+        let m = compute_digest(&e.0);
+        let com_tag = get_hash_commitment(&m, &r.0);
+        if com.0 == com_tag {
+            Ok(())
+        } else {
+            Err(ProofError)
+        }
+    }
+
+    fn generate_proof(ek: &EncryptionKey, secret_x: &BigInt, secret_r: &BigInt, e: &Challenge, range: &BigInt, data: &DataRandomnessPairs) -> Proof {
+        let bit: u8 = 1;
+        let range_scaled_third: BigInt = range.div_floor(&BigInt::from(3));
+
+        let bits_of_e = BitVec::from_bytes(&e.0);
+        let reponses: Vec<_> = bits_of_e.par_iter().enumerate()
+            .map(|(i, ei)| {
+                if !ei {
+                    Response::Open { 
+                        w1: data.w1[i].clone(),
+                        r1: data.r1[i].clone(),
+                        w2: data.w2[i].clone(),
+                        r2: data.r2[i].clone(),
+                    }
+                } else {
+                    if &(secret_x + &data.w1[i]) > &range_scaled_third {
+                        Response::Mask {
+                            j: 1,
+                            masked_x: secret_x + data.w1[i].clone(),
+                            masked_r: secret_r * data.r1[i].clone() % ek.n,
+                        }
+                    } else {
+                        Response::Mask {
+                            j: 2,
+                            masked_x: secret_x + data.w2[i].clone(),
+                            masked_r: secret_r * data.r2[i].clone() % ek.n,
+                        }
+                    }
+                }
+            })
+            .collect();
+
+        Proof(reponses)
+    }
+
+    fn verifier_output(ek: &EncryptionKey, e: &Challenge, encrypted_pairs: &EncryptedPairs, proof: &Proof, range: &BigInt, cipher_x: &RawCiphertext) -> Result<(), ProofError> {
+        let mut res = true;
+        let range_scaled_third: BigInt = range.div_floor(&BigInt::from(3i32));
+        let range_scaled_two_thirds: BigInt = BigInt::from(2i32) * &range_scaled_third;
+
+        let bits_of_e = BitVec::from_bytes(&e.0);
+        let responses = proof.0;
+
+        let ress = bits_of_e.iter().zip(reponses).enumerate()
+            .map(|((ei, response), index)| {
+                match (ei, response) {
+
+                    (false, Response::Open { w1, r1, w2, r2 }) => {
+                        let mut res = true;
+
+                        if Paillier::encrypt_with_chosen_randomness(ek, &RawPlaintext::from(&w1), &Randomness::from(&r1)) != encrypted_pairs.c1[index] { res = false; }
+                        if Paillier::encrypt_with_chosen_randomness(ek, &RawPlaintext::from(&w2), &Randomness::from(&r2)) != encrypted_pairs.c2[index] { res = false; }
+
+                        let mut flag = false;
+                        if w1 < range_scaled_third {
+                            if w2 > range_scaled_third && w2 < range_scaled_two_thirds { flag = true; }
+                        }
+                        if w2 < range_scaled_third {
+                            if w1 > range_scaled_third && w1 < range_scaled_two_thirds { flag = true; }
+                        }
+                        if !flag { res = false; }
+
+                        res
+                    }
+
+                    (true, Response::Mask { j, masked_x, masked_r }) => {
+                        let mut res = true;
+
+                        let enc_zi = Paillier::encrypt_with_chosen_randomness(ek, &RawPlaintext::from(masked_x), &Randomness::from(masked_r));
+
+                        let c = if j == 1 {
+                            encrypted_pairs.c1[index].0 * cipher_x.0 % ek.nn;
+                        } else {
+                            encrypted_pairs.c2[index].0 * cipher_x.0 % ek.nn;
+                        };
+                        if c != enc_zi.0 { res = false; }
+                        if masked_x < range_scaled_third && masked_x > range_scaled_two_thirds { res = false; }
+
+                        res
+                    }
+
+                    _ => false
+                }
+            }
+            .collect();
+
+        if ress.iter().any() {
+            Err(ProofError)
+        } else {
+            Ok(())
+        }
+
+    }
+}
+
 /// hash based commitment scheme : digest = H(m||r), works under random oracle model. |r| is of length security parameter
-pub fn get_hash_commitment(x: &BigInt, r: &BigInt) -> BigInt {
+fn get_hash_commitment(x: &BigInt, r: &BigInt) -> BigInt {
+
+
     let mut digest = Context::new(&SHA256);
     let bytes_x: Vec<u8> = x.into();
     digest.update(&bytes_x);
@@ -83,196 +278,11 @@ pub fn get_hash_commitment(x: &BigInt, r: &BigInt) -> BigInt {
     BigInt::from(digest.finish().as_ref())
 }
 
-impl RangeProof<EncryptionKey, DecryptionKey,RawPlaintext,Randomness,RawCiphertext> for Paillier {
-
-    fn verifier_commit() -> (BigInt, BigInt, Vec<u8>)
-    {
-
-        let mut e: Vec<_> = (0..STATISTICAL_ERROR_FACTOR_IN_BYTES)
-            .map(|_| random::<u8>())
-            .collect();
-        let mut digest = Context::new(&SHA256);
-        digest.update(&e);
-        let m =  BigInt::from(digest.finish().as_ref());
-        let r =  BigInt::sample(RANGE_BITS);
-        let com = get_hash_commitment(&m, &r);
-        (com,r,e)
-    }
-
-    fn generate_encrypted_pairs(ek: &EncryptionKey, range: &BigInt) -> (encrypted_pairs, data_and_randmoness_pairs)
-    {
-        let mut encrypted_pairs = encrypted_pairs{
-            c1: Vec::new(),
-            c2: Vec::new(),
-        };
-        let mut data_and_randmoness_pairs = data_and_randmoness_pairs{
-            w1: Vec::new(),
-            w2: Vec::new(),
-            r1: Vec::new(),
-            r2: Vec::new(),
-        };
-
-        let r1: Vec<_> = (0..STATISTICAL_ERROR_FACTOR)
-            .map(|_| BigInt::sample_below(&ek.n))
-            .collect();
-        let r2: Vec<_> = (0..STATISTICAL_ERROR_FACTOR)
-            .map(|_| BigInt::sample_below(&ek.n))
-            .collect();
-        let range_scaled_third: BigInt = range.div_floor(&BigInt::from(3i32));
-        let range_scaled_two_thirds: BigInt = BigInt::from(2i32) * &range_scaled_third;
-        let mut w1: Vec<_> = (0..STATISTICAL_ERROR_FACTOR)
-            .map(|_| BigInt::sample_range(&range_scaled_third, &range_scaled_two_thirds))
-            .collect();
-        let mut w2: Vec<BigInt> = Vec::new();
-        let mut w2: Vec<BigInt> = w1.clone();
-        let mut w2 = w2.iter().map(|x| x - &range_scaled_third).collect::<Vec<_>>();
-
-
-        for i in 0..STATISTICAL_ERROR_FACTOR {
-            // with probability 1/2 switch between w1i and w2i
-            if random() {
-                mem::swap(&mut w2[i],&mut w1[i]);
-            }
-
-            encrypted_pairs.c1.push( Paillier::encrypt_with_chosen_randomness(ek, &RawPlaintext::from(w1[i].clone()), &Randomness(r1[i].clone())));
-            encrypted_pairs.c2.push( Paillier::encrypt_with_chosen_randomness(ek, &RawPlaintext::from(w2[i].clone()), &Randomness(r2[i].clone())));
-        }
-        data_and_randmoness_pairs.w1.extend(w1.iter().cloned());
-        data_and_randmoness_pairs.w2.extend(w2.iter().cloned());
-        data_and_randmoness_pairs.r1.extend(r1.iter().cloned());
-        data_and_randmoness_pairs.r2.extend(r2.iter().cloned());
-        (encrypted_pairs,data_and_randmoness_pairs)
-    }
-
-    fn verify_commit(com: &BigInt, r: &BigInt, e: &Vec<u8>) -> bool
-    {
-
-        let mut digest = Context::new(&SHA256);
-        digest.update(e);
-        let m =  BigInt::from(digest.finish().as_ref());
-        let com_tag = get_hash_commitment(&m, r);
-        com == &com_tag
-
-    }
-
-    fn generate_proof(ek: &EncryptionKey, secret_x: &BigInt, secret_r: &BigInt ,e:  &Vec<u8>,range: &BigInt, data: &data_and_randmoness_pairs) -> z_vector
-    {
-
-        let bit: u8 = 1;
-        let range_scaled_third: BigInt = range.div_floor(&BigInt::from(3i32));
-        let mut masked_witness = masked_witness{
-            j: Vec::new(),
-            masked_x: Vec::new(),
-            masked_r: Vec::new(),
-        };
-        let mut data_and_randmoness_pairs = data_and_randmoness_pairs{
-            w1: Vec::new(),
-            w2: Vec::new(),
-            r1: Vec::new(),
-            r2: Vec::new(),
-        };
-        let mut z_vector =  z_vector{
-            map: Vec::new(),
-            z1: data_and_randmoness_pairs,
-            z2: masked_witness,
-        };
-
-        for i in 0..STATISTICAL_ERROR_FACTOR_IN_BYTES
-            {
-                let mut ei = &e[i];
-                for j in 0..BITS_IN_BYTE {
-                    let ei = &(ei >> j);
-                    let mut eij = ei & &bit;
-                    let index = i*BITS_IN_BYTE + j;
-                    if eij == 0{
-                        z_vector.map.push(true);
-                        z_vector.z1.w1.push(data.w1[index].clone());
-                        z_vector.z1.w2.push(data.w2[index].clone());
-                        z_vector.z1.r1.push(data.r1[index].clone());
-                        z_vector.z1.r2.push(data.r2[index].clone());
-                    } else{
-                        z_vector.map.push(false);
-                        if &(secret_x + data.w1[index].clone()) > &range_scaled_third{
-                            z_vector.z2.j.push(1);
-                            z_vector.z2.masked_x.push(secret_x + data.w1[index].clone());
-                            z_vector.z2.masked_r.push(secret_r * data.r1[index].clone() % &ek.n);
-                        } else{
-                            z_vector.z2.j.push(2);
-                            z_vector.z2.masked_x.push(secret_x + data.w2[index].clone());
-                            z_vector.z2.masked_r.push(secret_r * data.r2[index].clone() % &ek.n);
-                        }
-                    }
-                }
-            }
-        z_vector
-
-    }
-
-    fn verifier_output(ek: &EncryptionKey, e:  &Vec<u8>, encrypted_pairs: &encrypted_pairs, z: &z_vector,range: &BigInt, cipher_x: &RawCiphertext) -> Result<(), ProofError>
-    {
-
-        let bit: u8 = 1;
-        let mut res = true;
-        let range_scaled_third: BigInt = range.div_floor(&BigInt::from(3i32));
-        let range_scaled_two_thirds: BigInt = BigInt::from(2i32) * &range_scaled_third;
-        let mut index0 = 0;
-        let mut index1 = 0;
-        for i in 0..STATISTICAL_ERROR_FACTOR_IN_BYTES
-            {
-                let mut ei = &e[i];
-                for j in 0..BITS_IN_BYTE
-                    {
-                        let index = i*BITS_IN_BYTE + j;
-                        let ei = &(ei >> j);
-                        let mut eij = ei & &bit;
-
-                        if eij == 0 {
-                            if Paillier::encrypt_with_chosen_randomness(ek, &RawPlaintext::from( z.z1.w1[index0].clone()), &Randomness(z.z1.r1[index0].clone())) != encrypted_pairs.c1[index]{res = false;}
-                            if Paillier::encrypt_with_chosen_randomness(ek, &RawPlaintext::from( z.z1.w2[index0].clone()), &Randomness(z.z1.r2[index0].clone())) != encrypted_pairs.c2[index]{res = false;}
-                            let mut flag = false;
-                            if z.z1.w1[index0] < range_scaled_third {
-                                if z.z1.w2[index0] > range_scaled_third && z.z1.w2[index0] < range_scaled_two_thirds {flag = true; }
-                            }
-                            if z.z1.w2[index0] < range_scaled_third {
-                                if z.z1.w1[index0] > range_scaled_third && z.z1.w1[index0] < range_scaled_two_thirds {flag = true; }
-                            }
-                            if flag==false {res = false;}
-                            index0 = index0 + 1;
-                        }
-                            else{
-
-                                let enc_zi =  Paillier::encrypt_with_chosen_randomness(ek, &RawPlaintext::from( z.z2.masked_x[index1].clone()), &Randomness(z.z2.masked_r[index1].clone()));
-                                if z.z2.j[index1] == bit{
-                                    let c = (&encrypted_pairs.c1[index].0 * &cipher_x.0) % &ek.nn;
-                                    if c != enc_zi.0 {res = false;}
-                                }
-                                else{
-                                    let c = (&encrypted_pairs.c2[index].0 * &cipher_x.0) % &ek.nn;
-                                    if c != enc_zi.0 {res = false;}
-                                }
-                                if z.z2.masked_x[index1] < range_scaled_third && z.z2.masked_x[index1] > range_scaled_two_thirds {res = false;}
-                                index1 = index1 + 1;
-
-                            }
-
-
-
-                    }
-
-            }
-        if res {
-            Ok(())
-        } else {
-            Err(ProofError)
-        }
-
-    }
+fn compute_digest(bytes: &[u8]) -> BigInt {
+    let mut digest = Context::new(&SHA256);
+    digest.update(&bytes);
+    BigInt::from(digest.finish().as_ref())
 }
-
-
-
-
-
 
 #[cfg(test)]
 mod tests {
@@ -291,7 +301,6 @@ mod tests {
         }
     }
 
-
     #[test]
     fn test_generate_encrypted_pairs() {
         let (ek, dk) = test_keypair().keys();
@@ -302,8 +311,8 @@ mod tests {
 
     #[test]
     fn test_commit_decommit() {
-        let (com,r,e) = Paillier::verifier_commit();
-        assert!(Paillier::verify_commit(&com, &r, &e))
+        let (com, r, e) = Paillier::verifier_commit();
+        assert!(Paillier::verify_commit(&com, &r, &e).is_ok())
     }
 
     #[test]
@@ -314,13 +323,13 @@ mod tests {
         let (encrypted_pairs, data_and_randmoness_pairs) = Paillier::generate_encrypted_pairs(&ek, &range);
         let secret_r = BigInt::sample_below(&ek.n);
         let secret_x = BigInt::from(0xFFFFFFFi64);
-        let z_vector= Paillier::generate_proof(&ek,&secret_x,&secret_r,&e,&range,&data_and_randmoness_pairs);
+        let z_vector= Paillier::generate_proof(&ek, &secret_x, &secret_r, &e, &range, &data_and_randmoness_pairs);
     }
 
     #[test]
     fn test_range_proof() {
         /// common:
-        let range=  BigInt::sample(RANGE_BITS);
+        let range = BigInt::sample(RANGE_BITS);
         /// prover:
         let (ek, dk) = test_keypair().keys();
         /// verifier:
@@ -329,7 +338,6 @@ mod tests {
         let (encrypted_pairs, data_and_randmoness_pairs) = Paillier::generate_encrypted_pairs(&ek, &range);
         /// prover:
         let secret_r = BigInt::sample_below(&ek.n);
-
         let secret_x = BigInt::sample_below(&range);
         /// common:
         let cipher_x = Paillier::encrypt_with_chosen_randomness(&ek, &RawPlaintext::from(secret_x.clone()), &Randomness(secret_r.clone()));
