@@ -81,7 +81,7 @@ impl<'c> Decrypt<DecryptionKey, &'c RawCiphertext, RawPlaintext> for Paillier {
     }
 }
 
-pub struct Randomness(BigInt);
+pub struct Randomness(pub BigInt);
 
 impl<'c> Open<DecryptionKey, &'c RawCiphertext, RawPlaintext, Randomness> for Paillier {
     fn open(dk: &DecryptionKey, c: &'c RawCiphertext) -> (RawPlaintext, Randomness) {
