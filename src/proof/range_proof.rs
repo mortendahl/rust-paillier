@@ -42,6 +42,7 @@ pub struct MaskedWitness {
     masked_r: Vec<BigInt>,
 }
 
+//test github push
 // TODO[Morten] find better name
 pub enum Response {
     Open { w1: BigInt, r1: BigInt, w2: BigInt, r2: BigInt },
