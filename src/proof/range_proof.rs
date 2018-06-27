@@ -102,7 +102,7 @@ impl RangeProof<RawPlaintext, ChallengeRandomness, RawCiphertext> for Paillier {
         let range_scaled_third = range.div_floor(&BigInt::from(3));
         let range_scaled_two_thirds = BigInt::from(2) * &range_scaled_third;
 
-        let mut w1: Vec<_> = (0..STATISTICAL_ERROR_FACTOR).into_par_iter()
+        let mut w1: Vec<_> = (0..STATISTICAL_ERROR_FACTOR).into_iter()
             .map(|_| BigInt::sample_range(&range_scaled_third, &range_scaled_two_thirds))
             .collect();
 
@@ -118,11 +118,11 @@ impl RangeProof<RawPlaintext, ChallengeRandomness, RawCiphertext> for Paillier {
             }
         }
 
-        let r1: Vec<_> = (0..STATISTICAL_ERROR_FACTOR).into_par_iter()
+        let r1: Vec<_> = (0..STATISTICAL_ERROR_FACTOR).into_iter()
             .map(|_| BigInt::sample_below(&ek.n))
             .collect();
 
-        let r2: Vec<_> = (0..STATISTICAL_ERROR_FACTOR).into_par_iter()
+        let r2: Vec<_> = (0..STATISTICAL_ERROR_FACTOR).into_iter()
             .map(|_| BigInt::sample_below(&ek.n))
             .collect();
 
@@ -162,7 +162,7 @@ impl RangeProof<RawPlaintext, ChallengeRandomness, RawCiphertext> for Paillier {
     fn generate_proof(ek: &EncryptionKey, secret_x: &BigInt, secret_r: &BigInt, e: &Challenge, range: &BigInt, data: &DataRandomnessPairs) -> Proof {
         let range_scaled_third: BigInt = range.div_floor(&BigInt::from(3));
         let bits_of_e = BitVec::from_bytes(&e.0);
-        let reponses: Vec<_> = (0..STATISTICAL_ERROR_FACTOR).into_par_iter()
+        let reponses: Vec<_> = (0..STATISTICAL_ERROR_FACTOR).into_iter()
             .map(|i| {
                 let ei = bits_of_e[i];
                 if !ei {
@@ -200,7 +200,7 @@ impl RangeProof<RawPlaintext, ChallengeRandomness, RawCiphertext> for Paillier {
         let bits_of_e = BitVec::from_bytes(&e.0);
         let responses = &proof.0;
 
-        let verifications: Vec<bool> = (0..STATISTICAL_ERROR_FACTOR).into_par_iter()
+        let verifications: Vec<bool> = (0..STATISTICAL_ERROR_FACTOR).into_iter()
             .map(|i| {
                 let ei = bits_of_e[i];
                 let response = &responses[i];
@@ -339,6 +339,60 @@ mod tests {
         assert!(result.is_ok());
     }
 
+
+    #[bench]
+    fn bench_verifier_commit(b: &mut Bencher){
+        // TODO: bench range for 256bit range.
+        b.iter(|| {
+            // common:
+            let range = BigInt::sample(RANGE_BITS);
+            // prover:
+            let (ek, dk) = test_keypair().keys();
+            // verifier:
+            let (com,r,e) = Paillier::verifier_commit();
+        });
+    }
+    #[bench]
+    fn bench_generate_encrypted_pairs(b: &mut Bencher){
+        // TODO: bench range for 256bit range.
+        b.iter(|| {
+            // common:
+            let range = BigInt::sample(RANGE_BITS);
+            // prover:
+            let (ek, dk) = test_keypair().keys();
+            // verifier:
+            let (com,r,e) = Paillier::verifier_commit();
+            // prover:
+            let (encrypted_pairs, data_and_randmoness_pairs) = Paillier::generate_encrypted_pairs(&ek, &range);
+        });
+    }
+
+
+
+    #[bench]
+    fn bench_generate_range_proof(b: &mut Bencher){
+        // TODO: bench range for 256bit range.
+        b.iter(|| {
+            // common:
+            let range = BigInt::sample(RANGE_BITS);
+            // prover:
+            let (ek, dk) = test_keypair().keys();
+            // verifier:
+            let (com,r,e) = Paillier::verifier_commit();
+            // prover:
+            let (encrypted_pairs, data_and_randmoness_pairs) = Paillier::generate_encrypted_pairs(&ek, &range);
+            // prover:
+            let secret_r = BigInt::sample_below(&ek.n);
+            let secret_x = BigInt::sample_below(&range);
+            //let secret_x = BigInt::from(0xFFFFFFFi64);
+            // common:
+            let cipher_x = Paillier::encrypt_with_chosen_randomness(&ek, &RawPlaintext::from(secret_x.clone()), &Randomness(secret_r.clone()));
+            // verifer decommits (tested in test_commit_decommit)
+            // prover:
+            let z_vector = Paillier::generate_proof(&ek, &secret_x, &secret_r, &e, &range,&data_and_randmoness_pairs);
+
+        });
+    }
     #[bench]
     fn bench_range_proof(b: &mut Bencher){
         // TODO: bench range for 256bit range.
@@ -364,5 +418,8 @@ mod tests {
             let result = Paillier::verifier_output(&ek, &e, &encrypted_pairs,&z_vector, &range, &cipher_x);
         });
     }
+
+
+
 
 }
