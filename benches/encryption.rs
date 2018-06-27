@@ -9,12 +9,21 @@ use paillier::*;
 mod helpers;
 use helpers::*;
 
-pub fn bench_encryption<KS: KeySize>(b: &mut Bencher) {
+pub fn bench_encryption_ek<KS: KeySize>(b: &mut Bencher) {
     let ref keypair = KS::keypair();
     let ek = EncryptionKey::from(keypair);
     let m = RawPlaintext::from(10);
     b.iter(|| {
         let _ = Paillier::encrypt(&ek, &m);
+    });
+}
+
+pub fn bench_encryption_dk<KS: KeySize>(b: &mut Bencher) {
+    let ref keypair = KS::keypair();
+    let dk = DecryptionKey::from(keypair);
+    let m = RawPlaintext::from(10);
+    b.iter(|| {
+        let _ = Paillier::encrypt(&dk, &m);
     });
 }
 
@@ -69,7 +78,8 @@ pub fn bench_multiplication<KS: KeySize>(b: &mut Bencher) {
 }
 
 benchmark_group!(ks_2048,
-    self::bench_encryption<KeySize2048>,
+    self::bench_encryption_ek<KeySize2048>,
+    self::bench_encryption_dk<KeySize2048>,
     self::bench_decryption<KeySize2048>,
     self::bench_rerandomisation<KeySize2048>,
     self::bench_addition<KeySize2048>,
@@ -77,7 +87,8 @@ benchmark_group!(ks_2048,
 );
 
 benchmark_group!(ks_4096,
-    self::bench_encryption<KeySize4096>,
+    self::bench_encryption_ek<KeySize4096>,
+    self::bench_encryption_dk<KeySize4096>,
     self::bench_decryption<KeySize4096>,
     self::bench_rerandomisation<KeySize4096>,
     self::bench_addition<KeySize4096>,
