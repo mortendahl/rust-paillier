@@ -158,6 +158,7 @@ impl<'m, 'r> EncryptWithChosenRandomness<EncryptionKey, &'m RawPlaintext, &'r Pr
 impl<'m> Encrypt<DecryptionKey, &'m RawPlaintext, RawCiphertext> for Paillier {
     fn encrypt(dk: &DecryptionKey, m: &'m RawPlaintext) -> RawCiphertext {
         let (mp, mq) = crt_decompose(&m.0, &dk.pp, &dk.qq);
+        
         let (cp, cq) = join(
             || {
                 let rp = BigInt::sample_below(&dk.p);
@@ -174,6 +175,17 @@ impl<'m> Encrypt<DecryptionKey, &'m RawPlaintext, RawCiphertext> for Paillier {
                 cq
             }
         );
+
+        // let rp = BigInt::sample_below(&dk.p);
+        // let rnp = BigInt::modpow(&rp, &dk.n, &dk.pp);
+        // let gmp = (1 + mp * &dk.n) % &dk.pp; // TODO[Morten] maybe there's more to get here
+        // let cp = (gmp * rnp) % &dk.pp;
+        
+        // let rq = BigInt::sample_below(&dk.q);
+        // let rnq = BigInt::modpow(&rq, &dk.n, &dk.qq);
+        // let gmq = (1 + mq * &dk.n) % &dk.qq; // TODO[Morten] maybe there's more to get here
+        // let cq = (gmq * rnq) % &dk.qq;
+
         let c = crt_recombine(cp, cq, &dk.pp, &dk.qq, &dk.ppinv);
         RawCiphertext(c)
     }
