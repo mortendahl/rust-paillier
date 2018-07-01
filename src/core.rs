@@ -64,6 +64,9 @@ fn l(u: &BigInt, n: &BigInt) -> BigInt {
     (u - 1) / n
 }
 
+    // (http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.112.4035&rep=rep1&type=pdf)
+    // efficient decryption using CRT based on Paillier paper section 7
+    
 impl<'c> Decrypt<DecryptionKey, &'c RawCiphertext, RawPlaintext> for Paillier {
     fn decrypt(dk: &DecryptionKey, c: &'c RawCiphertext) -> RawPlaintext {
         let (cp, cq) = crt_decompose(&c.0, &dk.pp, &dk.qq);
