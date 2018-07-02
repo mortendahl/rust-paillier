@@ -1,4 +1,4 @@
-#![cfg(feature="inclnum")]
+#![cfg(feature="usenum")]
 
 extern crate num;
 

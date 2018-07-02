@@ -15,14 +15,14 @@ fn main() {
     let (ek, dk) = Paillier::keypair().keys();
 
     // encrypt two values
-    let c1 = Paillier::encrypt(&ek, &core::Plaintext::from(20));
-    let c2 = Paillier::encrypt(&ek, &core::Plaintext::from(30));
+    let c1 = Paillier::encrypt(&ek, &RawPlaintext::from(20));
+    let c2 = Paillier::encrypt(&ek, &RawPlaintext::from(30));
 
     // add all of them together
     let c = Paillier::add(&ek, &c1, &c2);
 
     // multiply the sum by 2
-    let d = Paillier::mul(&ek, &c, &core::Plaintext::from(2));
+    let d = Paillier::mul(&ek, &c, &RawPlaintext::from(2));
 
     // decrypt final result
     let m = Paillier::decrypt(&dk, &d);

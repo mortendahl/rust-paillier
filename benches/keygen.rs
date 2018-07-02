@@ -8,33 +8,27 @@ mod helpers;
 mod bench {
 
     use bencher::Bencher;
-    use paillier::RampPaillier;
     use paillier::*;
     use helpers::*;
 
-    pub fn bench_key_generation<S, KS>(b: &mut Bencher)
-    where
-        S : AbstractScheme,
-        S : KeyGeneration<Keypair<<S as AbstractScheme>::BigInteger>>,
-        KS : KeySize,
-    {
+    pub fn bench_key_generation<KS: KeySize>(b: &mut Bencher) {
         b.iter(|| {
-            S::keypair_with_modulus_size(KS::get());
+            Paillier::keypair_with_modulus_size(KS::size());
         });
     }
 
-    benchmark_group!(ramp,
-        self::bench_key_generation<RampPaillier, KeySize512>,
-        self::bench_key_generation<RampPaillier, KeySize1024>,
-        self::bench_key_generation<RampPaillier, KeySize2048>,
-        self::bench_key_generation<RampPaillier, KeySize3072>,
-        self::bench_key_generation<RampPaillier, KeySize4096>
+    benchmark_group!(group,
+        self::bench_key_generation<KeySize512>,
+        self::bench_key_generation<KeySize1024>,
+        self::bench_key_generation<KeySize2048>,
+        self::bench_key_generation<KeySize3072>,
+        self::bench_key_generation<KeySize4096>
     );
 
 }
 
 #[cfg(feature="keygen")]
-benchmark_main!(bench::ramp);
+benchmark_main!(bench::group);
 
 #[cfg(not(feature="keygen"))]
 fn main() {}

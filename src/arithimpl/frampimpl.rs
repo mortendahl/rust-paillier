@@ -1,4 +1,4 @@
-#![cfg(feature="inclframp")]
+#![cfg(feature="useframp")]
 
 extern crate framp;
 use frand::{OsRng};
