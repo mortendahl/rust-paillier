@@ -1,7 +1,9 @@
 # Paillier
 
+
 [![Build Status](https://travis-ci.org/mortendahl/rust-paillier.svg)](https://travis-ci.org/mortendahl/rust-paillier)
 [![Latest version](https://img.shields.io/crates/v/paillier.svg)](https://img.shields.io/crates/v/paillier.svg)
+
 [![License: MIT/Apache2](https://img.shields.io/badge/license-MIT%2fApache2-blue.svg)](https://img.shields.io/badge/license-MIT%2fApache2-blue.svg)
 
 Efficient pure-Rust library for the [Paillier](https://en.wikipedia.org/wiki/Paillier_cryptosystem) partially homomorphic encryption scheme, offering encoding of both scalars and vectors (for encrypting several values together).
