@@ -4,6 +4,7 @@ use std::error::Error;
 use std::borrow::Borrow;
 
 use ring::digest::{Context, SHA256};
+use rayon::prelude::*;
 
 use ::arithimpl::traits::*;
 use ::BigInteger as BigInt;
@@ -11,11 +12,12 @@ use core::extract_nroot;
 use ::Paillier as Paillier;
 use ::{EncryptionKey, DecryptionKey};
 
-use rayon::prelude::*;
 
 const STATISTICAL_ERROR_FACTOR: usize = 40;
 
 
+// TODO: generalize the error string and move the struct to a common location where all other proofs can use it as well
+// TODO[Morten]: better: use errorchain!
 #[derive(Debug)]
 pub struct ProofError;
 
@@ -65,17 +67,6 @@ pub trait CorrectKey<EK, DK> {
     fn verify(proof: &CorrectKeyProof, aid: &VerificationAid) -> Result<(), ProofError>;
 }
 
-fn compute_digest<IT>(values: IT) -> BigInt
-where  IT: Iterator, IT::Item: Borrow<BigInt>
-{
-    let mut digest = Context::new(&SHA256);
-    for value in values {
-        let bytes: Vec<u8> = value.borrow().into();
-        digest.update(&bytes);
-    }
-    BigInt::from(digest.finish().as_ref())
-}
-
 impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
 {
     fn challenge(ek: &EncryptionKey) -> (Challenge, VerificationAid) {
@@ -83,7 +74,7 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
         // FIXME[Morten]
         // settle the question of whether using n instead of n^2 is okay
 
-        // TODO[Morten] 
+        // TODO[Morten]
         // most of these could probably be run in parallel with Rayon
         // after simplification (using `into_par_iter` in some cases)
 
@@ -92,7 +83,6 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
         let y: Vec<_> = (0..STATISTICAL_ERROR_FACTOR)
             .map(|_| BigInt::sample_below(&ek.n))
             .collect();
-
         let x: Vec<_> = y.par_iter()
             .map(|yi| BigInt::modpow(yi, &ek.n, &ek.n))
             .collect();
@@ -130,6 +120,8 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
         // check x co-prime with n
         if challenge.x.par_iter().any(|xi| BigInt::egcd(&dk.n, xi).0 != BigInt::one()) {
             return Err(ProofError)
+            // TODO: could lead to timing analysis. please follow the poc code: return from the function only once,
+            // at the end, after completing all calculation. in case one of the calculations was bad - return error.
         }
 
         // check z co-prime with n
@@ -178,6 +170,18 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
             Err(ProofError)
         }
     }
+}
+
+// TODO[Morten] generalise and move to super
+fn compute_digest<IT>(values: IT) -> BigInt
+where IT: Iterator, IT::Item: Borrow<BigInt>
+{
+    let mut digest = Context::new(&SHA256);
+    for value in values {
+        let bytes: Vec<u8> = value.borrow().into();
+        digest.update(&bytes);
+    }
+    BigInt::from(digest.finish().as_ref())
 }
 
 #[cfg(test)]
