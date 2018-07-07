@@ -40,8 +40,6 @@ pub enum Response {
 
 pub struct Proof(Vec<Response>);
 
-pub struct Commitment(BigInt);
-
 pub struct Challenge(pub BigInt);
 
 pub struct ChallengeRandomness(BigInt);
@@ -59,14 +57,14 @@ pub struct ChallengeRandomness(BigInt);
 /// This is a non-interactive version of the proof, using Fiat Shamir Transform and assuming Random Oracle Model
 pub trait RangeProofNI<PT, R, CT> {
 
-    fn prover(ek: &EncryptionKey, range: &BigInt, secret_x: &BigInt, secret_r: &BigInt) -> (EncryptedPairs, DataRandomnessPairs, Challenge, Proof);
+    fn prover(ek: &EncryptionKey, range: &BigInt, secret_x: &BigInt, secret_r: &BigInt) -> (EncryptedPairs, Challenge, Proof);
 
     fn verifier(ek: &EncryptionKey, e: &Challenge, encrypted_pairs: &EncryptedPairs, z: &Proof, range: &BigInt, cipher_x: &RawCiphertext) -> Result<(), ProofError>;
 
 }
 
 impl RangeProofNI<RawPlaintext, ChallengeRandomness, RawCiphertext> for Paillier {
-    fn prover(ek: &EncryptionKey, range: &BigInt, secret_x: &BigInt, secret_r: &BigInt) -> (EncryptedPairs, DataRandomnessPairs, Challenge, Proof)
+    fn prover(ek: &EncryptionKey, range: &BigInt, secret_x: &BigInt, secret_r: &BigInt) -> (EncryptedPairs, Challenge, Proof)
     {
         let range_scaled_third = range.div_floor(&BigInt::from(3));
         let range_scaled_two_thirds = BigInt::from(2) * &range_scaled_third;
@@ -121,8 +119,8 @@ impl RangeProofNI<RawPlaintext, ChallengeRandomness, RawCiphertext> for Paillier
 
         //assuming digest length > STATISTICAL_ERROR_FACTOR
 
-        let dataRandomnessPairs =  DataRandomnessPairs { w1, w2, r1, r2};
-        let data = Box::new(dataRandomnessPairs);
+        let data_randomness_pairs =  DataRandomnessPairs { w1, w2, r1, r2};
+        let data = Box::new(data_randomness_pairs);
         let range_scaled_third: BigInt = range.div_floor(&BigInt::from(3));
 
         let reponses: Vec<_> = (0..STATISTICAL_ERROR_FACTOR).into_par_iter()
@@ -154,7 +152,7 @@ impl RangeProofNI<RawPlaintext, ChallengeRandomness, RawCiphertext> for Paillier
             })
             .collect();
 
-        (EncryptedPairs { c1, c2 }, *data , Challenge(e) ,Proof(reponses))
+        (EncryptedPairs { c1, c2 }, Challenge(e), Proof(reponses))
 
     }
 
@@ -256,7 +254,7 @@ mod tests {
         let range = BigInt::sample(RANGE_BITS);
         let secret_r = BigInt::sample_below(&ek.n);
         let secret_x =  BigInt::sample_below(&range);
-        let (encryptedPairs, dataRandomnessPairs, challenge, proof)= Paillier::prover(&ek, &range, &secret_x, &secret_r);
+        let (encrypted_pairs, challenge, proof)= Paillier::prover(&ek, &range, &secret_x, &secret_r);
     }
 
 
@@ -267,8 +265,8 @@ mod tests {
         let secret_r = BigInt::sample_below(&ek.n);
         let secret_x =  BigInt::sample_below(&range.div_floor(&BigInt::from(3)));
         let cipher_x = Paillier::encrypt_with_chosen_randomness(&ek, &RawPlaintext::from(secret_x.clone()), &Randomness(secret_r.clone()));
-        let (encryptedPairs, dataRandomnessPairs, challenge, proof)= Paillier::prover(&ek, &range, &secret_x, &secret_r);
-        let result = Paillier::verifier(&ek, &challenge, &encryptedPairs, &proof,&range, &cipher_x);
+        let (encrypted_pairs, challenge, proof)= Paillier::prover(&ek, &range, &secret_x, &secret_r);
+        let result = Paillier::verifier(&ek, &challenge, &encrypted_pairs, &proof,&range, &cipher_x);
         assert!(result.is_ok(),true);
     }
 
@@ -279,8 +277,8 @@ mod tests {
         let secret_r = BigInt::sample_below(&ek.n);
         let secret_x =  BigInt::sample_range(&(BigInt::from(100i32) * &range), &(BigInt::from(10000i32) * &range));
         let cipher_x = Paillier::encrypt_with_chosen_randomness(&ek, &RawPlaintext::from(secret_x.clone()), &Randomness(secret_r.clone()));
-        let (encryptedPairs, dataRandomnessPairs, challenge, proof)= Paillier::prover(&ek, &range, &secret_x, &secret_r);
-        let result = Paillier::verifier(&ek, &challenge, &encryptedPairs, &proof,&range, &cipher_x);
+        let (encrypted_pairs, challenge, proof)= Paillier::prover(&ek, &range, &secret_x, &secret_r);
+        let result = Paillier::verifier(&ek, &challenge, &encrypted_pairs, &proof,&range, &cipher_x);
         assert!(result.is_err());
     }
 
@@ -294,8 +292,8 @@ mod tests {
             let secret_r = BigInt::sample_below(&ek.n);
             let secret_x =  BigInt::sample_below(&range.div_floor(&BigInt::from(3)));
             let cipher_x = Paillier::encrypt_with_chosen_randomness(&ek, &RawPlaintext::from(secret_x.clone()), &Randomness(secret_r.clone()));
-            let (encryptedPairs, dataRandomnessPairs, challenge, proof)= Paillier::prover(&ek, &range, &secret_x, &secret_r);
-            let result = Paillier::verifier(&ek, &challenge, &encryptedPairs, &proof,&range, &cipher_x);
+            let (encrypted_pairs, challenge, proof)= Paillier::prover(&ek, &range, &secret_x, &secret_r);
+            let result = Paillier::verifier(&ek, &challenge, &encrypted_pairs, &proof,&range, &cipher_x);
             assert_eq!(result.is_ok(),true);
         });
     }
