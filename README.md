@@ -7,7 +7,7 @@
 Efficient pure-Rust library for the [Paillier](https://en.wikipedia.org/wiki/Paillier_cryptosystem) partially homomorphic encryption scheme, offering also packed encoding for encrypting several values together as well as several zero-knowledge proofs related to typical use-cases.
 Supports several underlying arbitrary precision libraries, including [RAMP](https://github.com/Aatch/ramp) and [GMP](https://github.com/fizyk20/rust-gmp).
 
-Several companies have invested resources in the development of this library, including [Snips](https://snips.ai/) who implemented the [original version](https://github.com/snipsco/rust-paillier) for use in their privacy-preserving analytics system. See [contributions](#contributions) below for more details.
+Several companies have invested resources in the development of this library, including [Snips](https://snips.ai/) who implemented the [original version](https://github.com/snipsco/rust-paillier) for use in their privacy-preserving analytics system, and [KZen networks](https://github.com/KZen-networks) who contributed with implementations of many zero-knowledge proofs. See [contributions](#contributions) below for more details.
 
 **Important**: while we have followed recommendations regarding the scheme itself, some parts of this library have not yet been harden against non-cryptographic attacks such as side-channel attacks.
 
@@ -116,10 +116,17 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 
 # Contributions
 
-Several people have had a significant impact in the development of this library:
-- [Morten Dahl](https://github.com/mortendahl)
-- [Mathieu Poumeyrol](https://github.com/kali) ([Snips](https://github.com/snipsco))
-- [Mario Cornejo](https://github.com/mcornejo) (while at [Snips](https://github.com/snipsco))
+Several people have had a significant impact in the development of this library (in alphabetical order):
+- [Gary Benattar](https://github.com/gbenattar) (KZen networks)
+- [Mario Cornejo](https://github.com/mcornejo) (while at Snips)
+- [Mathieu Poumeyrol](https://github.com/kali) (Snips)
+- [Omer Shlomovits](https://github.com/omershlo) (KZen networks)
 
-and several companies have reported on their used of the library:
-- [Snips](https://github.com/snipsco) for privacy-preserving analytics
+several companies have invested resources:
+- [Snips](https://github.com/snipsco) sponsored the original implementation
+- [KZen networks](https://github.com/KZen-networks) implemented many zero-knowledge proofs
+
+and several have reported on their use of the library:
+- [Snips](https://github.com/snipsco): privacy-preserving analytics
+- [KZen networks](https://github.com/KZen-networks): multi-party signatures
+
