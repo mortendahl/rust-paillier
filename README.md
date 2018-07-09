@@ -4,10 +4,12 @@
 [![Latest version](https://img.shields.io/crates/v/paillier.svg)](https://img.shields.io/crates/v/paillier.svg)
 [![License: MIT/Apache2](https://img.shields.io/badge/license-MIT%2fApache2-blue.svg)](https://img.shields.io/badge/license-MIT%2fApache2-blue.svg)
 
-Efficient pure-Rust library for the [Paillier](https://en.wikipedia.org/wiki/Paillier_cryptosystem) partially homomorphic encryption scheme, offering encoding of both scalars and vectors (for encrypting several values together).
-Supports several underlying arbitrary precision libraries, including [RAMP](https://github.com/Aatch/ramp), [GMP](https://github.com/fizyk20/rust-gmp), and [num](https://github.com/rust-num/num).
+Efficient pure-Rust library for the [Paillier](https://en.wikipedia.org/wiki/Paillier_cryptosystem) partially homomorphic encryption scheme, offering also packed encoding for encrypting several values together as well as several zero-knowledge proofs related to typical use-cases.
+Supports several underlying arbitrary precision libraries, including [RAMP](https://github.com/Aatch/ramp) and [GMP](https://github.com/fizyk20/rust-gmp).
 
-**Important**: while we have followed recommendations regarding the scheme itself, this library should currently be seen as an experimental implementation. In particular, no particular efforts have so far been made to harden it against non-cryptographic attacks, including side-channel attacks.
+Several companies have invested resources in the development of this library, including [Snips](https://snips.ai/) who implemented the [original version](https://github.com/snipsco/rust-paillier) for use in their privacy-preserving analytics system.
+
+**Important**: while we have followed recommendations regarding the scheme itself, some parts of this library have not yet been harden against non-cryptographic attacks such as side-channel attacks.
 
 
 ```rust
@@ -19,99 +21,80 @@ fn main() {
   // generate a fresh keypair and extract encryption and decryption keys
   let (ek, dk) = Paillier::keypair().keys();
 
-  // select integral coding
-  let code = integral::Code::default();
-
-  // pair keys with coding
-  let eek = ek.with_code(&code);
-  let ddk = dk.with_code(&code);
-
   // encrypt four values
-  let c1 = Paillier::encrypt(&eek, &10);
-  let c2 = Paillier::encrypt(&eek, &20);
-  let c3 = Paillier::encrypt(&eek, &30);
-  let c4 = Paillier::encrypt(&eek, &40);
+  let c1 = Paillier::encrypt(&ek, 10);
+  let c2 = Paillier::encrypt(&ek, 20);
+  let c3 = Paillier::encrypt(&ek, 30);
+  let c4 = Paillier::encrypt(&ek, 40);
 
   // add all of them together
-  let c = Paillier::add(&eek,
-    &Paillier::add(&eek, &c1, &c2),
-    &Paillier::add(&eek, &c3, &c4)
+  let c = Paillier::add(&ek,
+    &Paillier::add(&ek, &c1, &c2),
+    &Paillier::add(&ek, &c3, &c4)
   );
 
   // multiply the sum by 2
-  let d = Paillier::mul(&eek, &c, &2);
+  let d = Paillier::mul(&ek, &c, 2);
 
   // decrypt final result
-  let m: u64 = Paillier::decrypt(&ddk, &d);
+  let m: u64 = Paillier::decrypt(&dk, &d);
   println!("decrypted total sum is {}", m);
 
 }
 ```
 
-
 # Installation
 
-Note that some functionality is *not* included by default; see the [Building](#building) section for more details.
+Some features are optional yet currently included by default. See [Features](#features) below for more details. Note that the nightly toolchain is currently needed to build the library.
 
-## GitHub
+## Using cargo
+```toml
+[dependencies]
+paillier = { version="0.2" }
+```
+
+## From source
 ```bash
 git clone https://github.com/mortendahl/rust-paillier
 cd rust-paillier
 cargo build --release
 ```
 
-## Cargo
-```toml
-[dependencies]
-paillier = { version="0.1" }
-```
+## Features
 
-
-## Building
-
-The nightly toolchain is currently needed in order to build the library. For performance reasons we strongly encourage building and testing in release mode.
-
-### Arithmetic
-
-The library supports the use of different arithmetic libraries, currently defaulting to [RAMP](https://github.com/Aatch/ramp) for portability with good performance.
-
-For [RAMP](https://github.com/Aatch/ramp)-only compilation use `cargo` parameters
+The library supports the following features. The default compilation is equivalent to
 ```
---no-default-features --features "useramp"
+cargo build --release --no-default-features --features "usegmp keygen proofs"
 ```
+using GMP and including both key generation and zero-knowledge proofs.
 
-For [GMP](https://github.com/fizyk20/rust-gmp)-only compilation use
-```
---no-default-features --features "usegmp"
-```
+### Underlying arithmetic
 
-For [num](https://github.com/rust-num/num)-only compilation use
-```
---no-default-features --features "usenum"
-```
-
-Finally, use
-```
---no-default-features --features "inclramp inclnum inclgmp defaultramp"
-```
-to have one or more available, using one of them as the default (useful for e.g. performance tests).
+The choice of underlying arithmetic library may be changed using features `usegmp` (default) and `useramp`. GMP generally offers [slightly better performance](https://medium.com/snips-ai/benchmarking-paillier-encryption-15631a0b5ad8) but may be unavailable on some platforms or for some applications.
 
 ### Key generation
 
-Key generation is optional as it is currently only implemented when using [RAMP](https://github.com/Aatch/ramp) or [GMP](https://github.com/fizyk20/rust-gmp) as the underlying arithmetic library.
+Key generation feature `keygen` is included by default but if unneeded may safely be excluded to avoid extra dependencies.
 
-While included by default it may be excluded using parameter
-```
---no-default-features
-```
-in which case one or more arithmetic libraries must be specified as well as a default one, e.g.
-```
---features "inclramp inclgmp defaultramp"
-```
-as shown in [above](#arithmetic) .
+```rust
+extern crate paillier;
+use paillier::*;
 
+fn main() {
 
-# Performance
+  // generate a fresh keypair and extract encryption and decryption keys
+  let (ek, dk) = Paillier::keypair().keys();
+
+  ...
+
+}
+```
+
+### Zero-knowledge proofs
+
+Feature `proofs` includes various zero-knowledge proofs related to the typical use of Paillier encryption. Turned on by default but may safely be excluded if unneeded.
+
+# Benchmarks
 
 Several benches are included, testing both the underlying arithmetic libraries as well as the operations of the scheme. All may be run using
 ```
@@ -121,7 +104,7 @@ and including either several arithmetic libraries and key generation as discusse
 
 # License
 
-Fork of [`snipsco/rust-paillier`](https://github.com/snipsco/rust-paillier) with additional functionality. Licensed under either of
+Forked from [`snipsco/rust-paillier`](https://github.com/snipsco/rust-paillier) with additional functionality. Licensed under either of
 
  * Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
  * MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
