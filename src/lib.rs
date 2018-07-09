@@ -61,6 +61,7 @@ pub struct DecryptionKey {
     dp: BigInteger,
     dq: BigInteger,
     pinv: BigInteger,
+    ppinv: BigInteger,
     hp: BigInteger,
     hq: BigInteger,
 }

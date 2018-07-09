@@ -164,6 +164,73 @@ impl<'m, 'r> EncryptWithChosenRandomness<EncryptionKey, &'m RawPlaintext, &'r Pr
     }
 }
 
+impl<'m> Encrypt<DecryptionKey, &'m RawPlaintext, RawCiphertext> for Paillier {
+    fn encrypt(dk: &DecryptionKey, m: &'m RawPlaintext) -> RawCiphertext {
+        let (mp, mq) = crt_decompose(&m.0, &dk.pp, &dk.qq);
+        
+        let (cp, cq) = join(
+            || {
+                let rp = BigInt::sample_below(&dk.p);
+                let rnp = BigInt::modpow(&rp, &dk.n, &dk.pp);
+                let gmp = (1 + mp * &dk.n) % &dk.pp; // TODO[Morten] maybe there's more to get here
+                let cp = (gmp * rnp) % &dk.pp;
+                cp
+            },
+            || {
+                let rq = BigInt::sample_below(&dk.q);
+                let rnq = BigInt::modpow(&rq, &dk.n, &dk.qq);
+                let gmq = (1 + mq * &dk.n) % &dk.qq; // TODO[Morten] maybe there's more to get here
+                let cq = (gmq * rnq) % &dk.qq;
+                cq
+            }
+        );
+
+        // let rp = BigInt::sample_below(&dk.p);
+        // let rnp = BigInt::modpow(&rp, &dk.n, &dk.pp);
+        // let gmp = (1 + mp * &dk.n) % &dk.pp; // TODO[Morten] maybe there's more to get here
+        // let cp = (gmp * rnp) % &dk.pp;
+        
+        // let rq = BigInt::sample_below(&dk.q);
+        // let rnq = BigInt::modpow(&rq, &dk.n, &dk.qq);
+        // let gmq = (1 + mq * &dk.n) % &dk.qq; // TODO[Morten] maybe there's more to get here
+        // let cq = (gmq * rnq) % &dk.qq;
+
+        let c = crt_recombine(cp, cq, &dk.pp, &dk.qq, &dk.ppinv);
+        RawCiphertext(c)
+    }
+}
+
+impl<'m, 'r> EncryptWithChosenRandomness<DecryptionKey, &'m RawPlaintext, &'r Randomness, RawCiphertext> for Paillier {
+    fn encrypt_with_chosen_randomness(dk: &DecryptionKey, m: &'m RawPlaintext, r: &'r Randomness) -> RawCiphertext {
+        let (mp, mq) = crt_decompose(&m.0, &dk.pp, &dk.qq);
+        let (rp, rq) = crt_decompose(&r.0, &dk.pp, &dk.qq);
+        let (cp, cq) = join(
+            || {
+                let rnp = BigInt::modpow(&rp, &dk.n, &dk.pp);
+                let gmp = (1 + mp * &dk.n) % &dk.pp; // TODO[Morten] maybe there's more to get here
+                let cp = (gmp * rnp) % &dk.pp;
+                cp
+            },
+            || {
+                let rnq = BigInt::modpow(&rq, &dk.n, &dk.qq);
+                let gmq = (1 + mq * &dk.n) % &dk.qq; // TODO[Morten] maybe there's more to get here
+                let cq = (gmq * rnq) % &dk.qq;
+                cq
+            }
+        );
+        let c = crt_recombine(cp, cq, &dk.pp, &dk.qq, &dk.ppinv);
+        RawCiphertext(c)
+    }
+}
+
+impl<'m, 'r> EncryptWithChosenRandomness<DecryptionKey, &'m RawPlaintext, &'r PrecomputedRandomness, RawCiphertext> for Paillier {
+    fn encrypt_with_chosen_randomness(dk: &DecryptionKey, m: &'m RawPlaintext, rn: &'r PrecomputedRandomness) -> RawCiphertext {
+        let gm = (1 + &m.0 * &dk.n) % &dk.nn;
+        let c = (gm * &rn.0) % &dk.nn;
+        RawCiphertext(c)
+    }
+}
+
 // impl<PT, CT> Encrypt<EncryptionKey, PT, CT> for EncryptionKey
 // where Self: Encrypt<EncryptionKey, PT, CT>
 // {
@@ -249,12 +316,13 @@ impl<'kp> From<&'kp Keypair> for DecryptionKey {
         let (dp, dq) = crt_decompose(dn, &pminusone, &qminusone);
 
         let pinv = BigInt::modinv(&p, &q);
+        let ppinv = BigInt::modinv(&pp, &qq);
 
         let hp = h(&p, &pp, &n);
         let hq = h(&q, &qq, &n);
 
         DecryptionKey {
-            p, pp, pminusone, pinv,
+            p, pp, pminusone, pinv, ppinv,
             q, qq, qminusone,
             n, nn,
             phi,
@@ -290,11 +358,22 @@ mod tests {
     }
 
     #[test]
-    fn test_correct_encryption_decryption() {
+    fn test_correct_encryption_decryption1() {
         let (ek, dk) = test_keypair().keys();
 
         let m = RawPlaintext::from(10);
         let c = Paillier::encrypt(&ek, &m);
+
+        let recovered_m = Paillier::decrypt(&dk, &c);
+        assert_eq!(recovered_m, m);
+    }
+
+    #[test]
+    fn test_correct_encryption_decryption2() {
+        let (_, dk) = test_keypair().keys();
+
+        let m = RawPlaintext::from(10);
+        let c = Paillier::encrypt(&dk, &m);
 
         let recovered_m = Paillier::decrypt(&dk, &c);
         assert_eq!(recovered_m, m);
