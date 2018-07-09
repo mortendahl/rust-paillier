@@ -7,7 +7,7 @@
 Efficient pure-Rust library for the [Paillier](https://en.wikipedia.org/wiki/Paillier_cryptosystem) partially homomorphic encryption scheme, offering also packed encoding for encrypting several values together as well as several zero-knowledge proofs related to typical use-cases.
 Supports several underlying arbitrary precision libraries, including [RAMP](https://github.com/Aatch/ramp) and [GMP](https://github.com/fizyk20/rust-gmp).
 
-Several companies have invested resources in the development of this library, including [Snips](https://snips.ai/) who implemented the [original version](https://github.com/snipsco/rust-paillier) for use in their privacy-preserving analytics system.
+Several companies have invested resources in the development of this library, including [Snips](https://snips.ai/) who implemented the [original version](https://github.com/snipsco/rust-paillier) for use in their privacy-preserving analytics system. See [contributions](#contributions) below for more details.
 
 **Important**: while we have followed recommendations regarding the scheme itself, some parts of this library have not yet been harden against non-cryptographic attacks such as side-channel attacks.
 
@@ -111,9 +111,15 @@ Forked from [`snipsco/rust-paillier`](https://github.com/snipsco/rust-paillier) 
 
 at your option.
 
-## Contribution
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
 
-Unless you explicitly state otherwise, any contribution intentionally submitted
-for inclusion in the work by you, as defined in the Apache-2.0 license, shall
-be dual licensed as above, without any additional terms or conditions.
- 
+
+# Contributions
+
+Several people have had a significant impact in the development of this library:
+- [Morten Dahl](https://github.com/mortendahl)
+- [Mathieu Poumeyrol](https://github.com/kali) ([Snips](https://github.com/snipsco))
+- [Mario Cornejo](https://github.com/mcornejo) (while at [Snips](https://github.com/snipsco))
+
+and several companies have reported on their used of the library:
+- [Snips](https://github.com/snipsco) for privacy-preserving analytics
