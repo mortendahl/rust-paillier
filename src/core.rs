@@ -95,7 +95,26 @@ impl<'c> Decrypt<DecryptionKey, &'c RawCiphertext, RawPlaintext> for Paillier {
     }
 }
 
-pub struct Randomness(BigInt);
+#[derive(Clone)] // TODO[Morten] remove `Clone`?
+pub struct Randomness(pub BigInt);
+
+impl Randomness {
+    pub fn sample(ek: &EncryptionKey) -> Randomness {
+        Randomness(BigInt::sample_below(&ek.n))
+    }
+}
+
+impl From<BigInt> for Randomness {
+    fn from(x: BigInt) -> Randomness {
+        Randomness(x)
+    }
+}
+
+impl<'b> From<&'b BigInt> for Randomness {
+    fn from(x: &'b BigInt) -> Randomness {
+        Randomness(x.clone())
+    }
+}
 
 impl<'c> Open<DecryptionKey, &'c RawCiphertext, RawPlaintext, Randomness> for Paillier {
     fn open(dk: &DecryptionKey, c: &'c RawCiphertext) -> (RawPlaintext, Randomness) {
@@ -147,7 +166,7 @@ impl<'c> Rerandomize<EncryptionKey, &'c RawCiphertext, RawCiphertext> for Pailli
 
 impl<'m> Encrypt<EncryptionKey, &'m RawPlaintext, RawCiphertext> for Paillier {
     fn encrypt(ek: &EncryptionKey, m: &'m RawPlaintext) -> RawCiphertext {
-        let r = Randomness(BigInt::sample_below(&ek.n));
+        let r = Randomness::sample(&ek);
         Self::encrypt_with_chosen_randomness(ek, m, &r)
     }
 }
