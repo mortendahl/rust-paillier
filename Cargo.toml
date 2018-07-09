@@ -2,7 +2,7 @@
 name = "paillier"
 version = "0.2.0-pre"
 authors = [
-  "Mario Cornejo <mario.cornejo@snips.ai>",
+  "Mario Cornejo <murdix@gmail.com>",
   "Morten Dahl <mortendahlcs@gmail.com>",
   "Mathieu Poumeyrol <mathieu.poumeyrol@snips.ai>"
 ]
