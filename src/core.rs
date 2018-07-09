@@ -3,8 +3,6 @@
 use std::fmt;
 use std::borrow::Borrow;
 
-use rayon::join;
-
 use ::traits::*;
 use ::arithimpl::traits::*;
 use ::BigInteger as BigInt;
@@ -72,30 +70,40 @@ fn l(u: &BigInt, n: &BigInt) -> BigInt {
 impl<'c> Decrypt<DecryptionKey, &'c RawCiphertext, RawPlaintext> for Paillier {
     fn decrypt(dk: &DecryptionKey, c: &'c RawCiphertext) -> RawPlaintext {
         let (cp, cq) = crt_decompose(&c.0, &dk.pp, &dk.qq);
-        // decrypt in parallel with respectively p and q
-        let (mp, mq) = join(
-            || {
-                // process using p
-                let dp = BigInt::modpow(&cp, &dk.pminusone, &dk.pp);
-                let lp = l(&dp, &dk.p);
-                let mp = (&lp * &dk.hp) % &dk.p;
-                mp
-            },
-            || {
-                // process using q
-                let dq = BigInt::modpow(&cq, &dk.qminusone, &dk.qq);
-                let lq = l(&dq, &dk.q);
-                let mq = (&lq * &dk.hq) % &dk.q;
-                mq
-            }
-        );
+        // process using p
+        let dp = BigInt::modpow(&cp, &dk.pminusone, &dk.pp);
+        let lp = l(&dp, &dk.p);
+        let mp = (&lp * &dk.hp) % &dk.p;
+        // process using q
+        let dq = BigInt::modpow(&cq, &dk.qminusone, &dk.qq);
+        let lq = l(&dq, &dk.q);
+        let mq = (&lq * &dk.hq) % &dk.q;
         // perform CRT
         let m = crt_recombine(mp, mq, &dk.p, &dk.q, &dk.pinv);
         RawPlaintext(m)
     }
 }
 
-pub struct Randomness(BigInt);
+#[derive(Clone)] // TODO[Morten] remove `Clone`?
+pub struct Randomness(pub BigInt);
+
+impl Randomness {
+    pub fn sample(ek: &EncryptionKey) -> Randomness {
+        Randomness(BigInt::sample_below(&ek.n))
+    }
+}
+
+impl From<BigInt> for Randomness {
+    fn from(x: BigInt) -> Randomness {
+        Randomness(x)
+    }
+}
+
+impl<'b> From<&'b BigInt> for Randomness {
+    fn from(x: &'b BigInt) -> Randomness {
+        Randomness(x.clone())
+    }
+}
 
 impl<'c> Open<DecryptionKey, &'c RawCiphertext, RawPlaintext, Randomness> for Paillier {
     fn open(dk: &DecryptionKey, c: &'c RawCiphertext) -> (RawPlaintext, Randomness) {
@@ -147,7 +155,7 @@ impl<'c> Rerandomize<EncryptionKey, &'c RawCiphertext, RawCiphertext> for Pailli
 
 impl<'m> Encrypt<EncryptionKey, &'m RawPlaintext, RawCiphertext> for Paillier {
     fn encrypt(ek: &EncryptionKey, m: &'m RawPlaintext) -> RawCiphertext {
-        let r = Randomness(BigInt::sample_below(&ek.n));
+        let r = Randomness::sample(&ek);
         Self::encrypt_with_chosen_randomness(ek, m, &r)
     }
 }
