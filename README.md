@@ -122,11 +122,12 @@ Several people have had a significant impact in the development of this library 
 - [Mathieu Poumeyrol](https://github.com/kali) (Snips)
 - [Omer Shlomovits](https://github.com/omershlo) (KZen networks)
 
-several companies have invested resources:
-- [Snips](https://github.com/snipsco) sponsored the original implementation
-- [KZen networks](https://github.com/KZen-networks) implemented many zero-knowledge proofs
+and several companies have invested resources:
+- [Snips](https://github.com/snipsco) sponsored implementation of the original version
+- [KZen networks](https://github.com/KZen-networks) sponsored extension of many zero-knowledge proofs
 
-or have reported on their use of the library:
+## Reported uses
+
 - [Snips](https://github.com/snipsco): privacy-preserving analytics
 - [KZen networks](https://github.com/KZen-networks): multi-party signatures
 
