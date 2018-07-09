@@ -127,15 +127,15 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
 
     fn prove(dk: &DecryptionKey, challenge: &Challenge) -> Result<CorrectKeyProof, ProofError>
     {
+        let mut fail = false; // !!! Do not change
+
         // check x co-prime with n
-        if challenge.x.par_iter().any(|xi| BigInt::egcd(&dk.n, xi).0 != BigInt::one()) {
-            return Err(ProofError)
-        }
+        fail = challenge.x.par_iter()
+            .any(|xi| BigInt::egcd(&dk.n, xi).0 != BigInt::one()) || fail;
 
         // check z co-prime with n
-        if challenge.z.par_iter().any(|zi| BigInt::egcd(&dk.n, zi).0 != BigInt::one()) {
-            return Err(ProofError)
-        }
+        fail = challenge.z.par_iter()
+            .any(|zi| BigInt::egcd(&dk.n, zi).0 != BigInt::one()) || fail;
 
         // reconstruct a
         let phimine = &dk.phi - (&challenge.e % &dk.phi);
@@ -148,9 +148,8 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
             .collect();
 
         // check a co-prime with n
-        if a.par_iter().any(|ai| BigInt::egcd(&dk.n, ai).0 != BigInt::one()) {
-            return Err(ProofError)
-        }
+        fail = a.par_iter()
+            .any(|ai| BigInt::egcd(&dk.n, ai).0 != BigInt::one()) || fail;
 
         // check that e was computed correctly
         let e = compute_digest(
@@ -158,9 +157,10 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
                 .chain(&challenge.x)
                 .chain(&a)
         );
-        if challenge.e != e {
-            return Err(ProofError)
-        }
+
+        fail = (challenge.e != e) || fail;
+
+        if fail { return Err(ProofError); }
 
         // compute proof in the form of a hash of the recovered roots
         let y_digest = compute_digest(
