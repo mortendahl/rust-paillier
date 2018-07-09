@@ -6,10 +6,9 @@ extern crate rand;
 extern crate num_traits;
 #[macro_use]
 extern crate itertools;
+extern crate rayon;
 #[cfg(feature="proofs")]
 extern crate ring;
-#[cfg(feature="proofs")]
-extern crate rayon;
 extern crate bit_vec;
 
 pub mod arithimpl;

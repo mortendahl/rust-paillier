@@ -3,6 +3,8 @@
 use std::fmt;
 use std::borrow::Borrow;
 
+use rayon::join;
+
 use ::traits::*;
 use ::arithimpl::traits::*;
 use ::BigInteger as BigInt;
@@ -70,14 +72,23 @@ fn l(u: &BigInt, n: &BigInt) -> BigInt {
 impl<'c> Decrypt<DecryptionKey, &'c RawCiphertext, RawPlaintext> for Paillier {
     fn decrypt(dk: &DecryptionKey, c: &'c RawCiphertext) -> RawPlaintext {
         let (cp, cq) = crt_decompose(&c.0, &dk.pp, &dk.qq);
-        // process using p
-        let dp = BigInt::modpow(&cp, &dk.pminusone, &dk.pp);
-        let lp = l(&dp, &dk.p);
-        let mp = (&lp * &dk.hp) % &dk.p;
-        // process using q
-        let dq = BigInt::modpow(&cq, &dk.qminusone, &dk.qq);
-        let lq = l(&dq, &dk.q);
-        let mq = (&lq * &dk.hq) % &dk.q;
+        // decrypt in parallel with respectively p and q
+        let (mp, mq) = join(
+            || {
+                // process using p
+                let dp = BigInt::modpow(&cp, &dk.pminusone, &dk.pp);
+                let lp = l(&dp, &dk.p);
+                let mp = (&lp * &dk.hp) % &dk.p;
+                mp
+            },
+            || {
+                // process using q
+                let dq = BigInt::modpow(&cq, &dk.qminusone, &dk.qq);
+                let lq = l(&dq, &dk.q);
+                let mq = (&lq * &dk.hq) % &dk.q;
+                mq
+            }
+        );
         // perform CRT
         let m = crt_recombine(mp, mq, &dk.p, &dk.q, &dk.pinv);
         RawPlaintext(m)
