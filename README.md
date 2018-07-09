@@ -126,7 +126,7 @@ several companies have invested resources:
 - [Snips](https://github.com/snipsco) sponsored the original implementation
 - [KZen networks](https://github.com/KZen-networks) implemented many zero-knowledge proofs
 
-and several have reported on their use of the library:
+or have reported on their use of the library:
 - [Snips](https://github.com/snipsco): privacy-preserving analytics
 - [KZen networks](https://github.com/KZen-networks): multi-party signatures
 
