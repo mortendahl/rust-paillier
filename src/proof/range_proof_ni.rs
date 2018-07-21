@@ -20,8 +20,8 @@ const RANGE_BITS : usize = 256; //for elliptic curves with 256bits for example
 
 #[derive(Default)]
 pub struct EncryptedPairs {
-    c1: Vec<RawCiphertext>,
-    c2: Vec<RawCiphertext>,
+    c1: Vec<BigInt>,
+    c2: Vec<BigInt>,
 }
 
 #[derive(Default)]
