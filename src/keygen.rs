@@ -1,6 +1,6 @@
 //! Key generation following standard recommendations.
 
-use core::Keypair;
+use ::Keypair;
 use ::BigInteger as BigInt;
 use ::Paillier as Paillier;
 use traits::*;

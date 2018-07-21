@@ -186,7 +186,7 @@ where IT: Iterator, IT::Item: Borrow<BigInt>
 mod tests {
 
     use super::*;
-    use core::Keypair;
+    use ::Keypair;
     use traits::*;
 
     fn test_keypair() -> Keypair {

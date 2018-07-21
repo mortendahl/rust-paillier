@@ -9,13 +9,7 @@ use ::traits::*;
 use ::arithimpl::traits::*;
 use ::BigInteger as BigInt;
 use ::Paillier as Paillier;
-use ::{EncryptionKey, DecryptionKey};
-
-/// Representation of a keypair from which encryption and decryption keys can be derived.
-pub struct Keypair {
-    pub p: BigInt,
-    pub q: BigInt,
-}
+use ::{Keypair, EncryptionKey, DecryptionKey, RawPlaintext, RawCiphertext};
 
 impl DefaultKeys for Keypair {
     type EK = EncryptionKey;
@@ -81,14 +75,6 @@ impl<'kp> From<&'kp Keypair> for EncryptionKey {
         }
     }
 }
-
-/// Representation of unencrypted message.
-#[derive(Clone,Debug,PartialEq)]
-pub struct RawPlaintext<'b>(Cow<'b, BigInt>);
-
-/// Representation of encrypted message.
-#[derive(Clone,Debug,PartialEq)]
-pub struct RawCiphertext<'b>(Cow<'b, BigInt>);
 
 #[derive(Debug,PartialEq)]
 pub struct Randomness(pub BigInt);
@@ -289,9 +275,9 @@ impl<'c, 'm> Decrypt<DecryptionKey, RawCiphertext<'c>, RawPlaintext<'m>> for Pai
     }
 }
 
-impl<'c, 'm> Open<DecryptionKey, RawCiphertext<'c>, RawPlaintext<'m>, Randomness> for Paillier {
-    fn open(dk: &DecryptionKey, c: RawCiphertext<'c>) -> (RawPlaintext<'m>, Randomness) {
-        let m = Self::decrypt(dk, c);
+impl<'c, 'r, 'm> Open<DecryptionKey, &'c RawCiphertext<'r>, RawPlaintext<'m>, Randomness> for Paillier {
+    fn open(dk: &DecryptionKey, c: &'c RawCiphertext<'r>) -> (RawPlaintext<'m>, Randomness) {
+        let m = Self::decrypt(dk, c.clone()); // TODO[Morten] avoid clone
         let gminv = (1 - m.0.borrow() * &dk.n) % &dk.nn;
         let rn = (c.0.borrow() * gminv) % &dk.nn;
         let r = extract_nroot(dk, &rn);
@@ -415,7 +401,7 @@ mod tests {
         let (ek, dk) = test_keypair().keys();
 
         let c = Paillier::encrypt(&ek, RawPlaintext::from(BigInt::from(10)));
-        let (m, r) = Paillier::open(&dk, c);
+        let (m, r) = Paillier::open(&dk, &c);
         let d = Paillier::encrypt_with_chosen_randomness(&ek, m, &r);
         assert_eq!(c, d);
     }
@@ -453,7 +439,7 @@ mod tests {
         let (ek, dk): (EncryptionKey, _) = Paillier::keypair_with_modulus_size(2048).keys();
 
         let m = RawPlaintext::from(BigInt::from(10));
-        let c = Paillier::encrypt(&ek, m);
+        let c = Paillier::encrypt(&ek, m.clone()); // TODO avoid
 
         let recovered_m = Paillier::decrypt(&dk, c);
         assert_eq!(recovered_m, m);

@@ -26,6 +26,7 @@ pub use coding::*;
 #[cfg(feature="keygen")]
 pub use keygen::*;
 
+use std::borrow::Cow;
 
 /// Main struct onto which most operations are added.
 pub struct Paillier {}
@@ -41,6 +42,12 @@ pub use arithimpl::gmpimpl::BigInteger as BigInteger;
 
 #[cfg(feature="usenum")]
 pub use arithimpl::numimpl::BigInteger as BigInteger;
+
+/// Representation of a keypair from which encryption and decryption keys can be derived.
+pub struct Keypair {
+    pub p: BigInteger,
+    pub q: BigInteger,
+}
 
 /// Public encryption key.
 #[derive(Debug,Clone)]
@@ -68,3 +75,11 @@ pub struct DecryptionKey {
     hp: BigInteger,
     hq: BigInteger,
 }
+
+/// Representation of unencrypted message.
+#[derive(Clone,Debug,PartialEq)]
+pub struct RawPlaintext<'b>(Cow<'b, BigInteger>);
+
+/// Representation of encrypted message.
+#[derive(Clone,Debug,PartialEq)]
+pub struct RawCiphertext<'b>(Cow<'b, BigInteger>);

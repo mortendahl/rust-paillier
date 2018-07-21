@@ -1,7 +1,6 @@
 use ::Paillier as Paillier;
-use ::EncryptionKey;
+use ::{EncryptionKey, RawPlaintext, Keypair};
 use ::traits::*;
-use ::core::*;
 
 /// Verify correct opening of ciphertext.
 pub trait CorrectOpening<EK, PT, R, CT> {
@@ -39,7 +38,7 @@ mod tests {
         let (ek, dk) = test_keypair().keys();
 
         let c = Paillier::encrypt(&ek, RawPlaintext::from(BigInt::from(10)));
-        let (m, r) = Paillier::open(&dk, c.clone());
+        let (m, r) = Paillier::open(&dk, &c);
 
         assert!(Paillier::verify(&ek, m, &r, &c));
     }
