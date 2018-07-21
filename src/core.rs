@@ -251,6 +251,15 @@ impl<'c, 'd> Rerandomize<EncryptionKey, RawCiphertext<'c>, RawCiphertext<'d>> fo
 /// Efficient decryption using CRT based on [Paillier99, section 7](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.112.4035&rep=rep1&type=pdf)
 impl<'c, 'm> Decrypt<DecryptionKey, RawCiphertext<'c>, RawPlaintext<'m>> for Paillier {
     fn decrypt(dk: &DecryptionKey, c: RawCiphertext<'c>) -> RawPlaintext<'m> {
+        Self::decrypt(dk, &c)
+    }
+}
+
+/// TODO
+///
+/// Efficient decryption using CRT based on [Paillier99, section 7](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.112.4035&rep=rep1&type=pdf)
+impl<'c, 'm> Decrypt<DecryptionKey, &'c RawCiphertext<'c>, RawPlaintext<'m>> for Paillier {
+    fn decrypt(dk: &DecryptionKey, c: &'c RawCiphertext<'c>) -> RawPlaintext<'m> {
         let (cp, cq) = crt_decompose(c.0.borrow(), &dk.pp, &dk.qq);
         // decrypt in parallel with respectively p and q
         let (mp, mq) = join(
@@ -275,9 +284,25 @@ impl<'c, 'm> Decrypt<DecryptionKey, RawCiphertext<'c>, RawPlaintext<'m>> for Pai
     }
 }
 
-impl<'c, 'r, 'm> Open<DecryptionKey, &'c RawCiphertext<'r>, RawPlaintext<'m>, Randomness> for Paillier {
-    fn open(dk: &DecryptionKey, c: &'c RawCiphertext<'r>) -> (RawPlaintext<'m>, Randomness) {
-        let m = Self::decrypt(dk, c.clone()); // TODO[Morten] avoid clone
+// impl<'c, 'r, 'm> Open<DecryptionKey, &'c RawCiphertext<'r>, RawPlaintext<'m>, Randomness> for Paillier {
+//     fn open(dk: &DecryptionKey, c: &'c RawCiphertext<'r>) -> (RawPlaintext<'m>, Randomness) {
+//         let m = Self::decrypt(dk, c.clone()); // TODO[Morten] avoid clone
+//         let gminv = (1 - m.0.borrow() * &dk.n) % &dk.nn;
+//         let rn = (c.0.borrow() * gminv) % &dk.nn;
+//         let r = extract_nroot(dk, &rn);
+//         (m, Randomness(r))
+//     }
+// }
+
+impl<'c, 'm> Open<DecryptionKey, RawCiphertext<'c>, RawPlaintext<'m>, Randomness> for Paillier {
+    fn open(dk: &DecryptionKey, c: RawCiphertext<'c>) -> (RawPlaintext<'m>, Randomness) {
+        Self::open(dk, &c)
+    }
+}
+
+impl<'c, 'm> Open<DecryptionKey, &'c RawCiphertext<'c>, RawPlaintext<'m>, Randomness> for Paillier {
+    fn open(dk: &DecryptionKey, c: &'c RawCiphertext<'c>) -> (RawPlaintext<'m>, Randomness) {
+        let m = Self::decrypt(dk, c);
         let gminv = (1 - m.0.borrow() * &dk.n) % &dk.nn;
         let rn = (c.0.borrow() * gminv) % &dk.nn;
         let r = extract_nroot(dk, &rn);
