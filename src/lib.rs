@@ -4,25 +4,26 @@
 extern crate test;
 extern crate rand;
 extern crate num_traits;
-#[macro_use]
-extern crate itertools;
 extern crate rayon;
 #[cfg(feature="proofs")]
 extern crate ring;
 extern crate bit_vec;
 
 pub mod arithimpl;
-pub mod traits;
 pub mod core;
-pub mod coding;
+pub mod encoding;
+pub mod traits;
+
 #[cfg(feature="keygen")]
 pub mod keygen;
+
 #[cfg(feature="proofs")]
 pub mod proof;
 
 pub use traits::*;
 pub use core::*;
-pub use coding::*;
+pub use encoding::*;
+
 #[cfg(feature="keygen")]
 pub use keygen::*;
 
@@ -39,9 +40,6 @@ pub use arithimpl::frampimpl::BigInt as BigInt;
 
 #[cfg(feature="usegmp")]
 pub use arithimpl::gmpimpl::BigInt as BigInt;
-
-#[cfg(feature="usenum")]
-pub use arithimpl::numimpl::BigInt as BigInt;
 
 /// Representation of a keypair from which encryption and decryption keys can be derived.
 pub struct Keypair {
