@@ -11,13 +11,13 @@ use helpers::{P2048, Q2048, N2048};
 
 static P_EXP_Q_MOD_N: &'static str = "148677972634832330983979593310074301486537017973460461278300587514468301043894574906886127642530475786889672304776052879927627556769456140664043088700743909632312483413393134504352834240399191134336344285483935856491230340093391784574980688823380828143810804684752914935441384845195613674104960646037368551517";
 
-fn modpow_right_to_left(base: &BigInteger, exponent: &BigInteger, modulus: &BigInteger) -> BigInteger {
+fn modpow_right_to_left(base: &BigInt, exponent: &BigInt, modulus: &BigInt) -> BigInt {
     let mut base = base.clone();
     let mut exponent = exponent.clone();
-    let mut result = BigInteger::one();
+    let mut result = BigInt::one();
 
-    while !BigInteger::is_zero(&exponent) {
-        if !BigInteger::is_even(&exponent) {
+    while !BigInt::is_zero(&exponent) {
+        if !BigInt::is_even(&exponent) {
             result = (&result * &base) % modulus;
         }
         base = (&base * &base) % modulus;  // waste one of these by having it here but code is simpler (tiny bit)
@@ -28,11 +28,11 @@ fn modpow_right_to_left(base: &BigInteger, exponent: &BigInteger, modulus: &BigI
 
 pub fn bench_modpow_right_to_left(b: &mut Bencher)
 {
-    let ref p: BigInteger = str::parse(P2048).unwrap();
-    let ref q: BigInteger = str::parse(Q2048).unwrap();
-    let ref n: BigInteger = str::parse(N2048).unwrap();
+    let ref p: BigInt = str::parse(P2048).unwrap();
+    let ref q: BigInt = str::parse(Q2048).unwrap();
+    let ref n: BigInt = str::parse(N2048).unwrap();
 
-    let ref expected: BigInteger = str::parse(P_EXP_Q_MOD_N).unwrap();
+    let ref expected: BigInt = str::parse(P_EXP_Q_MOD_N).unwrap();
     let ref result = modpow_right_to_left(p, q, n);
     assert_eq!(result, expected);
 
@@ -42,9 +42,9 @@ pub fn bench_modpow_right_to_left(b: &mut Bencher)
 }
 
 
-fn modpow_right_to_left_noshift(base: &BigInteger, exponent: &BigInteger, modulus: &BigInteger) -> BigInteger {
+fn modpow_right_to_left_noshift(base: &BigInt, exponent: &BigInt, modulus: &BigInt) -> BigInt {
     let mut base = base.clone();
-    let mut result = BigInteger::one();
+    let mut result = BigInt::one();
     for i in 0..exponent.bit_length() {
         if exponent.test_bit(i) {
             result = (&result * &base) % modulus;
@@ -55,11 +55,11 @@ fn modpow_right_to_left_noshift(base: &BigInteger, exponent: &BigInteger, modulu
 }
 
 pub fn bench_modpow_right_to_left_noshift(b: &mut Bencher) {
-    let ref p: BigInteger = str::parse(P2048).unwrap();
-    let ref q: BigInteger = str::parse(Q2048).unwrap();
-    let ref n: BigInteger = str::parse(N2048).unwrap();
+    let ref p: BigInt = str::parse(P2048).unwrap();
+    let ref q: BigInt = str::parse(Q2048).unwrap();
+    let ref n: BigInt = str::parse(N2048).unwrap();
 
-    let ref expected: BigInteger = str::parse(P_EXP_Q_MOD_N).unwrap();
+    let ref expected: BigInt = str::parse(P_EXP_Q_MOD_N).unwrap();
     let ref result = modpow_right_to_left_noshift(p, q, n);
     assert_eq!(result, expected);
 
@@ -69,7 +69,7 @@ pub fn bench_modpow_right_to_left_noshift(b: &mut Bencher) {
 }
 
 
-fn modpow_left_to_right(base: &BigInteger, exponent: &BigInteger, modulus: &BigInteger) -> BigInteger {
+fn modpow_left_to_right(base: &BigInt, exponent: &BigInt, modulus: &BigInt) -> BigInt {
     let bitlen = exponent.bit_length();
     let mut result = base.clone();
     for i in (0..bitlen-1).rev() {
@@ -82,11 +82,11 @@ fn modpow_left_to_right(base: &BigInteger, exponent: &BigInteger, modulus: &BigI
 }
 
 pub fn bench_modpow_left_to_right(b: &mut Bencher) {
-    let ref p: BigInteger = str::parse(P2048).unwrap();
-    let ref q: BigInteger = str::parse(Q2048).unwrap();
-    let ref n: BigInteger = str::parse(N2048).unwrap();
+    let ref p: BigInt = str::parse(P2048).unwrap();
+    let ref q: BigInt = str::parse(Q2048).unwrap();
+    let ref n: BigInt = str::parse(N2048).unwrap();
 
-    let ref expected: BigInteger = str::parse(P_EXP_Q_MOD_N).unwrap();
+    let ref expected: BigInt = str::parse(P_EXP_Q_MOD_N).unwrap();
     let ref result = modpow_left_to_right(p, q, n);
     assert_eq!(result, expected);
 
@@ -96,13 +96,13 @@ pub fn bench_modpow_left_to_right(b: &mut Bencher) {
 }
 
 
-fn modpow_kary_precompute(base: &BigInteger, modulus: &BigInteger, k: u32) -> Vec<BigInteger> {
+fn modpow_kary_precompute(base: &BigInt, modulus: &BigInt, k: u32) -> Vec<BigInt> {
     (0..2_u32.pow(k)).map(|i| { base.pow(i) % modulus }).collect()
 }
 
-fn modpow_kary(base: &[BigInteger], exponent: &BigInteger, modulus: &BigInteger, k: usize) -> BigInteger {
+fn modpow_kary(base: &[BigInt], exponent: &BigInt, modulus: &BigInt, k: usize) -> BigInt {
     let block_length = (exponent.bit_length() + k-1) / k;
-    let mut result = BigInteger::one();
+    let mut result = BigInt::one();
     for i in (0..block_length).rev() {
 
         let mut block_value: usize = 0;
@@ -125,13 +125,13 @@ fn modpow_kary(base: &[BigInteger], exponent: &BigInteger, modulus: &BigInteger,
 
 pub fn bench_modpow_kary(b: &mut Bencher)
 {
-    let ref p: BigInteger = str::parse(P2048).unwrap();
-    let ref q: BigInteger = str::parse(Q2048).unwrap();
-    let ref n: BigInteger = str::parse(N2048).unwrap();
+    let ref p: BigInt = str::parse(P2048).unwrap();
+    let ref q: BigInt = str::parse(Q2048).unwrap();
+    let ref n: BigInt = str::parse(N2048).unwrap();
 
     let pe = modpow_kary_precompute(p, n, 7);
 
-    let ref expected: BigInteger = str::parse(P_EXP_Q_MOD_N).unwrap();
+    let ref expected: BigInt = str::parse(P_EXP_Q_MOD_N).unwrap();
     let ref result = modpow_kary(&pe, q, n, 7);
     assert_eq!(result, expected);
 
@@ -142,9 +142,9 @@ pub fn bench_modpow_kary(b: &mut Bencher)
 
 pub fn bench_modpow_kary_precompute(b: &mut Bencher)
 {
-    let p: BigInteger = str::parse(P2048).unwrap();
-    // let q: BigInteger = str::parse(Q2048).unwrap();
-    let n: BigInteger = str::parse(N2048).unwrap();
+    let p: BigInt = str::parse(P2048).unwrap();
+    // let q: BigInt = str::parse(Q2048).unwrap();
+    let n: BigInt = str::parse(N2048).unwrap();
 
     b.iter(|| {
         let _ = modpow_kary_precompute(&p, &n, 5);
@@ -160,9 +160,9 @@ benchmark_group!(modpow,
 );
 
 
-// fn gcd_euclidean(mut a: &BigInteger, mut b: &BigInteger) -> BigInteger {
+// fn gcd_euclidean(mut a: &BigInt, mut b: &BigInt) -> BigInt {
 //     let ref mut = 1;
-//     while !BigInteger::is_zero(b) {
+//     while !BigInt::is_zero(b) {
 //         r = a % b;
 //         a = b;
 //         b = r;
@@ -172,8 +172,8 @@ benchmark_group!(modpow,
 
 // pub fn bench_gcd_euclidean(b: &mut Bencher)
 // {
-//     // let ref p: BigInteger = str::parse(P).unwrap();
-//     // let ref q: BigInteger = str::parse(Q).unwrap();
+//     // let ref p: BigInt = str::parse(P).unwrap();
+//     // let ref q: BigInt = str::parse(Q).unwrap();
 //     //
 //     // b.iter(|| {
 //     //     let _ = gcd_euclidean(p, q);
@@ -195,8 +195,8 @@ static B: &'static str = "104945664374425635243495972160267712790711019936547260
 
 pub fn bench_muldiv_mul(bencer: &mut Bencher)
 {
-    let ref a: BigInteger = str::parse(A).unwrap();
-    let ref b: BigInteger = str::parse(B).unwrap();
+    let ref a: BigInt = str::parse(A).unwrap();
+    let ref b: BigInt = str::parse(B).unwrap();
 
     bencer.iter(|| {
         let _ = a * b;
@@ -206,8 +206,8 @@ pub fn bench_muldiv_mul(bencer: &mut Bencher)
 
 pub fn bench_muldiv_div(bencer: &mut Bencher)
 {
-    let ref a: BigInteger = str::parse(A).unwrap();
-    let ref b: BigInteger = str::parse(B).unwrap();
+    let ref a: BigInt = str::parse(A).unwrap();
+    let ref b: BigInt = str::parse(B).unwrap();
 
     bencer.iter(|| {
         let _ = a / b;
@@ -216,10 +216,10 @@ pub fn bench_muldiv_div(bencer: &mut Bencher)
 
 pub fn bench_muldiv_rem(bencer: &mut Bencher)
 {
-    let ref a: BigInteger = str::parse(A).unwrap();
-    let ref b: BigInteger = str::parse(B).unwrap();
+    let ref a: BigInt = str::parse(A).unwrap();
+    let ref b: BigInt = str::parse(B).unwrap();
 
-    let ref d = b / BigInteger::from(17);
+    let ref d = b / BigInt::from(17);
 
     bencer.iter(|| {
         let _ = a % d;
@@ -237,9 +237,9 @@ benchmark_group!(muldiv,
 
 pub fn bench_mulrem_naive(bencher: &mut Bencher)
 {
-    let ref a: BigInteger = str::parse(A).unwrap();
-    let ref b: BigInteger = str::parse(B).unwrap();
-    let ref n: BigInteger = str::parse(M).unwrap();
+    let ref a: BigInt = str::parse(A).unwrap();
+    let ref b: BigInt = str::parse(B).unwrap();
+    let ref n: BigInt = str::parse(M).unwrap();
 
     let ref c = a * b;
 
@@ -254,28 +254,28 @@ pub fn bench_mulrem_naive(bencher: &mut Bencher)
 
 pub fn bench_mulrem_montgomery(bencher: &mut Bencher)
 {
-    let ref a: BigInteger = str::parse(A).unwrap();
-    let ref b: BigInteger = str::parse(B).unwrap();
-    let ref n: BigInteger = str::parse(M).unwrap();
-    let ref minusone: BigInteger = str::parse("-1").unwrap();
+    let ref a: BigInt = str::parse(A).unwrap();
+    let ref b: BigInt = str::parse(B).unwrap();
+    let ref n: BigInt = str::parse(M).unwrap();
+    let ref minusone: BigInt = str::parse("-1").unwrap();
 
     let l: usize = 2048 + 64; // n.bit_length() as usize + 1;
-    let ref r = BigInteger::one() << l;
+    let ref r = BigInt::one() << l;
     assert!(r > n);
     let ref ahat = (a * r) % n;
     let ref bhat = (b * r) % n;
 
-    let (ref d, ref rinv, ref ninvinv) = BigInteger::egcd(r, n);
+    let (ref d, ref rinv, ref ninvinv) = BigInt::egcd(r, n);
     let ref ninv = (ninvinv * (r-1)) % r;
-    assert_eq!(d, &BigInteger::one());
-    assert_eq!( (r * rinv) % n + n, BigInteger::one() );
+    assert_eq!(d, &BigInt::one());
+    assert_eq!( (r * rinv) % n + n, BigInt::one() );
     assert_eq!( (n * ninv) % r - r, *minusone );
 
-    let ref s: BigInteger = ahat * bhat;
+    let ref s: BigInt = ahat * bhat;
 
     bencher.iter(|| {
-        let ref m: BigInteger = ((s & (r-1)) * ninv) & (r-1);
-        let ref _t: BigInteger = (s + m * n) >> l;
+        let ref m: BigInt = ((s & (r-1)) * ninv) & (r-1);
+        let ref _t: BigInt = (s + m * n) >> l;
         // if t < n {
             // let ref res = (t * rinv) % n;
             // assert_eq!(res, c);
@@ -323,7 +323,7 @@ pub fn bench_mont_montgomery(bencher: &mut Bencher)
     let bhat = (b * r) % n;
 
     let ninv = 12345678; //(ninvinv * (r-1)) % r;
-    // assert_eq!( (r * rinv) % n + n, BigInteger::one() );
+    // assert_eq!( (r * rinv) % n + n, BigInt::one() );
     // assert_eq!( (n * ninv) % r - r, *minusone );
 
     let s = ahat * bhat;

@@ -4,13 +4,10 @@ use ring::digest::{Context, SHA256};
 use std::borrow::Borrow;
 
 use ::arithimpl::traits::*;
-use ::{RawPlaintext, RawCiphertext};
-use ::BigInteger as BigInt;
-use ::Paillier as Paillier;
+use ::{Paillier, EncryptionKey, RawPlaintext, RawCiphertext, BigInt};
 use ::core::*;
-use proof::correct_key::*;
 use ::traits::*;
-use ::EncryptionKey;
+use proof::correct_key::*;
 use proof::correct_key::ProofError;
 use proof::range_proof::{EncryptedPairs, Challenge, Proof};
 

@@ -3,5 +3,4 @@
 pub mod traits;
 pub mod rampimpl;
 pub mod frampimpl;
-pub mod numimpl;
 pub mod gmpimpl;

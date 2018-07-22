@@ -7,10 +7,8 @@ use ring::digest::{Context, SHA256};
 use rayon::prelude::*;
 
 use ::arithimpl::traits::*;
-use ::BigInteger as BigInt;
+use ::{Paillier, BigInt, EncryptionKey, DecryptionKey};
 use core::extract_nroot;
-use ::Paillier as Paillier;
-use ::{EncryptionKey, DecryptionKey};
 
 
 const STATISTICAL_ERROR_FACTOR: usize = 40;

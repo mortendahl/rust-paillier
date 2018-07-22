@@ -10,7 +10,6 @@ fn main() {
 fn main() {
 
     use paillier::*;
-    use paillier::BigInteger as BigInt;
 
     // generate a fresh keypair
     let (ek, dk) = Paillier::keypair().keys();

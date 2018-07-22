@@ -7,13 +7,10 @@ use ring::digest::{Context, SHA256};
 use bit_vec::BitVec;
 
 use ::arithimpl::traits::*;
-use ::{RawPlaintext, RawCiphertext};
-use ::BigInteger as BigInt;
-use ::Paillier as Paillier;
+use ::{Paillier, EncryptionKey, RawPlaintext, RawCiphertext, BigInt};
+use ::traits::*;
 use ::core::*;
 use proof::correct_key::*;
-use ::traits::*;
-use ::EncryptionKey;
 use proof::correct_key::ProofError;
 
 const STATISTICAL_ERROR_FACTOR : usize = 40;

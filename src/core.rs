@@ -1,15 +1,12 @@
 //! Core Paillier encryption scheme supporting ciphertext addition and plaintext multiplication.
 
 use std::borrow::{Borrow, Cow};
-use std::fmt;
 
 use rayon::join;
 
 use ::traits::*;
 use ::arithimpl::traits::*;
-use ::BigInteger as BigInt;
-use ::Paillier as Paillier;
-use ::{Keypair, EncryptionKey, DecryptionKey, RawPlaintext, RawCiphertext};
+use ::{Paillier, Keypair, EncryptionKey, DecryptionKey, RawPlaintext, RawCiphertext, BigInt};
 
 impl DefaultKeys for Keypair {
     type EK = EncryptionKey;

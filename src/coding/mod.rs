@@ -1,9 +1,19 @@
 //! Various coding schemes to be used in conjunction with the core Paillier encryption scheme.
 
-use ::BigInteger as BigInt;
+use std::marker::PhantomData;
+
+use ::BigInt;
 use arithimpl::traits::ConvertFrom;
 
 pub mod integral;
+
+/// Representation of encrypted message.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Ciphertext<T> {
+    raw: BigInt,
+    components: usize,
+    _phantom: PhantomData<T>,
+}
 
 fn pack<T>(components: &[T], component_bitsize: usize) -> BigInt
 where BigInt: From<T>, T: Copy

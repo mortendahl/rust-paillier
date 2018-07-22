@@ -3,20 +3,10 @@
 use std::borrow::Borrow;
 use std::marker::PhantomData;
 
-use ::{RawCiphertext, RawPlaintext};
-use super::{pack, unpack};
+use super::{pack, unpack, Ciphertext};
 use ::traits::*;
-use ::BigInteger as BigInt;
-use ::Paillier as Paillier;
+use ::{Paillier, BigInt, RawCiphertext, RawPlaintext};
 use arithimpl::traits::ConvertFrom;
-
-/// Representation of encrypted message.
-#[derive(Clone, Debug, PartialEq)]
-pub struct Ciphertext<T> {
-    raw: BigInt,
-    components: usize,
-    _phantom: PhantomData<T>,
-}
 
 impl<EK> Encrypt<EK, u64, Ciphertext<u64>> for Paillier
 where for<'p, 'c> Self: Encrypt<EK, RawPlaintext<'p>, RawCiphertext<'c>>
