@@ -9,7 +9,7 @@ pub mod integral;
 
 /// Representation of encrypted message.
 #[derive(Clone, Debug, PartialEq)]
-pub struct Ciphertext<T> {
+pub struct EncodedCiphertext<T> {
     raw: BigInt,
     components: usize,
     _phantom: PhantomData<T>,
