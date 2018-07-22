@@ -1,19 +1,18 @@
 use ::Paillier as Paillier;
-use ::EncryptionKey;
+use ::{EncryptionKey, RawPlaintext};
 use ::traits::*;
-use ::core::*;
 
 /// Verify correct opening of ciphertext.
 pub trait CorrectOpening<EK, PT, R, CT> {
     fn verify(ek: &EK, m: PT, r: R, c: CT) -> bool;
 }
 
-impl<'m, 'r, 'c, R, CT> CorrectOpening<EncryptionKey, &'m RawPlaintext, &'r R, &'c CT> for Paillier
+impl<'m, 'r, 'c, R, CT> CorrectOpening<EncryptionKey, RawPlaintext<'m>, &'r R, &'c CT> for Paillier
 where
-    Self: EncryptWithChosenRandomness<EncryptionKey, &'m RawPlaintext, &'r R, CT>,
+    Self: EncryptWithChosenRandomness<EncryptionKey, RawPlaintext<'m>, &'r R, CT>,
     CT: PartialEq,
 {
-    fn verify(ek: &EncryptionKey, m: &'m RawPlaintext, r: &'r R, c: &'c CT) -> bool {
+    fn verify(ek: &EncryptionKey, m: RawPlaintext<'m>, r: &'r R, c: &'c CT) -> bool {
         let d = Self::encrypt_with_chosen_randomness(ek, m, r);
         c == &d
     }
@@ -23,6 +22,7 @@ where
 mod tests {
 
     use super::*;
+    use ::{BigInt, Keypair};
 
     fn test_keypair() -> Keypair {
         let p = str::parse("148677972634832330983979593310074301486537017973460461278300587514468301043894574906886127642530475786889672304776052879927627556769456140664043088700743909632312483413393134504352834240399191134336344285483935856491230340093391784574980688823380828143810804684752914935441384845195613674104960646037368551517").unwrap();
@@ -37,9 +37,9 @@ mod tests {
     fn test_verify() {
         let (ek, dk) = test_keypair().keys();
 
-        let c = Paillier::encrypt(&ek, &RawPlaintext::from(10));
+        let c = Paillier::encrypt(&ek, RawPlaintext::from(BigInt::from(10)));
         let (m, r) = Paillier::open(&dk, &c);
 
-        assert!(Paillier::verify(&ek, &m, &r, &c));
+        assert!(Paillier::verify(&ek, m, &r, &c));
     }
 }

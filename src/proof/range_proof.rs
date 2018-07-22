@@ -1,3 +1,4 @@
+use std::borrow::Borrow;
 use std::mem;
 
 use rand::{random, Rng, OsRng};
@@ -6,12 +7,9 @@ use ring::digest::{Context, SHA256};
 use bit_vec::BitVec;
 
 use ::arithimpl::traits::*;
-use ::BigInteger as BigInt;
-use ::Paillier as Paillier;
-use ::core::*;
-use proof::correct_key::*;
+use ::{Paillier, EncryptionKey, RawPlaintext, RawCiphertext, BigInt};
 use ::traits::*;
-use ::EncryptionKey;
+use ::core::*;
 use proof::correct_key::ProofError;
 
 const STATISTICAL_ERROR_FACTOR : usize = 40;
@@ -19,8 +17,8 @@ const RANGE_BITS : usize = 256; //for elliptic curves with 256bits for example
 
 #[derive(Default)]
 pub struct EncryptedPairs {
-    c1: Vec<RawCiphertext>,
-    c2: Vec<RawCiphertext>,
+    pub c1: Vec<BigInt>, // TODO[Morten] should not need to be public
+    pub c2: Vec<BigInt>, // TODO[Morten] should not need to be public
 }
 
 #[derive(Default)]
@@ -30,6 +28,8 @@ pub struct DataRandomnessPairs {
     r1: Vec<BigInt>,
     r2: Vec<BigInt>,
 }
+
+pub struct Challenge(Vec<u8>);
 
 // TODO[Morten] find better name
 pub enum Response {
@@ -41,14 +41,18 @@ pub struct Proof(Vec<Response>);
 
 pub struct Commitment(BigInt);
 
-pub struct Challenge(Vec<u8>);
-
 impl Challenge {
     fn sample(big_length: usize) -> Challenge {
         let mut rng = OsRng::new().unwrap();
         let mut bytes: Vec<u8> = vec![0; big_length/8];
         rng.fill_bytes(&mut bytes);
         Challenge(bytes)
+    }
+}
+
+impl From<Vec<u8>> for Challenge {
+    fn from(x: Vec<u8>) -> Self {
+        Challenge(x)
     }
 }
 
@@ -65,7 +69,7 @@ pub struct ChallengeRandomness(BigInt);
 /// - Section 1.2.2 in [Boudot '00](https://www.iacr.org/archive/eurocrypt2000/1807/18070437-new.pdf)
 ///
 /// /// This is an interactive version of the proof, assuming only DCRA which is alreasy assumed for Paillier cryptosystem security
-pub trait RangeProof<PT, R, CT> {
+pub trait RangeProof {
 
     /// Verifier commits to a t-bit vector e where e is STATISTICAL_ERROR_FACTOR.
     fn verifier_commit(ek: &EncryptionKey) -> (Commitment, ChallengeRandomness, Challenge); // commitment is public
@@ -82,11 +86,11 @@ pub trait RangeProof<PT, R, CT> {
     fn generate_proof(ek: &EncryptionKey, secret_x: &BigInt, secret_r: &BigInt, e: &Challenge, range: &BigInt, data: &DataRandomnessPairs) -> Proof;
 
     /// Verifier verifies the proof
-    fn verifier_output(ek: &EncryptionKey, e: &Challenge, encrypted_pairs: &EncryptedPairs, z: &Proof, range: &BigInt, cipher_x: &RawCiphertext) -> Result<(), ProofError>;
+    fn verifier_output(ek: &EncryptionKey, e: &Challenge, encrypted_pairs: &EncryptedPairs, z: &Proof, range: &BigInt, cipher_x: RawCiphertext) -> Result<(), ProofError>;
 
 }
 
-impl RangeProof<RawPlaintext, ChallengeRandomness, RawCiphertext> for Paillier {
+impl RangeProof for Paillier {
 
     fn verifier_commit(ek: &EncryptionKey) -> (Commitment, ChallengeRandomness, Challenge) {
         let e = Challenge::sample(STATISTICAL_ERROR_FACTOR);
@@ -130,9 +134,9 @@ impl RangeProof<RawPlaintext, ChallengeRandomness, RawCiphertext> for Paillier {
             .map(|(wi, ri)| {
                 Paillier::encrypt_with_chosen_randomness(
                     ek,
-                    &RawPlaintext::from(wi.clone()), 
+                    RawPlaintext::from(wi),
                     &Randomness::from(ri)
-                )
+                ).0.into_owned()
             })
             .collect();
 
@@ -140,9 +144,9 @@ impl RangeProof<RawPlaintext, ChallengeRandomness, RawCiphertext> for Paillier {
             .map(|(wi, ri)| {
                 Paillier::encrypt_with_chosen_randomness(
                     ek,
-                    &RawPlaintext::from(wi.clone()), 
+                    RawPlaintext::from(wi),
                     &Randomness::from(ri)
-                )
+                ).0.into_owned()
             })
             .collect();
 
@@ -174,7 +178,7 @@ impl RangeProof<RawPlaintext, ChallengeRandomness, RawCiphertext> for Paillier {
                         r2: data.r2[i].clone(),
                     }
                 } else {
-                    if secret_x + &data.w1[i] > range_scaled_third  && secret_x + &data.w1[i] < range_scaled_two_thirds {
+                    if secret_x + &data.w1[i] > range_scaled_third && secret_x + &data.w1[i] < range_scaled_two_thirds {
                         Response::Mask {
                             j: 1,
                             masked_x: secret_x + &data.w1[i],
@@ -194,7 +198,7 @@ impl RangeProof<RawPlaintext, ChallengeRandomness, RawCiphertext> for Paillier {
         Proof(reponses)
     }
 
-    fn verifier_output(ek: &EncryptionKey, e: &Challenge, encrypted_pairs: &EncryptedPairs, proof: &Proof, range: &BigInt, cipher_x: &RawCiphertext) -> Result<(), ProofError> {
+    fn verifier_output(ek: &EncryptionKey, e: &Challenge, encrypted_pairs: &EncryptedPairs, proof: &Proof, range: &BigInt, cipher_x: RawCiphertext) -> Result<(), ProofError> {
         let range_scaled_third: BigInt = range.div_floor(&BigInt::from(3i32));
         let range_scaled_two_thirds: BigInt = BigInt::from(2i32) * &range_scaled_third;
 
@@ -211,8 +215,11 @@ impl RangeProof<RawPlaintext, ChallengeRandomness, RawCiphertext> for Paillier {
                     (false, Response::Open { w1, r1, w2, r2 }) => {
                         let mut res = true;
 
-                        if Paillier::encrypt_with_chosen_randomness(ek, &RawPlaintext::from(w1.clone()), &Randomness::from(r1)) != encrypted_pairs.c1[i] { res = false; }
-                        if Paillier::encrypt_with_chosen_randomness(ek, &RawPlaintext::from(w2.clone()), &Randomness::from(r2)) != encrypted_pairs.c2[i] { res = false; }
+                        let expected_c1i: BigInt = Paillier::encrypt_with_chosen_randomness(ek, RawPlaintext::from(w1), &Randomness::from(r1)).into();
+                        let expected_c2i: BigInt = Paillier::encrypt_with_chosen_randomness(ek, RawPlaintext::from(w2), &Randomness::from(r2)).into();
+
+                        if &expected_c1i != &encrypted_pairs.c1[i] { res = false; }
+                        if &expected_c2i != &encrypted_pairs.c2[i] { res = false; }
 
                         let mut flag = false;
                         if w1 < &range_scaled_third {
@@ -229,14 +236,14 @@ impl RangeProof<RawPlaintext, ChallengeRandomness, RawCiphertext> for Paillier {
                     (true, Response::Mask { j, masked_x, masked_r }) => {
                         let mut res = true;
 
-                        let enc_zi = Paillier::encrypt_with_chosen_randomness(ek, &RawPlaintext::from(masked_x.clone()), &Randomness::from(masked_r.clone()));
-
                         let c = if *j == 1 {
-                            &encrypted_pairs.c1[i].0 * &cipher_x.0 % &ek.nn
+                            &encrypted_pairs.c1[i] * cipher_x.0.borrow() % &ek.nn
                         } else {
-                            &encrypted_pairs.c2[i].0 * &cipher_x.0 % &ek.nn
+                            &encrypted_pairs.c2[i] * cipher_x.0.borrow() % &ek.nn
                         };
-                        if c != enc_zi.0 { res = false; }
+
+                        let enc_zi = Paillier::encrypt_with_chosen_randomness(ek, RawPlaintext::from(masked_x), &Randomness::from(masked_r.clone()));
+                        if &c != enc_zi.0.borrow() { res = false; }
                         if masked_x < &range_scaled_third || masked_x > &range_scaled_two_thirds { res = false; }
 
                         res
@@ -258,10 +265,12 @@ impl RangeProof<RawPlaintext, ChallengeRandomness, RawCiphertext> for Paillier {
 
 /// hash based commitment scheme : digest = H(m||r), works under random oracle model. |r| is of length security parameter
 fn get_paillier_commitment(ek: &EncryptionKey, x: &BigInt, r: &BigInt) -> BigInt {
-
-    let com_pi = Paillier::encrypt_with_chosen_randomness(ek, &RawPlaintext::from(x.clone()), &Randomness::from(r));
-    com_pi.0
-
+    let com_pi = Paillier::encrypt_with_chosen_randomness(
+        ek,
+        RawPlaintext::from(x),
+        &Randomness::from(r)
+    );
+    com_pi.0.into_owned()
 }
 
 fn compute_digest(bytes: &[u8]) -> BigInt {
@@ -272,12 +281,12 @@ fn compute_digest(bytes: &[u8]) -> BigInt {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use core::Keypair;
-    use traits::*;
-    use Paillier;
+
     use test::Bencher;
 
+    use super::*;
+    use ::Keypair;
+    use proof::correct_key::CorrectKey;
 
     fn test_keypair() -> Keypair {
         let p = str::parse("148677972634832330983979593310074301486537017973460461278300587514468301043894574906886127642530475786889672304776052879927627556769456140664043088700743909632312483413393134504352834240399191134336344285483935856491230340093391784574980688823380828143810804684752914935441384845195613674104960646037368551517").unwrap();
@@ -290,7 +299,7 @@ mod tests {
 
     #[test]
     fn test_generate_encrypted_pairs() {
-        let (ek, dk) = test_keypair().keys();
+        let (ek, _dk) = test_keypair().keys();
         let range = BigInt::from(0xFFFFFFFFFFFFFi64);
         Paillier::generate_encrypted_pairs(&ek, &range);
         //Paillier::verifier_commit();
@@ -300,13 +309,13 @@ mod tests {
     fn test_commit_decommit() {
         let (verifier_ek, verifier_dk) = test_keypair().keys();
         let (com, r, e) = Paillier::verifier_commit(&verifier_ek);
-        /// 1. verifier sends the prover (com,r,e,verifier_ek)
-        /// 2. prover is playing verifier for zk correct_key protocol to make sure verifier_ek was generated correctly:
+        // 1. verifier sends the prover (com,r,e,verifier_ek)
+        // 2. prover is playing verifier for zk correct_key protocol to make sure verifier_ek was generated correctly:
         let (challenge, verification_aid) = Paillier::challenge(&verifier_ek);
-        /// 3. verifier is proving correct_key
+        // 3. verifier is proving correct_key
         let proof_results = Paillier::prove(&verifier_dk, &challenge);
         assert!(proof_results.is_ok());
-        /// 4. prover verifies correct key proof:
+        // 4. prover verifies correct key proof:
         let result = Paillier::verify(&proof_results.unwrap(), &verification_aid);
         assert!(result.is_ok());
         assert!(Paillier::verify_commit(&verifier_ek,&com, &r, &e).is_ok())
@@ -314,14 +323,14 @@ mod tests {
 
     #[test]
     fn test_generate_proof() {
-        let (ek, dk) = test_keypair().keys();
-        let (verifier_ek, verifier_dk) = test_keypair().keys();
+        let (ek, _dk) = test_keypair().keys();
+        let (verifier_ek, _verifier_dk) = test_keypair().keys();
         let range = BigInt::from(0xFFFFFFFFFFFFFi64);
-        let (com,r,e) = Paillier::verifier_commit(&verifier_ek);
-        let (encrypted_pairs, data_and_randmoness_pairs) = Paillier::generate_encrypted_pairs(&ek, &range);
+        let (_com, _r, e) = Paillier::verifier_commit(&verifier_ek);
+        let (_encrypted_pairs, data_and_randmoness_pairs) = Paillier::generate_encrypted_pairs(&ek, &range);
         let secret_r = BigInt::sample_below(&ek.n);
         let secret_x = BigInt::from(0xFFFFFFFi64);
-        let z_vector= Paillier::generate_proof(&ek, &secret_x, &secret_r, &e, &range, &data_and_randmoness_pairs);
+        let _z_vector = Paillier::generate_proof(&ek, &secret_x, &secret_r, &e, &range, &data_and_randmoness_pairs);
     }
 
     #[test]
@@ -329,26 +338,30 @@ mod tests {
         // common:
         let range = BigInt::sample(RANGE_BITS);
         // prover:
-        let (ek, dk) = test_keypair().keys();
+        let (ek, _dk) = test_keypair().keys();
         let (verifier_ek, verifier_dk) = test_keypair().keys();
         // verifier:
         let (com, r, e) = Paillier::verifier_commit(&verifier_ek);
         let (challenge, verification_aid) = Paillier::challenge(&verifier_ek);
         let proof_results = Paillier::prove(&verifier_dk, &challenge);
-        let result = Paillier::verify(&proof_results.unwrap(), &verification_aid);
-        Paillier::verify_commit(&verifier_ek,&com, &r, &e);
+        let _result = Paillier::verify(&proof_results.unwrap(), &verification_aid);
+        assert!(Paillier::verify_commit(&verifier_ek, &com, &r, &e).is_ok());
         // prover:
         let (encrypted_pairs, data_and_randmoness_pairs) = Paillier::generate_encrypted_pairs(&ek, &range);
         // prover:
         let secret_r = BigInt::sample_below(&ek.n);
         let secret_x = BigInt::sample_below(&range.div_floor(&BigInt::from(3)));
         // common:
-        let cipher_x = Paillier::encrypt_with_chosen_randomness(&ek, &RawPlaintext::from(secret_x.clone()), &Randomness(secret_r.clone()));
+        let cipher_x = Paillier::encrypt_with_chosen_randomness(
+            &ek,
+            RawPlaintext::from(&secret_x),
+            &Randomness(secret_r.clone())
+        );
         // verifer decommits (tested in test_commit_decommit)
         // prover:
         let z_vector = Paillier::generate_proof(&ek, &secret_x, &secret_r, &e, &range,&data_and_randmoness_pairs);
         // verifier:
-        let result = Paillier::verifier_output(&ek, &e, &encrypted_pairs,&z_vector, &range, &cipher_x);
+        let result = Paillier::verifier_output(&ek, &e, &encrypted_pairs,&z_vector, &range, cipher_x);
         assert!(result.is_ok());
     }
 
@@ -357,22 +370,26 @@ mod tests {
         // common:
         let range = BigInt::sample(RANGE_BITS);
         // prover:
-        let (ek, dk) = test_keypair().keys();
-        let (verifier_ek, verifier_dk) = test_keypair().keys();
+        let (ek, _dk) = test_keypair().keys();
+        let (verifier_ek, _verifier_dk) = test_keypair().keys();
         // verifier:
-        let (com, r, e) = Paillier::verifier_commit(&verifier_ek);
+        let (_com, _r, e) = Paillier::verifier_commit(&verifier_ek);
         // prover:
         let (encrypted_pairs, data_and_randmoness_pairs) = Paillier::generate_encrypted_pairs(&ek, &range);
         // prover:
         let secret_r = BigInt::sample_below(&ek.n);
         let secret_x =  BigInt::sample_range(&(BigInt::from(100i32) * &range), &(BigInt::from(10000i32) * &range));
         // common:
-        let cipher_x = Paillier::encrypt_with_chosen_randomness(&ek, &RawPlaintext::from(secret_x.clone()), &Randomness(secret_r.clone()));
+        let cipher_x = Paillier::encrypt_with_chosen_randomness(
+            &ek,
+            RawPlaintext::from(&secret_x),
+            &Randomness(secret_r.clone())
+        );
         // verifer decommits (tested in test_commit_decommit)
         // prover:
         let z_vector = Paillier::generate_proof(&ek, &secret_x, &secret_r, &e, &range,&data_and_randmoness_pairs);
         // verifier:
-        let result = Paillier::verifier_output(&ek, &e, &encrypted_pairs,&z_vector, &range, &cipher_x);
+        let result = Paillier::verifier_output(&ek, &e, &encrypted_pairs,&z_vector, &range, cipher_x);
         assert!(result.is_err());
     }
 
@@ -383,10 +400,10 @@ mod tests {
             // common:
             let range = BigInt::sample(RANGE_BITS);
             // prover:
-            let (ek, dk) = test_keypair().keys();
-            let (verifier_ek, verifier_dk) = test_keypair().keys();
+            let (ek, _dk) = test_keypair().keys();
+            let (verifier_ek, _verifier_dk) = test_keypair().keys();
             // verifier:
-            let (com,r,e) = Paillier::verifier_commit(&verifier_ek);
+            let (_com, r, e) = Paillier::verifier_commit(&verifier_ek);
             // prover:
             let (encrypted_pairs, data_and_randmoness_pairs) = Paillier::generate_encrypted_pairs(&ek, &range);
             // prover:
@@ -394,12 +411,16 @@ mod tests {
             let secret_x = BigInt::sample_below(&range.div_floor(&BigInt::from(3)));
             //let secret_x = BigInt::from(0xFFFFFFFi64);
             // common:
-            let cipher_x = Paillier::encrypt_with_chosen_randomness(&ek, &RawPlaintext::from(secret_x.clone()), &Randomness(secret_r.clone()));
+            let cipher_x = Paillier::encrypt_with_chosen_randomness(
+                &ek,
+                RawPlaintext::from(&secret_x),
+                &Randomness(secret_r.clone())
+            );
             // verifer decommits (tested in test_commit_decommit)
             // prover:
             let z_vector = Paillier::generate_proof(&ek, &secret_x, &secret_r, &e, &range,&data_and_randmoness_pairs);
             // verifier:
-            let result = Paillier::verifier_output(&ek, &e, &encrypted_pairs,&z_vector, &range, &cipher_x);
+            let _result = Paillier::verifier_output(&ek, &e, &encrypted_pairs,&z_vector, &range, cipher_x);
         });
     }
 

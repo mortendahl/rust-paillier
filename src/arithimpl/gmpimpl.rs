@@ -141,4 +141,4 @@ impl BitManipulation for Mpz {
     }
 }
 
-pub type BigInteger = Mpz;
+pub type BigInt = Mpz;
