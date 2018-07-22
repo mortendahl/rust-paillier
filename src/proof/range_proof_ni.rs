@@ -1,17 +1,12 @@
-
-use rayon::prelude::*;
 use ring::digest::{Context, SHA256};
 use std::borrow::Borrow;
 
 use ::arithimpl::traits::*;
-use ::{Paillier, EncryptionKey, RawPlaintext, RawCiphertext, BigInt};
+use ::{Paillier, EncryptionKey, RawCiphertext, BigInt};
 use ::core::*;
-use ::traits::*;
-use proof::correct_key::*;
 use proof::correct_key::ProofError;
 use proof::range_proof::{EncryptedPairs, Challenge, Proof};
 
-const STATISTICAL_ERROR_FACTOR : usize = 40;
 const RANGE_BITS : usize = 256; //for elliptic curves with 256bits for example
 
 /// Zero-knowledge range proof that a value x<q/3 lies in interval [0,q].
@@ -48,8 +43,6 @@ impl RangeProofNI for Paillier {
 
         //assuming digest length > STATISTICAL_ERROR_FACTOR
 
-        let range_scaled_third: BigInt = range.div_floor(&BigInt::from(3));
-
         let proof = Paillier::generate_proof(ek, secret_x, secret_r, &e, range, &data_randomness_pairs);
 
         (EncryptedPairs { c1, c2 }, e, proof)
@@ -61,8 +54,6 @@ impl RangeProofNI for Paillier {
     }
 
 }
-
-
 
 fn compute_digest<IT>(values: IT) -> Vec<u8>
     where IT: Iterator, IT::Item: Borrow<BigInt>
@@ -77,10 +68,10 @@ fn compute_digest<IT>(values: IT) -> Vec<u8>
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
-    use ::Keypair;
+    use ::{Keypair, RawPlaintext};
     use traits::*;
-    use Paillier;
     use test::Bencher;
 
     fn test_keypair() -> Keypair {
@@ -94,17 +85,17 @@ mod tests {
 
     #[test]
     fn test_prover() {
-        let (ek, dk) = test_keypair().keys();
+        let (ek, _dk) = test_keypair().keys();
         let range = BigInt::sample(RANGE_BITS);
         let secret_r = BigInt::sample_below(&ek.n);
-        let secret_x =  BigInt::sample_below(&range);
-        let (encrypted_pairs, challenge, proof)= Paillier::prover(&ek, &range, &secret_x, &secret_r);
+        let secret_x = BigInt::sample_below(&range);
+        let (_encrypted_pairs, _challenge, _proof)= Paillier::prover(&ek, &range, &secret_x, &secret_r);
     }
 
 
     #[test]
     fn test_verifier_for_correct_proof() {
-        let (ek, dk) = test_keypair().keys();
+        let (ek, _dk) = test_keypair().keys();
         let range = BigInt::sample(RANGE_BITS);
         let secret_r = BigInt::sample_below(&ek.n);
         let secret_x =  BigInt::sample_below(&range.div_floor(&BigInt::from(3)));
@@ -116,7 +107,7 @@ mod tests {
 
     #[test]
     fn test_verifier_for_incorrect_proof() {
-        let (ek, dk) = test_keypair().keys();
+        let (ek, _dk) = test_keypair().keys();
         let range = BigInt::sample(RANGE_BITS);
         let secret_r = BigInt::sample_below(&ek.n);
         let secret_x =  BigInt::sample_range(&(BigInt::from(100i32) * &range), &(BigInt::from(10000i32) * &range));
@@ -131,7 +122,7 @@ mod tests {
     fn bench_range_proof(b: &mut Bencher){
         // TODO: bench range for 256bit range.
         b.iter(|| {
-            let (ek, dk) = test_keypair().keys();
+            let (ek, _dk) = test_keypair().keys();
             let range = BigInt::sample(RANGE_BITS);
             let secret_r = BigInt::sample_below(&ek.n);
             let secret_x =  BigInt::sample_below(&range.div_floor(&BigInt::from(3)));
