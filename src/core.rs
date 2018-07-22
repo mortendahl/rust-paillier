@@ -163,7 +163,6 @@ impl<'m, 'r, 'd> EncryptWithChosenRandomness<EncryptionKey, RawPlaintext<'m>, &'
 impl<'m, 'd> Encrypt<DecryptionKey, RawPlaintext<'m>, RawCiphertext<'d>> for Paillier {
     fn encrypt(dk: &DecryptionKey, m: RawPlaintext<'m>) -> RawCiphertext<'d> {
         let (mp, mq) = crt_decompose(m.0.borrow(), &dk.pp, &dk.qq);
-        
         let (cp, cq) = join(
             || {
                 let rp = BigInt::sample_below(&dk.p);
@@ -180,17 +179,6 @@ impl<'m, 'd> Encrypt<DecryptionKey, RawPlaintext<'m>, RawCiphertext<'d>> for Pai
                 cq
             }
         );
-
-        // let rp = BigInt::sample_below(&dk.p);
-        // let rnp = BigInt::modpow(&rp, &dk.n, &dk.pp);
-        // let gmp = (1 + mp * &dk.n) % &dk.pp; // TODO[Morten] maybe there's more to get here
-        // let cp = (gmp * rnp) % &dk.pp;
-        
-        // let rq = BigInt::sample_below(&dk.q);
-        // let rnq = BigInt::modpow(&rq, &dk.n, &dk.qq);
-        // let gmq = (1 + mq * &dk.n) % &dk.qq; // TODO[Morten] maybe there's more to get here
-        // let cq = (gmq * rnq) % &dk.qq;
-
         let c = crt_recombine(cp, cq, &dk.pp, &dk.qq, &dk.ppinv);
         RawCiphertext(Cow::Owned(c))
     }
@@ -280,16 +268,6 @@ impl<'c, 'm> Decrypt<DecryptionKey, &'c RawCiphertext<'c>, RawPlaintext<'m>> for
         RawPlaintext(Cow::Owned(m))
     }
 }
-
-// impl<'c, 'r, 'm> Open<DecryptionKey, &'c RawCiphertext<'r>, RawPlaintext<'m>, Randomness> for Paillier {
-//     fn open(dk: &DecryptionKey, c: &'c RawCiphertext<'r>) -> (RawPlaintext<'m>, Randomness) {
-//         let m = Self::decrypt(dk, c.clone()); // TODO[Morten] avoid clone
-//         let gminv = (1 - m.0.borrow() * &dk.n) % &dk.nn;
-//         let rn = (c.0.borrow() * gminv) % &dk.nn;
-//         let r = extract_nroot(dk, &rn);
-//         (m, Randomness(r))
-//     }
-// }
 
 impl<'c, 'm> Open<DecryptionKey, RawCiphertext<'c>, RawPlaintext<'m>, Randomness> for Paillier {
     fn open(dk: &DecryptionKey, c: RawCiphertext<'c>) -> (RawPlaintext<'m>, Randomness) {
@@ -461,7 +439,7 @@ mod tests {
         let (ek, dk): (EncryptionKey, _) = Paillier::keypair_with_modulus_size(2048).keys();
 
         let m = RawPlaintext::from(BigInt::from(10));
-        let c = Paillier::encrypt(&ek, m.clone()); // TODO avoid
+        let c = Paillier::encrypt(&ek, m.clone()); // TODO avoid clone
 
         let recovered_m = Paillier::decrypt(&dk, c);
         assert_eq!(recovered_m, m);

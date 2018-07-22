@@ -72,15 +72,12 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
         // FIXME[Morten]
         // settle the question of whether using n instead of n^2 is okay
 
-        // TODO[Morten]
-        // most of these could probably be run in parallel with Rayon
-        // after simplification (using `into_par_iter` in some cases)
-
         // Compute challenges in the form of n-powers
 
-        let y: Vec<_> = (0..STATISTICAL_ERROR_FACTOR)
+        let y: Vec<_> = (0..STATISTICAL_ERROR_FACTOR).into_par_iter()
             .map(|_| BigInt::sample_below(&ek.n))
             .collect();
+
         let x: Vec<_> = y.par_iter()
             .map(|yi| BigInt::modpow(yi, &ek.n, &ek.n))
             .collect();
@@ -88,7 +85,7 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
         // Compute non-interactive proof of knowledge of the n-roots in the above
         // TODO[Morten] introduce new proof type for this that can be used independently?
 
-        let r: Vec<_> = (0..STATISTICAL_ERROR_FACTOR)
+        let r: Vec<_> = (0..STATISTICAL_ERROR_FACTOR).into_par_iter()
             .map(|_| BigInt::sample_below(&ek.n))
             .collect();
 
