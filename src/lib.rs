@@ -23,6 +23,7 @@ pub mod proof;
 pub use traits::*;
 pub use core::*;
 pub use encoding::*;
+pub use proof::*;
 
 #[cfg(feature="keygen")]
 pub use keygen::*;
@@ -76,8 +77,8 @@ pub struct DecryptionKey {
 
 /// Representation of unencrypted message.
 #[derive(Clone,Debug,PartialEq)]
-pub struct RawPlaintext<'b>(Cow<'b, BigInt>);
+pub struct RawPlaintext<'b>( pub Cow<'b, BigInt>);
 
 /// Representation of encrypted message.
 #[derive(Clone,Debug,PartialEq)]
-pub struct RawCiphertext<'b>(Cow<'b, BigInt>);
+pub struct RawCiphertext<'b>(pub Cow<'b, BigInt>);

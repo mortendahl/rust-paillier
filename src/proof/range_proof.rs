@@ -10,7 +10,7 @@ use ::arithimpl::traits::*;
 use ::{Paillier, EncryptionKey, RawPlaintext, RawCiphertext, BigInt};
 use ::traits::*;
 use ::core::*;
-use proof::correct_key::ProofError;
+use proof::correct_key::CorrectKeyProofError;
 
 const STATISTICAL_ERROR_FACTOR : usize = 40;
 const RANGE_BITS : usize = 256; //for elliptic curves with 256bits for example
@@ -29,7 +29,7 @@ pub struct DataRandomnessPairs {
     r2: Vec<BigInt>,
 }
 
-pub struct Challenge(Vec<u8>);
+pub struct ChallengeBits(Vec<u8>);
 
 // TODO[Morten] find better name
 pub enum Response {
@@ -41,18 +41,18 @@ pub struct Proof(Vec<Response>);
 
 pub struct Commitment(BigInt);
 
-impl Challenge {
-    fn sample(big_length: usize) -> Challenge {
+impl ChallengeBits {
+    fn sample(big_length: usize) -> ChallengeBits {
         let mut rng = OsRng::new().unwrap();
         let mut bytes: Vec<u8> = vec![0; big_length/8];
         rng.fill_bytes(&mut bytes);
-        Challenge(bytes)
+        ChallengeBits(bytes)
     }
 }
 
-impl From<Vec<u8>> for Challenge {
+impl From<Vec<u8>> for ChallengeBits {
     fn from(x: Vec<u8>) -> Self {
-        Challenge(x)
+        ChallengeBits(x)
     }
 }
 
@@ -72,7 +72,7 @@ pub struct ChallengeRandomness(BigInt);
 pub trait RangeProof {
 
     /// Verifier commits to a t-bit vector e where e is STATISTICAL_ERROR_FACTOR.
-    fn verifier_commit(ek: &EncryptionKey) -> (Commitment, ChallengeRandomness, Challenge); // commitment is public
+    fn verifier_commit(ek: &EncryptionKey) -> (Commitment, ChallengeRandomness, ChallengeBits); // commitment is public
 
     /// Prover generates t random pairs, each pair encrypts a number in {q/3, 2q/3} and a number in {0, q/3}
     fn generate_encrypted_pairs(ek: &EncryptionKey, range: &BigInt) -> (EncryptedPairs, DataRandomnessPairs);
@@ -80,20 +80,20 @@ pub trait RangeProof {
     /// Verifier decommits to vector e.
 
     /// Prover check correctness using:
-    fn verify_commit(ek: &EncryptionKey, com: &Commitment, r: &ChallengeRandomness, e: &Challenge) -> Result<(), ProofError>;
+    fn verify_commit(ek: &EncryptionKey, com: &Commitment, r: &ChallengeRandomness, e: &ChallengeBits) -> Result<(), CorrectKeyProofError>;
 
     /// Prover calcuate z_i according to bit e_i and returns a vector z
-    fn generate_proof(ek: &EncryptionKey, secret_x: &BigInt, secret_r: &BigInt, e: &Challenge, range: &BigInt, data: &DataRandomnessPairs) -> Proof;
+    fn generate_proof(ek: &EncryptionKey, secret_x: &BigInt, secret_r: &BigInt, e: &ChallengeBits, range: &BigInt, data: &DataRandomnessPairs) -> Proof;
 
     /// Verifier verifies the proof
-    fn verifier_output(ek: &EncryptionKey, e: &Challenge, encrypted_pairs: &EncryptedPairs, z: &Proof, range: &BigInt, cipher_x: RawCiphertext) -> Result<(), ProofError>;
+    fn verifier_output(ek: &EncryptionKey, e: &ChallengeBits, encrypted_pairs: &EncryptedPairs, z: &Proof, range: &BigInt, cipher_x: RawCiphertext) -> Result<(), CorrectKeyProofError>;
 
 }
 
 impl RangeProof for Paillier {
 
-    fn verifier_commit(ek: &EncryptionKey) -> (Commitment, ChallengeRandomness, Challenge) {
-        let e = Challenge::sample(STATISTICAL_ERROR_FACTOR);
+    fn verifier_commit(ek: &EncryptionKey) -> (Commitment, ChallengeRandomness, ChallengeBits) {
+        let e = ChallengeBits::sample(STATISTICAL_ERROR_FACTOR);
         // commit to challenge
         let m = compute_digest(&e.0);
         let r = BigInt::sample_below(&ek.n);
@@ -153,17 +153,17 @@ impl RangeProof for Paillier {
         (EncryptedPairs { c1, c2 }, DataRandomnessPairs { w1, w2, r1, r2 })
     }
 
-    fn verify_commit(ek: &EncryptionKey, com: &Commitment, r: &ChallengeRandomness, e: &Challenge) -> Result<(), ProofError> {
+    fn verify_commit(ek: &EncryptionKey, com: &Commitment, r: &ChallengeRandomness, e: &ChallengeBits) -> Result<(), CorrectKeyProofError> {
         let m = compute_digest(&e.0);
         let com_tag = get_paillier_commitment(&ek, &m, &r.0);
         if com.0 == com_tag {
             Ok(())
         } else {
-            Err(ProofError)
+            Err(CorrectKeyProofError)
         }
     }
 
-    fn generate_proof(ek: &EncryptionKey, secret_x: &BigInt, secret_r: &BigInt, e: &Challenge, range: &BigInt, data: &DataRandomnessPairs) -> Proof {
+    fn generate_proof(ek: &EncryptionKey, secret_x: &BigInt, secret_r: &BigInt, e: &ChallengeBits, range: &BigInt, data: &DataRandomnessPairs) -> Proof {
         let range_scaled_third: BigInt = range.div_floor(&BigInt::from(3));
         let range_scaled_two_thirds = BigInt::from(2) * &range_scaled_third;
         let bits_of_e = BitVec::from_bytes(&e.0);
@@ -198,7 +198,7 @@ impl RangeProof for Paillier {
         Proof(reponses)
     }
 
-    fn verifier_output(ek: &EncryptionKey, e: &Challenge, encrypted_pairs: &EncryptedPairs, proof: &Proof, range: &BigInt, cipher_x: RawCiphertext) -> Result<(), ProofError> {
+    fn verifier_output(ek: &EncryptionKey, e: &ChallengeBits, encrypted_pairs: &EncryptedPairs, proof: &Proof, range: &BigInt, cipher_x: RawCiphertext) -> Result<(), CorrectKeyProofError> {
         let range_scaled_third: BigInt = range.div_floor(&BigInt::from(3i32));
         let range_scaled_two_thirds: BigInt = BigInt::from(2i32) * &range_scaled_third;
 
@@ -257,7 +257,7 @@ impl RangeProof for Paillier {
         if verifications.iter().all(|b| *b) {
             Ok(())
         } else {
-            Err(ProofError)
+            Err(CorrectKeyProofError)
         }
     }
 

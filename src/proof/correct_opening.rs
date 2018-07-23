@@ -4,7 +4,7 @@ use ::traits::*;
 
 /// Verify correct opening of ciphertext.
 pub trait CorrectOpening<EK, PT, R, CT> {
-    fn verify(ek: &EK, m: PT, r: R, c: CT) -> bool;
+    fn verify_opening(ek: &EK, m: PT, r: R, c: CT) -> bool;
 }
 
 impl<'m, 'r, 'c, R, CT> CorrectOpening<EncryptionKey, RawPlaintext<'m>, &'r R, &'c CT> for Paillier
@@ -12,7 +12,7 @@ where
     Self: EncryptWithChosenRandomness<EncryptionKey, RawPlaintext<'m>, &'r R, CT>,
     CT: PartialEq,
 {
-    fn verify(ek: &EncryptionKey, m: RawPlaintext<'m>, r: &'r R, c: &'c CT) -> bool {
+    fn verify_opening(ek: &EncryptionKey, m: RawPlaintext<'m>, r: &'r R, c: &'c CT) -> bool {
         let d = Self::encrypt_with_chosen_randomness(ek, m, r);
         c == &d
     }
@@ -40,6 +40,6 @@ mod tests {
         let c = Paillier::encrypt(&ek, RawPlaintext::from(BigInt::from(10)));
         let (m, r) = Paillier::open(&dk, &c);
 
-        assert!(Paillier::verify(&ek, m, &r, &c));
+        assert!(Paillier::verify_opening(&ek, m, &r, &c));
     }
 }

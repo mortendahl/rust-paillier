@@ -15,17 +15,17 @@ const STATISTICAL_ERROR_FACTOR: usize = 40;
 
 
 // TODO: generalize the error string and move the struct to a common location where all other proofs can use it as well
-// TODO[Morten]: better: use errorchain!
+// TODO[Morten]: better: use error chain!
 #[derive(Debug)]
-pub struct ProofError;
+pub struct CorrectKeyProofError;
 
-impl fmt::Display for ProofError {
+impl fmt::Display for CorrectKeyProofError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "ProofError")
     }
 }
 
-impl Error for ProofError {
+impl Error for CorrectKeyProofError {
     fn description(&self) -> &str {
         "Error while verifying"
     }
@@ -59,10 +59,10 @@ pub trait CorrectKey<EK, DK> {
     fn challenge(ek: &EK) -> (Challenge, VerificationAid);
 
     /// Generate proof given decryption key.
-    fn prove(dk: &DK, challenge: &Challenge) -> Result<CorrectKeyProof, ProofError>;
+    fn prove(dk: &DK, challenge: &Challenge) -> Result<CorrectKeyProof, CorrectKeyProofError>;
 
     /// Verify proof.
-    fn verify(proof: &CorrectKeyProof, aid: &VerificationAid) -> Result<(), ProofError>;
+    fn verify(proof: &CorrectKeyProof, aid: &VerificationAid) -> Result<(), CorrectKeyProofError>;
 }
 
 impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
@@ -110,7 +110,7 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
         (Challenge { x, e, z }, VerificationAid { y_digest })
     }
 
-    fn prove(dk: &DecryptionKey, challenge: &Challenge) -> Result<CorrectKeyProof, ProofError>
+    fn prove(dk: &DecryptionKey, challenge: &Challenge) -> Result<CorrectKeyProof, CorrectKeyProofError>
     {
         let mut fail = false; // !!! Do not change
 
@@ -145,7 +145,7 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
 
         fail = (challenge.e != e) || fail;
 
-        if fail { return Err(ProofError); }
+        if fail { return Err(CorrectKeyProofError); }
 
         // compute proof in the form of a hash of the recovered roots
         let y_digest = compute_digest(
@@ -155,12 +155,12 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
         Ok(CorrectKeyProof { y_digest })
     }
 
-    fn verify(proof: &CorrectKeyProof, va: &VerificationAid) -> Result<(), ProofError> {
+    fn verify(proof: &CorrectKeyProof, va: &VerificationAid) -> Result<(), CorrectKeyProofError> {
         // compare actual with expected
         if proof.y_digest == va.y_digest {
             Ok(())
         } else {
-            Err(ProofError)
+            Err(CorrectKeyProofError)
         }
     }
 }
