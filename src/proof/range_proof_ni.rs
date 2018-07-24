@@ -4,8 +4,8 @@ use std::borrow::Borrow;
 use ::arithimpl::traits::*;
 use ::{Paillier, EncryptionKey, RawCiphertext, BigInt};
 use ::core::*;
-use proof::correct_key::ProofError;
-use proof::range_proof::{EncryptedPairs, Challenge, Proof};
+use proof::correct_key::CorrectKeyProofError;
+use proof::range_proof::{EncryptedPairs, ChallengeBits, Proof};
 
 const RANGE_BITS : usize = 256; //for elliptic curves with 256bits for example
 
@@ -22,14 +22,14 @@ const RANGE_BITS : usize = 256; //for elliptic curves with 256bits for example
 /// This is a non-interactive version of the proof, using Fiat Shamir Transform and assuming Random Oracle Model
 pub trait RangeProofNI {
 
-    fn prover(ek: &EncryptionKey, range: &BigInt, secret_x: &BigInt, secret_r: &BigInt) -> (EncryptedPairs, Challenge, Proof);
+    fn prover(ek: &EncryptionKey, range: &BigInt, secret_x: &BigInt, secret_r: &BigInt) -> (EncryptedPairs, ChallengeBits, Proof);
 
-    fn verifier(ek: &EncryptionKey, e: &Challenge, encrypted_pairs: &EncryptedPairs, z: &Proof, range: &BigInt, cipher_x: RawCiphertext) -> Result<(), ProofError>;
+    fn verifier(ek: &EncryptionKey, e: &ChallengeBits, encrypted_pairs: &EncryptedPairs, z: &Proof, range: &BigInt, cipher_x: RawCiphertext) -> Result<(), CorrectKeyProofError>;
 
 }
 
 impl RangeProofNI for Paillier {
-    fn prover(ek: &EncryptionKey, range: &BigInt, secret_x: &BigInt, secret_r: &BigInt) -> (EncryptedPairs, Challenge, Proof)
+    fn prover(ek: &EncryptionKey, range: &BigInt, secret_x: &BigInt, secret_r: &BigInt) -> (EncryptedPairs, ChallengeBits, Proof)
     {
         use proof::RangeProof;
         let (encrypted_pairs, data_randomness_pairs) = Paillier::generate_encrypted_pairs(ek, range);
@@ -39,7 +39,7 @@ impl RangeProofNI for Paillier {
         let mut vec: Vec<BigInt> = Vec::new();
         vec.push(c1[0].clone());
         vec.push(c2[0].clone());
-        let e = Challenge::from(compute_digest(vec.iter()));
+        let e = ChallengeBits::from(compute_digest(vec.iter()));
 
         //assuming digest length > STATISTICAL_ERROR_FACTOR
 
@@ -48,7 +48,7 @@ impl RangeProofNI for Paillier {
         (EncryptedPairs { c1, c2 }, e, proof)
     }
 
-    fn verifier(ek: &EncryptionKey, e: &Challenge, encrypted_pairs: &EncryptedPairs, proof: &Proof, range: &BigInt, cipher_x: RawCiphertext) -> Result<(), ProofError> {
+    fn verifier(ek: &EncryptionKey, e: &ChallengeBits, encrypted_pairs: &EncryptedPairs, proof: &Proof, range: &BigInt, cipher_x: RawCiphertext) -> Result<(), CorrectKeyProofError> {
         use proof::RangeProof;
         <Paillier as RangeProof>::verifier_output(ek, e, encrypted_pairs, proof, range, cipher_x)
     }
