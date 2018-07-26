@@ -4,7 +4,7 @@ extern crate gmp;
 
 use super::traits::*;
 use self::gmp::mpz::Mpz;
-use rand::{OsRng, Rng};
+use rand::prelude::*;
 
 impl Samplable for Mpz {
 
@@ -19,7 +19,7 @@ impl Samplable for Mpz {
     }
 
     fn sample(bitsize: usize) -> Self {
-        let mut rng = OsRng::new().unwrap();
+        let mut rng = thread_rng();
         let bytes = (bitsize -1) / 8 + 1;
         let mut buf: Vec<u8> = vec![0; bytes];
         rng.fill_bytes(&mut buf);

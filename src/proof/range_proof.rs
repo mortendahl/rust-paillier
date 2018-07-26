@@ -1,7 +1,7 @@
 use std::borrow::Borrow;
 use std::mem;
 
-use rand::{random, Rng, OsRng};
+use rand::prelude::*;
 use rayon::prelude::*;
 use ring::digest::{Context, SHA256};
 use bit_vec::BitVec;
@@ -43,7 +43,7 @@ pub struct Commitment(BigInt);
 
 impl ChallengeBits {
     fn sample(big_length: usize) -> ChallengeBits {
-        let mut rng = OsRng::new().unwrap();
+        let mut rng = thread_rng();
         let mut bytes: Vec<u8> = vec![0; big_length/8];
         rng.fill_bytes(&mut bytes);
         ChallengeBits(bytes)
