@@ -96,4 +96,4 @@ impl BitManipulation for ramp::Int {
     }
 }
 
-pub type BigInteger = ramp::Int;
+pub type BigInt = ramp::Int;

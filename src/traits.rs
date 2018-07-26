@@ -81,5 +81,5 @@ pub trait Mul<EK, CT1, PT2, CT> {
 pub trait Rerandomize<EK, CT1, CT> {
     /// Rerandomise ciphertext `c` to hide any history of which homomorphic operations were
     /// used to compute it, making it look exactly like a fresh encryption of the same plaintext.
-    fn rerandomise(ek: &EK, c: CT1) -> CT;
+    fn rerandomize(ek: &EK, c: CT1) -> CT;
 }

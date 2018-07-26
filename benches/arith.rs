@@ -11,8 +11,8 @@ mod helpers;
 use helpers::*;
 
 pub fn bench_mul(b: &mut Bencher) {
-    let ref p: BigInteger = str::parse(P2048).unwrap();
-    let ref q: BigInteger = str::parse(Q2048).unwrap();
+    let ref p: BigInt = str::parse(P2048).unwrap();
+    let ref q: BigInt = str::parse(Q2048).unwrap();
 
     b.iter(|| {
         let _ = p * q;
@@ -20,9 +20,9 @@ pub fn bench_mul(b: &mut Bencher) {
 }
 
 pub fn bench_mulrem(b: &mut Bencher) {
-    let ref p: BigInteger = str::parse(P2048).unwrap();
-    let ref q: BigInteger = str::parse(Q2048).unwrap();
-    let ref n: BigInteger = str::parse(N2048).unwrap();
+    let ref p: BigInt = str::parse(P2048).unwrap();
+    let ref q: BigInt = str::parse(Q2048).unwrap();
+    let ref n: BigInt = str::parse(N2048).unwrap();
 
     b.iter(|| {
         let _ = (p * q) % n;
@@ -30,12 +30,12 @@ pub fn bench_mulrem(b: &mut Bencher) {
 }
 
 pub fn bench_modarith(b: &mut Bencher) {
-    let ref p: BigInteger = str::parse(P2048).unwrap();
-    let ref q: BigInteger = str::parse(Q2048).unwrap();
-    let ref n: BigInteger = str::parse(N2048).unwrap();
+    let ref p: BigInt = str::parse(P2048).unwrap();
+    let ref q: BigInt = str::parse(Q2048).unwrap();
+    let ref n: BigInt = str::parse(N2048).unwrap();
 
     b.iter(|| {
-        let _ = BigInteger::modpow(p, q, n);
+        let _ = BigInt::modpow(p, q, n);
     });
 }
 

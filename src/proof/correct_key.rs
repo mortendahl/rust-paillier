@@ -4,28 +4,28 @@ use std::error::Error;
 use std::borrow::Borrow;
 
 use ring::digest::{Context, SHA256};
+use rayon::prelude::*;
 
 use ::arithimpl::traits::*;
-use ::BigInteger as BigInt;
+use ::{Paillier, BigInt, EncryptionKey, DecryptionKey};
 use core::extract_nroot;
-use ::Paillier as Paillier;
-use ::{EncryptionKey, DecryptionKey};
 
-use rayon::prelude::*;
 
 const STATISTICAL_ERROR_FACTOR: usize = 40;
 
 
+// TODO: generalize the error string and move the struct to a common location where all other proofs can use it as well
+// TODO[Morten]: better: use error chain!
 #[derive(Debug)]
-pub struct ProofError;
+pub struct CorrectKeyProofError;
 
-impl fmt::Display for ProofError {
+impl fmt::Display for CorrectKeyProofError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "ProofError")
     }
 }
 
-impl Error for ProofError {
+impl Error for CorrectKeyProofError {
     fn description(&self) -> &str {
         "Error while verifying"
     }
@@ -59,21 +59,10 @@ pub trait CorrectKey<EK, DK> {
     fn challenge(ek: &EK) -> (Challenge, VerificationAid);
 
     /// Generate proof given decryption key.
-    fn prove(dk: &DK, challenge: &Challenge) -> Result<CorrectKeyProof, ProofError>;
+    fn prove(dk: &DK, challenge: &Challenge) -> Result<CorrectKeyProof, CorrectKeyProofError>;
 
     /// Verify proof.
-    fn verify(proof: &CorrectKeyProof, aid: &VerificationAid) -> Result<(), ProofError>;
-}
-
-fn compute_digest<IT>(values: IT) -> BigInt
-where  IT: Iterator, IT::Item: Borrow<BigInt>
-{
-    let mut digest = Context::new(&SHA256);
-    for value in values {
-        let bytes: Vec<u8> = value.borrow().into();
-        digest.update(&bytes);
-    }
-    BigInt::from(digest.finish().as_ref())
+    fn verify(proof: &CorrectKeyProof, aid: &VerificationAid) -> Result<(), CorrectKeyProofError>;
 }
 
 impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
@@ -83,13 +72,9 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
         // FIXME[Morten]
         // settle the question of whether using n instead of n^2 is okay
 
-        // TODO[Morten] 
-        // most of these could probably be run in parallel with Rayon
-        // after simplification (using `into_par_iter` in some cases)
-
         // Compute challenges in the form of n-powers
 
-        let y: Vec<_> = (0..STATISTICAL_ERROR_FACTOR)
+        let y: Vec<_> = (0..STATISTICAL_ERROR_FACTOR).into_par_iter()
             .map(|_| BigInt::sample_below(&ek.n))
             .collect();
 
@@ -100,7 +85,7 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
         // Compute non-interactive proof of knowledge of the n-roots in the above
         // TODO[Morten] introduce new proof type for this that can be used independently?
 
-        let r: Vec<_> = (0..STATISTICAL_ERROR_FACTOR)
+        let r: Vec<_> = (0..STATISTICAL_ERROR_FACTOR).into_par_iter()
             .map(|_| BigInt::sample_below(&ek.n))
             .collect();
 
@@ -125,17 +110,17 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
         (Challenge { x, e, z }, VerificationAid { y_digest })
     }
 
-    fn prove(dk: &DecryptionKey, challenge: &Challenge) -> Result<CorrectKeyProof, ProofError>
+    fn prove(dk: &DecryptionKey, challenge: &Challenge) -> Result<CorrectKeyProof, CorrectKeyProofError>
     {
+        let mut fail = false; // !!! Do not change
+
         // check x co-prime with n
-        if challenge.x.par_iter().any(|xi| BigInt::egcd(&dk.n, xi).0 != BigInt::one()) {
-            return Err(ProofError)
-        }
+        fail = challenge.x.par_iter()
+            .any(|xi| BigInt::egcd(&dk.n, xi).0 != BigInt::one()) || fail;
 
         // check z co-prime with n
-        if challenge.z.par_iter().any(|zi| BigInt::egcd(&dk.n, zi).0 != BigInt::one()) {
-            return Err(ProofError)
-        }
+        fail = challenge.z.par_iter()
+            .any(|zi| BigInt::egcd(&dk.n, zi).0 != BigInt::one()) || fail;
 
         // reconstruct a
         let phimine = &dk.phi - (&challenge.e % &dk.phi);
@@ -148,9 +133,8 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
             .collect();
 
         // check a co-prime with n
-        if a.par_iter().any(|ai| BigInt::egcd(&dk.n, ai).0 != BigInt::one()) {
-            return Err(ProofError)
-        }
+        fail = a.par_iter()
+            .any(|ai| BigInt::egcd(&dk.n, ai).0 != BigInt::one()) || fail;
 
         // check that e was computed correctly
         let e = compute_digest(
@@ -158,9 +142,10 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
                 .chain(&challenge.x)
                 .chain(&a)
         );
-        if challenge.e != e {
-            return Err(ProofError)
-        }
+
+        fail = (challenge.e != e) || fail;
+
+        if fail { return Err(CorrectKeyProofError); }
 
         // compute proof in the form of a hash of the recovered roots
         let y_digest = compute_digest(
@@ -170,21 +155,33 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
         Ok(CorrectKeyProof { y_digest })
     }
 
-    fn verify(proof: &CorrectKeyProof, va: &VerificationAid) -> Result<(), ProofError> {
+    fn verify(proof: &CorrectKeyProof, va: &VerificationAid) -> Result<(), CorrectKeyProofError> {
         // compare actual with expected
         if proof.y_digest == va.y_digest {
             Ok(())
         } else {
-            Err(ProofError)
+            Err(CorrectKeyProofError)
         }
     }
+}
+
+// TODO[Morten] generalise and move to super
+fn compute_digest<IT>(values: IT) -> BigInt
+where IT: Iterator, IT::Item: Borrow<BigInt>
+{
+    let mut digest = Context::new(&SHA256);
+    for value in values {
+        let bytes: Vec<u8> = value.borrow().into();
+        digest.update(&bytes);
+    }
+    BigInt::from(digest.finish().as_ref())
 }
 
 #[cfg(test)]
 mod tests {
 
     use super::*;
-    use core::Keypair;
+    use ::Keypair;
     use traits::*;
 
     fn test_keypair() -> Keypair {
