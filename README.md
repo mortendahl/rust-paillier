@@ -70,7 +70,7 @@ using GMP and including both key generation and zero-knowledge proofs.
 
 ### Underlying arithmetic
 
-The choice of underlying arithmetic library may be changed using features `usegmp` (default) and `useramp`. GMP generally offers [slightly better performance](https://medium.com/snips-ai/benchmarking-paillier-encryption-15631a0b5ad8) but may be unavailable on some platforms or for some applications.
+The choice of underlying arithmetic library may be changed using features `usegmp` (default) and `useramp`. GMP generally offers [slightly better performance](https://medium.com/snips-ai/benchmarking-paillier-encryption-15631a0b5ad8) but may be unavailable on some platforms or for some applications. Note that `useramp` does currently *not* support proofs, i.e. features `useramp` and `proofs` cannot be used together.
 
 ### Key generation
 
