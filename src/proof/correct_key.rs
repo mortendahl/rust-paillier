@@ -32,17 +32,17 @@ impl Error for CorrectKeyProofError {
 }
 
 pub struct Challenge {
-    x: Vec<BigInt>,
+    sn: Vec<BigInt>,
     e: BigInt,
     z: Vec<BigInt>,
 }
 
 pub struct VerificationAid {
-    y_digest: BigInt
+    s_digest: BigInt
 }
 
 pub struct CorrectKeyProof {
-    y_digest: BigInt
+    s_digest: BigInt
 }
 
 /// Zero-knowledge proof of co-primality between the encryption modulus and its order.
@@ -69,17 +69,14 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
 {
     fn challenge(ek: &EncryptionKey) -> (Challenge, VerificationAid) {
 
-        // FIXME[Morten]
-        // settle the question of whether using n instead of n^2 is okay
-
         // Compute challenges in the form of n-powers
 
-        let y: Vec<_> = (0..STATISTICAL_ERROR_FACTOR).into_par_iter()
+        let s: Vec<_> = (0..STATISTICAL_ERROR_FACTOR).into_par_iter()
             .map(|_| BigInt::sample_below(&ek.n))
             .collect();
 
-        let x: Vec<_> = y.par_iter()
-            .map(|yi| BigInt::modpow(yi, &ek.n, &ek.n))
+        let sn: Vec<_> = s.par_iter()
+            .map(|si| BigInt::modpow(si, &ek.n, &ek.nn))
             .collect();
 
         // Compute non-interactive proof of knowledge of the n-roots in the above
@@ -89,75 +86,77 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
             .map(|_| BigInt::sample_below(&ek.n))
             .collect();
 
-        let a : Vec<_> = r.par_iter()
-            .map(|ri| BigInt::modpow(ri, &ek.n, &ek.n))
+        let rn: Vec<_> = r.par_iter()
+            .map(|ri| BigInt::modpow(ri, &ek.n, &ek.nn))
             .collect();
 
         let e = compute_digest(
             iter::once(&ek.n)
-                .chain(&x)
-                .chain(&a)
+                .chain(&sn)
+                .chain(&rn)
         );
 
         let z: Vec<_> = r.par_iter()
-            .zip(y.par_iter())
-            .map(|(ri, yi)| (ri * BigInt::modpow(yi, &e, &ek.n)) % &ek.n)
+            .zip(s.par_iter())
+            .map(|(ri, si)| (ri * BigInt::modpow(si, &e, &ek.n)) % &ek.nn) // n or nn in the modpow?
             .collect();
 
         // Compute expected result for equality test in verification
-        let y_digest: BigInt = compute_digest(y.iter());
+        let s_digest: BigInt = compute_digest(s.iter());
 
-        (Challenge { x, e, z }, VerificationAid { y_digest })
+        (Challenge { sn, e, z }, VerificationAid { s_digest })
     }
 
     fn prove(dk: &DecryptionKey, challenge: &Challenge) -> Result<CorrectKeyProof, CorrectKeyProofError>
     {
         let mut fail = false; // !!! Do not change
 
-        // check x co-prime with n
-        fail = challenge.x.par_iter()
-            .any(|xi| BigInt::egcd(&dk.n, xi).0 != BigInt::one()) || fail;
+        // check sn co-prime with n
+        fail = challenge.sn.par_iter()
+            .any(|sni| BigInt::egcd(&dk.n, sni).0 != BigInt::one()) || fail;
 
         // check z co-prime with n
         fail = challenge.z.par_iter()
             .any(|zi| BigInt::egcd(&dk.n, zi).0 != BigInt::one()) || fail;
 
-        // reconstruct a
+        // reconstruct rn
         let phimine = &dk.phi - (&challenge.e % &dk.phi);
-        let a: Vec<_> = challenge.z.par_iter().zip(challenge.x.par_iter())
-            .map(|(zi, xi)| {
-                let zn = BigInt::modpow(zi, &dk.n, &dk.n);
-                let xphi = BigInt::modpow(xi, &phimine, &dk.n);
-                (zn * xphi) % &dk.n
+        let rn: Vec<_> = challenge.z.par_iter().zip(challenge.sn.par_iter())
+            .map(|(zi, sni)| {
+                let zn = BigInt::modpow(zi, &dk.n, &dk.nn);
+                let snphi = BigInt::modpow(sni, &phimine, &dk.nn);
+                (zn * snphi) % &dk.nn
             })
             .collect();
 
-        // check a co-prime with n
-        fail = a.par_iter()
-            .any(|ai| BigInt::egcd(&dk.n, ai).0 != BigInt::one()) || fail;
+        // check rn co-prime with n
+        fail = rn.par_iter()
+            .any(|rni| BigInt::egcd(&dk.n, rni).0 != BigInt::one()) || fail;
 
         // check that e was computed correctly
         let e = compute_digest(
             iter::once(&dk.n)
-                .chain(&challenge.x)
-                .chain(&a)
+                .chain(&challenge.sn)
+                .chain(&rn)
         );
-
         fail = (challenge.e != e) || fail;
 
         if fail { return Err(CorrectKeyProofError); }
 
         // compute proof in the form of a hash of the recovered roots
-        let y_digest = compute_digest(
-            challenge.x.iter()
-                .map(|xi| extract_nroot(dk, xi)));
+        let s_digest = compute_digest(
+            challenge.sn.iter()
+                .map(|sni| {
+                    let si = extract_nroot(dk, sni);
+                    si
+                }));
 
-        Ok(CorrectKeyProof { y_digest })
+        Ok(CorrectKeyProof { s_digest })
     }
 
     fn verify(proof: &CorrectKeyProof, va: &VerificationAid) -> Result<(), CorrectKeyProofError> {
         // compare actual with expected
-        if proof.y_digest == va.y_digest {
+        if proof.s_digest == va.s_digest {
             Ok(())
         } else {
             Err(CorrectKeyProofError)
@@ -224,7 +223,7 @@ mod tests {
         let proof_results = Paillier::prove(&dk, &challenge);
         assert!(proof_results.is_ok());
 
-        verification_aid.y_digest += 1;
+        verification_aid.s_digest += 1;
         let result = Paillier::verify(&proof_results.unwrap(), &verification_aid);
         assert!(result.is_err()); // ERROR expected because of manipulated aid
     }
