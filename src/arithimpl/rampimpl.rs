@@ -1,25 +1,24 @@
 #![cfg(feature="useramp")]
 
 extern crate ramp;
-use rand::{OsRng};
+
+use rand::prelude::*;
+use self::ramp::RandomInt;
 use super::traits::*;
 
 impl Samplable for ramp::Int {
     fn sample_below(upper: &Self) -> Self {
-        use self::ramp::RandomInt;
-        let mut rng = OsRng::new().unwrap();
+        let mut rng = thread_rng();
         rng.gen_uint_below(upper)
     }
 
      fn sample(bitsize: usize) -> Self {
-        use self::ramp::RandomInt;
-        let mut rng = OsRng::new().unwrap();
+        let mut rng = thread_rng();
         rng.gen_uint(bitsize)
     }
 
      fn sample_range(lower: &Self, upper: &Self) -> Self {
-        use self::ramp::RandomInt;
-        let mut rng = OsRng::new().unwrap();
+        let mut rng = thread_rng();
         rng.gen_int_range(lower, upper)
     }
 }
@@ -62,9 +61,37 @@ impl ConvertFrom<ramp::Int> for u64 {
     }
 }
 
+impl ConvertFrom<ramp::Int> for i8 {
+    fn _from(x: &ramp::Int) -> i8 {
+        i8::from(x)
+    }
+}
+
+impl ConvertFrom<ramp::Int> for i16 {
+    fn _from(x: &ramp::Int) -> i16 {
+        i16::from(x)
+    }
+}
+
+impl ConvertFrom<ramp::Int> for i32 {
+    fn _from(x: &ramp::Int) -> i32 {
+        i32::from(x)
+    }
+}
+
+impl ConvertFrom<ramp::Int> for i64 {
+    fn _from(x: &ramp::Int) -> i64 {
+        i64::from(x)
+    }
+}
+
 impl BitManipulation for ramp::Int {
     fn set_bit(self: &mut Self, bit: usize, bit_val: bool) {
         self.set_bit(bit as u32, bit_val);
+    }
+
+    fn test_bit(self: &Self, bit: usize) -> bool {
+        self.bit(bit as u32)
     }
 }
 

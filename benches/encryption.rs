@@ -5,7 +5,7 @@ extern crate num_traits;
 
 use bencher::Bencher;
 use paillier::*;
-use paillier::coding::*;
+use paillier::encoding::*;
 
 mod helpers;
 use helpers::*;
