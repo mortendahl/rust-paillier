@@ -137,7 +137,7 @@ impl<'m, 'd> Encrypt<EncryptionKey, RawPlaintext<'m>, RawCiphertext<'d>> for Pai
     fn encrypt(ek: &EncryptionKey, m: RawPlaintext<'m>) -> RawCiphertext<'d> {
         let r = Randomness::sample(&ek);
         let rn = BigInt::modpow(&r.0, &ek.n, &ek.nn);
-        let gm = (1 + m.0.borrow() * &ek.n) % &ek.nn;
+        let gm: BigInt = (m.0.borrow() as &BigInt * &ek.n + 1) % &ek.nn;
         let c = (gm * rn) % &ek.nn;
         RawCiphertext(Cow::Owned(c))
     }
@@ -146,7 +146,7 @@ impl<'m, 'd> Encrypt<EncryptionKey, RawPlaintext<'m>, RawCiphertext<'d>> for Pai
 impl<'m, 'r, 'd> EncryptWithChosenRandomness<EncryptionKey, RawPlaintext<'m>, &'r Randomness, RawCiphertext<'d>> for Paillier {
     fn encrypt_with_chosen_randomness(ek: &EncryptionKey, m: RawPlaintext<'m>, r: &'r Randomness) -> RawCiphertext<'d> {
         let rn = BigInt::modpow(&r.0, &ek.n, &ek.nn);
-        let gm = (1 + m.0.borrow() * &ek.n) % &ek.nn;
+        let gm: BigInt = (m.0.borrow() as &BigInt * &ek.n + 1) % &ek.nn;
         let c = (gm * rn) % &ek.nn;
         RawCiphertext(Cow::Owned(c))
     }
@@ -154,7 +154,7 @@ impl<'m, 'r, 'd> EncryptWithChosenRandomness<EncryptionKey, RawPlaintext<'m>, &'
 
 impl<'m, 'r, 'd> EncryptWithChosenRandomness<EncryptionKey, RawPlaintext<'m>, &'r PrecomputedRandomness, RawCiphertext<'d>> for Paillier {
     fn encrypt_with_chosen_randomness(ek: &EncryptionKey, m: RawPlaintext<'m>, rn: &'r PrecomputedRandomness) -> RawCiphertext<'d> {
-        let gm = (1 + m.0.borrow() * &ek.n) % &ek.nn;
+        let gm: BigInt = (m.0.borrow() as &BigInt * &ek.n + 1) % &ek.nn;
         let c = (gm * &rn.0) % &ek.nn;
         RawCiphertext(Cow::Owned(c))
     }
@@ -209,7 +209,7 @@ impl<'m, 'r, 'd> EncryptWithChosenRandomness<DecryptionKey, RawPlaintext<'m>, &'
 
 impl<'m, 'r, 'd> EncryptWithChosenRandomness<DecryptionKey, RawPlaintext<'m>, &'r PrecomputedRandomness, RawCiphertext<'d>> for Paillier {
     fn encrypt_with_chosen_randomness(dk: &DecryptionKey, m: RawPlaintext<'m>, rn: &'r PrecomputedRandomness) -> RawCiphertext<'d> {
-        let gm = (1 + m.0.borrow() * &dk.n) % &dk.nn;
+        let gm = (1 + m.0.borrow() as &BigInt * &dk.n) % &dk.nn;
         let c = (gm * &rn.0) % &dk.nn;
         RawCiphertext(Cow::Owned(c))
     }
@@ -226,7 +226,7 @@ impl<'c, 'd> Rerandomize<EncryptionKey, RawCiphertext<'c>, RawCiphertext<'d>> fo
     fn rerandomize(ek: &EncryptionKey, c: RawCiphertext<'c>) -> RawCiphertext<'d> {
         let r = BigInt::sample_below(&ek.n);
         let rn = BigInt::modpow(&r, &ek.n, &ek.nn);
-        let d = (c.0.borrow() * rn) % &ek.nn;
+        let d = (c.0.borrow() as &BigInt * rn) % &ek.nn;
         RawCiphertext(Cow::Owned(d))
     }
 }
@@ -278,8 +278,8 @@ impl<'c, 'm> Open<DecryptionKey, RawCiphertext<'c>, RawPlaintext<'m>, Randomness
 impl<'c, 'm> Open<DecryptionKey, &'c RawCiphertext<'c>, RawPlaintext<'m>, Randomness> for Paillier {
     fn open(dk: &DecryptionKey, c: &'c RawCiphertext<'c>) -> (RawPlaintext<'m>, Randomness) {
         let m = Self::decrypt(dk, c);
-        let gminv = (1 - m.0.borrow() * &dk.n) % &dk.nn;
-        let rn = (c.0.borrow() * gminv) % &dk.nn;
+        let gminv = (BigInt::one() - (m.0.borrow() as &BigInt) * &dk.n) % &dk.nn;
+        let rn = (c.0.borrow() as &BigInt * gminv) % &dk.nn;
         let r = extract_nroot(dk, &rn);
         (m, Randomness(r))
     }
@@ -287,26 +287,25 @@ impl<'c, 'm> Open<DecryptionKey, &'c RawCiphertext<'c>, RawPlaintext<'m>, Random
 
 impl<'c1, 'c2, 'd> Add<EncryptionKey, RawCiphertext<'c1>, RawCiphertext<'c2>, RawCiphertext<'d>> for Paillier {
     fn add(ek: &EncryptionKey, c1: RawCiphertext<'c1>, c2: RawCiphertext<'c2>) -> RawCiphertext<'d> {
-        let c1: &BigInt = c1.0.borrow();
-        let d: BigInt = c1 * c2.0.borrow() % &ek.nn;
+        let d = (c1.0.borrow() as &BigInt * c2.0.borrow() as &BigInt) % &ek.nn;
         RawCiphertext(Cow::Owned(d))
     }
 }
 
 impl<'c, 'm, 'd> Add<EncryptionKey, RawCiphertext<'c>, RawPlaintext<'m>, RawCiphertext<'d>> for Paillier {
     fn add(ek: &EncryptionKey, c: RawCiphertext<'c>, m: RawPlaintext<'m>) -> RawCiphertext<'d> {
-        let c1 = c.0.borrow();
-        let c2 = (m.0.borrow() * &ek.n + 1) % &ek.nn;
-        let d: BigInt = (c1 * c2) % &ek.nn;
+        let c1 = c.0.borrow() as &BigInt;
+        let c2 = (m.0.borrow() as &BigInt * &ek.n + 1) % &ek.nn;
+        let d = (c1 * c2) % &ek.nn;
         RawCiphertext(Cow::Owned(d))
     }
 }
 
 impl<'c, 'm, 'd> Add<EncryptionKey, RawPlaintext<'m>, RawCiphertext<'c>, RawCiphertext<'d>> for Paillier {
     fn add(ek: &EncryptionKey, m: RawPlaintext<'m>, c: RawCiphertext<'c>) -> RawCiphertext<'d> {
-        let c1 = (m.0.borrow() * &ek.n + 1) % &ek.nn;
-        let c2 = c.0.borrow();
-        let d: BigInt = (c1 * c2) % &ek.nn;
+        let c1 = (m.0.borrow() as &BigInt * &ek.n + 1) % &ek.nn;
+        let c2 = c.0.borrow() as &BigInt;
+        let d = (c1 * c2) % &ek.nn;
         RawCiphertext(Cow::Owned(d))
     }
 }

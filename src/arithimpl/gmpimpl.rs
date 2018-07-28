@@ -2,9 +2,9 @@
 
 extern crate gmp;
 
-use super::traits::*;
 use self::gmp::mpz::Mpz;
 use rand::prelude::*;
+use super::traits::*;
 
 impl Samplable for Mpz {
 

@@ -1,25 +1,24 @@
 #![cfg(feature="useramp")]
 
 extern crate ramp;
-use rand::{OsRng};
+
+use rand::prelude::*;
+use self::ramp::RandomInt;
 use super::traits::*;
 
 impl Samplable for ramp::Int {
     fn sample_below(upper: &Self) -> Self {
-        use self::ramp::RandomInt;
-        let mut rng = OsRng::new().unwrap();
+        let mut rng = thread_rng();
         rng.gen_uint_below(upper)
     }
 
      fn sample(bitsize: usize) -> Self {
-        use self::ramp::RandomInt;
-        let mut rng = OsRng::new().unwrap();
+        let mut rng = thread_rng();
         rng.gen_uint(bitsize)
     }
 
      fn sample_range(lower: &Self, upper: &Self) -> Self {
-        use self::ramp::RandomInt;
-        let mut rng = OsRng::new().unwrap();
+        let mut rng = thread_rng();
         rng.gen_int_range(lower, upper)
     }
 }

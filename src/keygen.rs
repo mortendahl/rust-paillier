@@ -31,11 +31,11 @@ impl PrimeSampable for BigInt
         loop {
             let mut candidate = Self::sample(bitsize);
             // We flip the LSB to make sure tue candidate is odd.
-            candidate.set_bit(0, true);
+            BitManipulation::set_bit(&mut candidate, 0, true);
 
             // To ensure the appropiate size
-           // we set the MSB of the candidate.
-            candidate.set_bit(bitsize-1, true);
+            // we set the MSB of the candidate.
+            BitManipulation::set_bit(&mut candidate, bitsize-1, true);
             // If no prime number is found in 500 iterations,
             // restart the loop (re-seed).
             // FIXME: Why 500?
@@ -62,7 +62,7 @@ fn is_prime(candidate: &BigInt) -> bool
     for p in SMALL_PRIMES.into_iter() {
         let prime = BigInt::from(*p);
         let r = candidate % &prime;
-        if !r.is_zero() {
+        if !NumberTests::is_zero(&r) {
             continue
         } else {
             return false

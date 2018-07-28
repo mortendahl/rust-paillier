@@ -23,10 +23,12 @@ pub mod proof;
 pub use traits::*;
 pub use core::*;
 pub use encoding::*;
-pub use proof::*;
 
 #[cfg(feature="keygen")]
 pub use keygen::*;
+
+#[cfg(feature="proofs")]
+pub use proof::*;
 
 use std::borrow::Cow;
 
