@@ -98,7 +98,7 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
 
         let z: Vec<_> = r.par_iter()
             .zip(s.par_iter())
-            .map(|(ri, si)| (ri * BigInt::modpow(si, &e, &ek.n)) % &ek.nn) // n or nn in the modpow?
+            .map(|(ri, si)| (ri * BigInt::modpow(si, &e, &ek.nn)) % &ek.nn)
             .collect();
 
         // Compute expected result for equality test in verification
