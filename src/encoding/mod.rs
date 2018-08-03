@@ -4,14 +4,19 @@ use std::marker::PhantomData;
 
 use ::BigInt;
 use arithimpl::traits::ConvertFrom;
+use serde::ser::Serialize;
+use serde::de::Deserialize;
 
 pub mod integral;
 
-/// Representation of encrypted message.
-#[derive(Clone, Debug, PartialEq)]
+/// Encrypted message with type information.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct EncodedCiphertext<T> {
+    #[serde(with = "::serialize::bigint")]
     raw: BigInt,
+
     components: usize,
+
     _phantom: PhantomData<T>,
 }
 
