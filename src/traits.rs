@@ -14,27 +14,6 @@ pub trait KeyGeneration<KP>
     fn keypair_with_modulus_size(big_length: usize) -> KP;
 }
 
-/// Generate default encryption and decryption keys.
-pub trait DefaultKeys {
-
-    /// Type of encryption key generated.
-    type EK;
-
-    /// Type of decryption key generated.
-    type DK;
-
-    /// Generate default encryption key.
-    fn encryption_key(&self) -> Self::EK;
-
-    /// Generate default decryption key.
-    fn decryption_key(&self) -> Self::DK;
-
-    /// Generate default encryption and decryption keys.
-    fn keys(&self) -> (Self::EK, Self::DK) {
-        (self.encryption_key(), self.decryption_key())
-    }
-}
-
 pub trait PrecomputeRandomness<EK, R, PR> {
     fn precompute(ek: EK, r: R) -> PR;
 }
