@@ -15,9 +15,12 @@ use proof::correct_key::CorrectKeyProofError;
 const STATISTICAL_ERROR_FACTOR : usize = 40;
 const RANGE_BITS : usize = 256; //for elliptic curves with 256bits for example
 
-#[derive(Default)]
+#[derive(Default, Debug, Serialize, Deserialize)]
 pub struct EncryptedPairs {
+    #[serde(with = "::serialize::vecbigint")]
     pub c1: Vec<BigInt>, // TODO[Morten] should not need to be public
+
+    #[serde(with = "::serialize::vecbigint")]
     pub c2: Vec<BigInt>, // TODO[Morten] should not need to be public
 }
 
@@ -29,14 +32,38 @@ pub struct DataRandomnessPairs {
     r2: Vec<BigInt>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ChallengeBits(Vec<u8>);
 
 // TODO[Morten] find better name
+#[derive(Debug, Serialize, Deserialize)]
 pub enum Response {
-    Open { w1: BigInt, r1: BigInt, w2: BigInt, r2: BigInt },
-    Mask { j: u8, masked_x: BigInt, masked_r: BigInt },
+    Open {
+        #[serde(with = "::serialize::bigint")]
+        w1: BigInt,
+
+        #[serde(with = "::serialize::bigint")]
+        r1: BigInt,
+
+        #[serde(with = "::serialize::bigint")]
+        w2: BigInt,
+
+        #[serde(with = "::serialize::bigint")]
+        r2: BigInt
+    },
+
+    Mask {
+        j: u8,
+
+        #[serde(with = "::serialize::bigint")]
+        masked_x: BigInt,
+
+        #[serde(with = "::serialize::bigint")]
+        masked_r: BigInt
+    },
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Proof(Vec<Response>);
 
 pub struct Commitment(BigInt);

@@ -31,17 +31,27 @@ impl Error for CorrectKeyProofError {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Challenge {
-    sn: Vec<BigInt>,
-    e: BigInt,
-    z: Vec<BigInt>,
+    #[serde(with = "::serialize::vecbigint")]
+    pub sn: Vec<BigInt>,
+
+    #[serde(with = "::serialize::bigint")]
+    pub e: BigInt,
+
+    #[serde(with = "::serialize::vecbigint")]
+    pub z: Vec<BigInt>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct VerificationAid {
+    #[serde(with = "::serialize::bigint")]
     s_digest: BigInt
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CorrectKeyProof {
+    #[serde(with = "::serialize::bigint")]
     s_digest: BigInt
 }
 
