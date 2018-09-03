@@ -1,106 +1,121 @@
 #![feature(test)]
 #![feature(specialization)]
 
-extern crate test;
-extern crate rand;
+extern crate bit_vec;
 extern crate num_traits;
-
+extern crate rand;
+extern crate rayon;
+#[cfg(feature = "proofs")]
+extern crate ring;
+extern crate serde;
+extern crate test;
 #[macro_use]
-mod macros;
+extern crate serde_derive;
 
 pub mod arithimpl;
-pub mod traits;
 pub mod core;
-pub mod coding;
+pub mod encoding;
+mod serialize;
+pub mod traits;
 
+#[cfg(feature = "keygen")]
+pub mod keygen;
+
+#[cfg(feature = "proofs")]
+pub mod proof;
+
+pub use core::*;
+pub use encoding::*;
 pub use traits::*;
-pub use coding::*;
-pub use core::Keypair;
-pub use core::standard::EncryptionKey;
-pub use core::crt::DecryptionKey;
 
+#[cfg(feature = "keygen")]
+pub use keygen::*;
 
-/// Parameterised type onto which all operations are added (see `Paillier`).
-pub struct AbstractPaillier<I> {
-    junk: ::std::marker::PhantomData<I>
+#[cfg(feature = "proofs")]
+pub use proof::*;
+
+use std::borrow::Cow;
+use serde::ser::Serialize;
+use serde::de::Deserialize;
+
+/// Main struct onto which most operations are added.
+pub struct Paillier;
+
+#[cfg(feature = "useramp")]
+pub use arithimpl::rampimpl::BigInt;
+
+#[cfg(feature = "useframp")]
+pub use arithimpl::frampimpl::BigInt;
+
+#[cfg(feature = "usegmp")]
+pub use arithimpl::gmpimpl::BigInt;
+
+/// Keypair from which encryption and decryption keys can be derived.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Keypair {
+    #[serde(with = "::serialize::bigint")]
+    pub p: BigInt, // TODO[Morten] okay to make non-public?
+
+    #[serde(with = "::serialize::bigint")]
+    pub q: BigInt, // TODO[Morten] okay to make non-public?
 }
 
-impl<I> AbstractScheme for AbstractPaillier<I> {
-    type BigInteger=I;
+/// Public encryption key with no precomputed values.
+/// 
+/// Used e.g. for serialization of `EncryptionKey`.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct MinimalEncryptionKey {
+    #[serde(with = "::serialize::bigint")]
+    n: BigInt,
 }
 
+/// Private decryption key with no precomputed values.
+/// 
+/// Used e.g. for serialization of `DecryptionKey`.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct MinimalDecryptionKey {
+    #[serde(with = "::serialize::bigint")]
+    p: BigInt,
 
-/*************************
-  Ramp instance
- *************************/
-
-#[cfg(feature="inclramp")]
-mod rampinstance
-{
-    pub use arithimpl::rampimpl::BigInteger as RampBigInteger;
-    pub type RampPaillier = ::AbstractPaillier<RampBigInteger>;
-
-    #[cfg(feature="defaultramp")]
-    pub type BigInteger = RampBigInteger;
-    #[cfg(feature="defaultramp")]
-    pub type Paillier = RampPaillier;
+    #[serde(with = "::serialize::bigint")]
+    q: BigInt,
 }
-#[cfg(feature="inclramp")]
-pub use self::rampinstance::*;
 
-
-/*************************
-  Framp instance
- *************************/
-
-#[cfg(feature="inclframp")]
-mod frampinstance
-{
-    pub use arithimpl::frampimpl::BigInteger as FrampBigInteger;
-    pub type FrampPaillier = ::AbstractPaillier<FrampBigInteger>;
-
-    #[cfg(feature="defaultframp")]
-    pub type BigInteger = FrampBigInteger;
-    #[cfg(feature="defaultframp")]
-    pub type Paillier = FrampPaillier;
+/// Public encryption key.
+#[derive(Clone, Debug, PartialEq)]
+pub struct EncryptionKey {
+    n: BigInt,  // the modulus
+    nn: BigInt, // the modulus squared
 }
-#[cfg(feature="inclframp")]
-pub use self::frampinstance::*;
 
-
-/**************
-  GMP instance
- **************/
-
-#[cfg(feature="inclgmp")]
-mod gmpinstance
-{
-    pub use arithimpl::gmpimpl::BigInteger as GmpBigInteger;
-    pub type GmpPaillier = ::AbstractPaillier<GmpBigInteger>;
-
-    #[cfg(feature="defaultgmp")]
-    pub type BigInteger = GmpBigInteger;
-    #[cfg(feature="defaultgmp")]
-    pub type Paillier = GmpPaillier;
+/// Private decryption key.
+#[derive(Clone, Debug, PartialEq)]
+pub struct DecryptionKey {
+    p: BigInt, // first prime
+    q: BigInt, // second prime
+    n: BigInt, // the modulus (also in public key)
+    nn: BigInt,
+    pp: BigInt,
+    pminusone: BigInt,
+    qq: BigInt,
+    qminusone: BigInt,
+    phi: BigInt,
+    dp: BigInt,
+    dq: BigInt,
+    pinv: BigInt,
+    ppinv: BigInt,
+    hp: BigInt,
+    hq: BigInt,
 }
-#[cfg(feature="inclgmp")]
-pub use self::gmpinstance::*;
 
+/// Unencrypted message without type information.
+/// 
+/// Used mostly for internal purposes and advanced use-cases.
+#[derive(Clone, Debug, PartialEq)]
+pub struct RawPlaintext<'b>(pub Cow<'b, BigInt>);
 
-/**************
-  Num instance
- **************/
-
-#[cfg(feature="inclnum")]
-mod numinstance
-{
-    pub use arithimpl::numimpl::BigInteger as NumBigInteger;
-    pub type NumPaillier = ::AbstractPaillier<NumBigInteger>;
-
-    #[cfg(feature="defaultnum")]
-    pub type BigInteger = NumBigInteger;
-    #[cfg(feature="defaultnum")]
-    pub type Paillier = NumPaillier;
-}
-#[cfg(feature="inclnum")]
-pub use self::numinstance::*;
+/// Encrypted message without type information.
+/// 
+/// Used mostly for internal purposes and advanced use-cases.
+#[derive(Clone, Debug, PartialEq)]
+pub struct RawCiphertext<'b>(pub Cow<'b, BigInt>);

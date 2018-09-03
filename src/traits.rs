@@ -1,12 +1,4 @@
-
 //! Abstract operations exposed by the library.
-
-/// Marker trait for the Paillier scheme.
-pub trait AbstractScheme
-{
-    /// Underlying arbitrary precision arithmetic type.
-    type BigInteger;
-}
 
 /// Secure generation of fresh key pairs.
 pub trait KeyGeneration<KP>
@@ -22,92 +14,51 @@ pub trait KeyGeneration<KP>
     fn keypair_with_modulus_size(big_length: usize) -> KP;
 }
 
-/// Generate default encryption and decryption keys.
-pub trait DefaultKeys {
-
-    /// Type of encryption key generated.
-    type EK;
-
-    /// Type of decryption key generated.
-    type DK;
-
-    /// Generate default encryption key.
-    fn encryption_key(&self) -> Self::EK;
-
-    /// Generate default decryption key.
-    fn decryption_key(&self) -> Self::DK;
-
-    /// Generate default encryption and decryption keys.
-    fn keys(&self) -> (Self::EK, Self::DK) {
-        (self.encryption_key(), self.decryption_key())
-    }
+pub trait PrecomputeRandomness<EK, R, PR> {
+    fn precompute(ek: EK, r: R) -> PR;
 }
 
-/// Marker trait for encryption keys.
-pub trait EncryptionKey {}
-
-/// Marker trait for decryption keys.
-pub trait DecryptionKey {}
-
 /// Encryption of plaintext.
-pub trait Encryption<EK, PT, CT> {
+pub trait Encrypt<EK, PT, CT> {
     /// Encrypt plaintext `m` under key `ek` into a ciphertext.
-    fn encrypt(ek: &EK, m: &PT) -> CT;
+    fn encrypt(ek: &EK, m: PT) -> CT;
+}
+
+pub trait EncryptWithChosenRandomness<EK, PT, R, CT> {
+    fn encrypt_with_chosen_randomness(ek: &EK, m: PT, r: R) -> CT;
 }
 
 /// Decryption of ciphertext.
-pub trait Decryption<DK, CT, PT> {
+pub trait Decrypt<DK, CT, PT> {
     /// Decrypt ciphertext `c` using key `dk` into a plaintext.
-    fn decrypt(ek: &DK, c: &CT) -> PT;
+    fn decrypt(ek: &DK, c: CT) -> PT;
+}
+
+/// Opening of ciphertext.
+///
+/// Unlike decryption this also returns the randomness used.
+pub trait Open<DK, CT, PT, R> {
+    /// Open ciphertext `c` using key `dk` into a plaintext and a randomness.
+    fn open(dk: &DK, c: CT) -> (PT, R);
 }
 
 /// Addition of two ciphertexts.
-pub trait Addition<EK, CT1, CT2, CT> {
+pub trait Add<EK, CT1, CT2, CT> {
     /// Homomorphically combine ciphertexts `c1` and `c2` to obtain a ciphertext containing
     /// the sum of the two underlying plaintexts, reduced modulus `n` from `ek`.
-    fn add(ek: &EK, c1: &CT1, c2: &CT2) -> CT;
+    fn add(ek: &EK, c1: CT1, c2: CT2) -> CT;
 }
 
 /// Multiplication of ciphertext with plaintext.
-pub trait Multiplication<EK, CT1, PT2, CT> {
+pub trait Mul<EK, CT1, PT2, CT> {
     /// Homomorphically combine ciphertext `c1` and plaintext `m2` to obtain a ciphertext
     /// containing the multiplication of the (underlying) plaintexts, reduced modulus `n` from `ek`.
-    fn mul(ek: &EK, c1: &CT1, m2: &PT2) -> CT;
+    fn mul(ek: &EK, c1: CT1, m2: PT2) -> CT;
 }
 
 /// Rerandomisation of ciphertext.
-pub trait Rerandomisation<EK, CT> {
+pub trait Rerandomize<EK, CT1, CT> {
     /// Rerandomise ciphertext `c` to hide any history of which homomorphic operations were
     /// used to compute it, making it look exactly like a fresh encryption of the same plaintext.
-    fn rerandomise(ek: &EK, c: &CT) -> CT;
-}
-
-/// Marker trait to avoid conflicting implementations.
-// Future support for negative traits could void this.
-pub trait EncodableType {}
-// Heuristics for what constitutes an encodable type:
-// impl<T: Into<u64>> EncodableType for T {}
-impl<T: Into<u64>> EncodableType for Vec<T> {}
-// impl EncodableType for usize {}
-// impl EncodableType for u8 {}
-// impl EncodableType for u16 {}
-// impl EncodableType for u32 {}
-impl EncodableType for u64 {}
-
-/// Encoding into plaintexts.
-pub trait Encoder<T>
-{
-    type Target;
-
-    /// Encode `T` types into `Target` types.
-    fn encode(&self, x: &T) -> Self::Target;
-}
-
-/// Decoding from plaintexts.
-pub trait Decoder<T>
-{
-    type Source;
-
-    /// Decode `Source` types into `T` types.
-    fn decode(&self, y: &Self::Source) -> T;
+    fn rerandomize(ek: &EK, c: CT1) -> CT;
 }
