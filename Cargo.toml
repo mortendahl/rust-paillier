@@ -10,7 +10,7 @@ description = "A pure-Rust implementation of the Paillier encryption scheme"
 keywords = [
   "paillier",
   "cryptography",
-  "homomorphic-encryption",
+  "homomorphic-encrypt",
   "secure-computation",
   "zero-knowledge",
 ]
