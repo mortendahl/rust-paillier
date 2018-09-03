@@ -1,6 +1,6 @@
 [package]
 name = "paillier"
-version = "0.2.0-pre"
+version = "0.2.0"
 authors = [
   "Mario Cornejo <murdix@gmail.com>",
   "Morten Dahl <mortendahlcs@gmail.com>",
