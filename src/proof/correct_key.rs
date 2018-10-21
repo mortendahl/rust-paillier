@@ -86,7 +86,7 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
             .collect();
 
         let sn: Vec<_> = s.par_iter()
-            .map(|si| BigInt::modpow(si, &ek.n, &ek.nn))
+            .map(|si| BigInt::modpow(si, &ek.n, &ek.n))
             .collect();
 
         // Compute non-interactive proof of knowledge of the n-roots in the above
@@ -97,7 +97,7 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
             .collect();
 
         let rn: Vec<_> = r.par_iter()
-            .map(|ri| BigInt::modpow(ri, &ek.n, &ek.nn))
+            .map(|ri| BigInt::modpow(ri, &ek.n, &ek.n))
             .collect();
 
         let e = compute_digest(
@@ -108,7 +108,7 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
 
         let z: Vec<_> = r.par_iter()
             .zip(s.par_iter())
-            .map(|(ri, si)| (ri * BigInt::modpow(si, &e, &ek.nn)) % &ek.nn)
+            .map(|(ri, si)| (ri * BigInt::modpow(si, &e, &ek.n)) % &ek.n)
             .collect();
 
         // Compute expected result for equality test in verification
@@ -133,9 +133,9 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
         let phimine = &dk.phi - (&challenge.e % &dk.phi);
         let rn: Vec<_> = challenge.z.par_iter().zip(challenge.sn.par_iter())
             .map(|(zi, sni)| {
-                let zn = BigInt::modpow(zi, &dk.n, &dk.nn);
-                let snphi = BigInt::modpow(sni, &phimine, &dk.nn);
-                (zn * snphi) % &dk.nn
+                let zn = BigInt::modpow(zi, &dk.n, &dk.n);
+                let snphi = BigInt::modpow(sni, &phimine, &dk.n);
+                (zn * snphi) % &dk.n
             })
             .collect();
 
@@ -175,7 +175,7 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier
 }
 
 // TODO[Morten] generalise and move to super
-fn compute_digest<IT>(values: IT) -> BigInt
+pub fn compute_digest<IT>(values: IT) -> BigInt
 where IT: Iterator, IT::Item: Borrow<BigInt>
 {
     let mut digest = Context::new(&SHA256);
@@ -191,7 +191,6 @@ mod tests {
 
     use super::*;
     use ::Keypair;
-    use traits::*;
 
     fn test_keypair() -> Keypair {
         let p = str::parse("148677972634832330983979593310074301486537017973460461278300587514468301043894574906886127642530475786889672304776052879927627556769456140664043088700743909632312483413393134504352834240399191134336344285483935856491230340093391784574980688823380828143810804684752914935441384845195613674104960646037368551517").unwrap();

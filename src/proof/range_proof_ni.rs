@@ -1,7 +1,6 @@
 use ring::digest::{Context, SHA256};
 use std::borrow::Borrow;
 
-use ::arithimpl::traits::*;
 use ::{Paillier, EncryptionKey, RawCiphertext, BigInt};
 use ::core::*;
 use proof::correct_key::CorrectKeyProofError;
@@ -69,9 +68,11 @@ fn compute_digest<IT>(values: IT) -> Vec<u8>
 #[cfg(test)]
 mod tests {
 
+    const RANGE_BITS : usize = 256;
     use super::*;
     use ::{Keypair, RawPlaintext};
     use traits::*;
+    use arithimpl::traits::Samplable;
     use test::Bencher;
 
     fn test_keypair() -> Keypair {

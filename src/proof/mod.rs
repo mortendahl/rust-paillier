@@ -9,6 +9,8 @@ pub use self::correct_key::Challenge;
 mod correct_key;
 pub use self::correct_key::CorrectKey;
 
+mod correct_key_ni;
+
 mod range_proof;
 pub use self::range_proof::RangeProof;
 

@@ -6,6 +6,7 @@ use arithimpl::traits::*;
 
 impl KeyGeneration<Keypair> for Paillier
 {
+
     fn keypair_with_modulus_size(bit_length: usize) -> Keypair {
         let p = BigInt::sample_prime(bit_length/2);
         let q = BigInt::sample_prime(bit_length/2);
@@ -14,6 +15,7 @@ impl KeyGeneration<Keypair> for Paillier
             q: q,
         }
     }
+
 }
 
 pub trait PrimeSampable {

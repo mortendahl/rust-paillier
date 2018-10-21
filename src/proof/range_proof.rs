@@ -13,7 +13,6 @@ use ::core::*;
 use proof::correct_key::CorrectKeyProofError;
 
 const STATISTICAL_ERROR_FACTOR : usize = 40;
-const RANGE_BITS : usize = 256; //for elliptic curves with 256bits for example
 
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct EncryptedPairs {
@@ -309,6 +308,7 @@ fn compute_digest(bytes: &[u8]) -> BigInt {
 #[cfg(test)]
 mod tests {
 
+    const RANGE_BITS : usize = 256;
     use test::Bencher;
 
     use super::*;
@@ -430,7 +430,7 @@ mod tests {
             let (ek, _dk) = test_keypair().keys();
             let (verifier_ek, _verifier_dk) = test_keypair().keys();
             // verifier:
-            let (_com, r, e) = Paillier::verifier_commit(&verifier_ek);
+            let (_com, _r, e) = Paillier::verifier_commit(&verifier_ek);
             // prover:
             let (encrypted_pairs, data_and_randmoness_pairs) = Paillier::generate_encrypted_pairs(&ek, &range);
             // prover:
