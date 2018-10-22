@@ -1,18 +1,13 @@
-use std::borrow::Borrow;
-use std::error::Error;
-use std::fmt;
 use std::iter;
 use std::ops::Shl;
 
 use rayon::prelude::*;
-use ring::digest::{Context, SHA256};
 
 use arithimpl::traits::*;
 use core::extract_nroot;
 use proof::correct_key::compute_digest;
 use proof::CorrectKeyProofError;
-use std::str::Chars;
-use {BigInt, DecryptionKey, EncryptionKey, Keypair, Paillier};
+use {BigInt, DecryptionKey};
 // This protocol is based on the NIZK protocol in https://eprint.iacr.org/2018/057.pdf
 // for parameters = e = N, m2 = 11, alpha = 6379 see https://eprint.iacr.org/2018/987.pdf
 // for full details.
@@ -114,12 +109,11 @@ impl NICorrectKeyProof {
 mod tests {
     use super::*;
     use traits::KeyGeneration;
-    use Keypair;
     use Paillier;
 
     #[test]
     fn test_correct_zk_proof() {
-        let (ek, dk) = Paillier::keypair().keys();
+        let (_ek, dk) = Paillier::keypair().keys();
         let proof = NICorrectKeyProof::proof(&dk);
         assert!(proof.verify().is_ok());
     }

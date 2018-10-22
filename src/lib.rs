@@ -34,8 +34,6 @@ pub use keygen::*;
 #[cfg(feature = "proofs")]
 pub use proof::*;
 
-use serde::de::Deserialize;
-use serde::ser::Serialize;
 use std::borrow::Cow;
 
 /// Main struct onto which most operations are added.

@@ -3,8 +3,6 @@
 use std::marker::PhantomData;
 
 use arithimpl::traits::ConvertFrom;
-use serde::de::Deserialize;
-use serde::ser::Serialize;
 use BigInt;
 
 pub mod integral;

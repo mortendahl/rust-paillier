@@ -1,12 +1,9 @@
 use ring::digest::{Context, SHA256};
 use std::borrow::Borrow;
 
-use core::*;
 use proof::correct_key::CorrectKeyProofError;
 use proof::range_proof::{ChallengeBits, EncryptedPairs, Proof};
 use {BigInt, EncryptionKey, Paillier, RawCiphertext};
-
-const RANGE_BITS: usize = 256; //for elliptic curves with 256bits for example
 
 /// Zero-knowledge range proof that a value x<q/3 lies in interval [0,q].
 ///
@@ -95,6 +92,7 @@ mod tests {
     const RANGE_BITS: usize = 256;
     use super::*;
     use arithimpl::traits::Samplable;
+    use core::*;
     use test::Bencher;
     use traits::*;
     use {Keypair, RawPlaintext};
