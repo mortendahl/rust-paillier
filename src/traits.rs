@@ -1,8 +1,7 @@
 //! Abstract operations exposed by the library.
 
 /// Secure generation of fresh key pairs.
-pub trait KeyGeneration<KP>
-{
+pub trait KeyGeneration<KP> {
     /// Generate fresh key pair with currently recommended security level (2048 bit modulus).
     fn keypair() -> KP {
         Self::keypair_with_modulus_size(2048)

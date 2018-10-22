@@ -1,8 +1,8 @@
 #![cfg(feature="useframp")]
 
 extern crate framp;
-use frand::{OsRng};
 use super::traits::*;
+use frand::OsRng;
 
 impl Samplable for framp::Int {
     fn sample_below(upper: &Self) -> Self {
@@ -11,13 +11,13 @@ impl Samplable for framp::Int {
         rng.gen_uint_below(upper)
     }
 
-     fn sample(bitsize: usize) -> Self {
+    fn sample(bitsize: usize) -> Self {
         use self::ramp::RandomInt;
         let mut rng = OsRng::new().unwrap();
         rng.gen_uint(bitsize)
     }
 
-     fn sample_range(lower: &Self, upper: &Self) -> Self {
+    fn sample_range(lower: &Self, upper: &Self) -> Self {
         use self::ramp::RandomInt;
         let mut rng = OsRng::new().unwrap();
         rng.gen_int_range(lower, upper)
@@ -25,9 +25,15 @@ impl Samplable for framp::Int {
 }
 
 impl NumberTests for framp::Int {
-    fn is_zero(me: &Self) -> bool { me == &0 }
-    fn is_even(me: &Self) -> bool { me.is_even() }
-    fn is_negative(me: &Self) -> bool { me < &0 }
+    fn is_zero(me: &Self) -> bool {
+        me == &0
+    }
+    fn is_even(me: &Self) -> bool {
+        me.is_even()
+    }
+    fn is_negative(me: &Self) -> bool {
+        me < &0
+    }
 }
 
 impl ModPow for framp::Int {
