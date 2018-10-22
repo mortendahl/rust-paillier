@@ -26,29 +26,18 @@ pub struct NICorrectKeyProof {
 impl NICorrectKeyProof {
     pub fn proof(dk: &DecryptionKey) -> NICorrectKeyProof {
         let key_length = &dk.n.bit_length();
-        // generate random elements mod N:
-        // https://tools.ietf.org/html/rfc8017#appendix-B.2.1
-        let msklen = key_length / DIGEST_SIZE;
+
         let salt_bn = BigInt::from(SALT_STRING);
 
         // TODO: use flatten (Morten?)
         let rho_vec = (0..M2)
             .map(|i| {
-                let msklen_hash_vec = (0..msklen)
-                    .map(|j| {
-                        compute_digest(
-                            iter::once(&dk.n)
-                                .chain(iter::once(&BigInt::from(i.clone() as u32)))
-                                .chain(iter::once(&BigInt::from(j.clone() as u32)))
-                                .chain(iter::once(&salt_bn)),
-                        )
-                        // concat elements of  msklen_hash_vec to one long element
-                    }).collect::<Vec<BigInt>>();
-                let rho = msklen_hash_vec
-                    .iter()
-                    .zip(0..msklen)
-                    .fold(BigInt::zero(), |acc, x| acc + x.0.shl(x.1 * DIGEST_SIZE));
-                rho % &dk.n
+                let seed = compute_digest(
+                    iter::once(&dk.n)
+                        .chain(iter::once(&salt_bn))
+                        .chain(iter::once(&BigInt::from(i.clone() as u32))),
+                );
+                mask_generation(&key_length, &seed) % &dk.n
             }).collect::<Vec<BigInt>>();
 
         let sigma_vec = rho_vec
@@ -65,29 +54,16 @@ impl NICorrectKeyProof {
 
     pub fn verify(&self) -> Result<(), CorrectKeyProofError> {
         let key_length = self.n.bit_length() as usize;
-        // generate random elements mod N:
-        // https://tools.ietf.org/html/rfc8017#appendix-B.2.1
-        let msklen = key_length / DIGEST_SIZE;
         let salt_bn = BigInt::from(SALT_STRING);
 
-        // TODO: refactor to a function that accepts size and seed and returns digest of this size
         let rho_vec = (0..M2)
             .map(|i| {
-                let msklen_hash_vec = (0..msklen)
-                    .map(|j| {
-                        compute_digest(
-                            iter::once(&self.n)
-                                .chain(iter::once(&BigInt::from(i.clone() as u32)))
-                                .chain(iter::once(&BigInt::from(j.clone() as u32)))
-                                .chain(iter::once(&salt_bn)),
-                        )
-                        // concat elements of  msklen_hash_vec to one long element
-                    }).collect::<Vec<BigInt>>();
-                let rho = msklen_hash_vec
-                    .iter()
-                    .zip(0..msklen)
-                    .fold(BigInt::zero(), |acc, x| acc + x.0.shl(x.1 * DIGEST_SIZE));
-                rho % &self.n
+                let seed = compute_digest(
+                    iter::once(&self.n)
+                        .chain(iter::once(&salt_bn))
+                        .chain(iter::once(&BigInt::from(i.clone() as u32))),
+                );
+                mask_generation(&key_length, &seed) % &self.n
             }).collect::<Vec<BigInt>>();
         let alpha_primorial: BigInt = str::parse(&P).unwrap();
         let gcd_test = alpha_primorial.gcd(&self.n);
@@ -103,6 +79,21 @@ impl NICorrectKeyProof {
             Err(CorrectKeyProofError)
         }
     }
+}
+
+// generate random elements mod N:
+// based on https://tools.ietf.org/html/rfc8017#appendix-B.2.1
+pub fn mask_generation(out_length: &usize, seed: &BigInt) -> BigInt {
+    let msklen = out_length / DIGEST_SIZE;
+    let msklen_hash_vec = (0..msklen)
+        .map(|j| {
+            compute_digest(iter::once(seed).chain(iter::once(&BigInt::from(j.clone() as u32))))
+            // concat elements of  msklen_hash_vec to one long element
+        }).collect::<Vec<BigInt>>();
+    msklen_hash_vec
+        .iter()
+        .zip(0..msklen)
+        .fold(BigInt::zero(), |acc, x| acc + x.0.shl(x.1 * DIGEST_SIZE))
 }
 
 #[cfg(test)]
