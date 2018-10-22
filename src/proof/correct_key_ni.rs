@@ -23,20 +23,19 @@ const P: &str = "182418372624539346724764423130224413609353719905710421321355057
 const SALT_STRING : &[u8] = &[75, 90, 101, 110];
 const M2: usize = 11;
 const DIGEST_SIZE: usize  = 256;
-pub struct CorrectKeyProof{
-    pub N: BigInt,
+pub struct NICorrectKeyProof {
+    pub n: BigInt,
     pub sigma_vec: Vec<BigInt>,
 }
 
-impl CorrectKeyProof{
+impl NICorrectKeyProof {
 
-    pub fn proof(dk: &DecryptionKey) -> CorrectKeyProof {
+    pub fn proof(dk: &DecryptionKey) -> NICorrectKeyProof {
         let key_length = &dk.n.bit_length();
         // generate random elements mod N:
        // https://tools.ietf.org/html/rfc8017#appendix-B.2.1
         let msklen = key_length / DIGEST_SIZE;
         let salt_bn = BigInt::from(SALT_STRING);
-        let digest_size_bn = BigInt::from(DIGEST_SIZE as u32);
 
 // TODO: use flatten (Morten?)
         let rho_vec = (0..M2).map(|i|{
@@ -61,8 +60,8 @@ impl CorrectKeyProof{
                     let sigma_i = extract_nroot(dk, i);
                     sigma_i
                 }).collect::<Vec<BigInt>>();
-        CorrectKeyProof{
-            N: dk.n.clone(),
+        NICorrectKeyProof {
+            n: dk.n.clone(),
             sigma_vec,
         }
 
@@ -70,18 +69,17 @@ impl CorrectKeyProof{
 
     pub fn verify(&self) -> Result<(), CorrectKeyProofError>{
 
-        let key_length = self.N.bit_length() as usize;
+        let key_length = self.n.bit_length() as usize;
         // generate random elements mod N:
         // https://tools.ietf.org/html/rfc8017#appendix-B.2.1
         let msklen = key_length / DIGEST_SIZE;
         let salt_bn = BigInt::from(SALT_STRING);
-        let digest_size_bn = BigInt::from(DIGEST_SIZE as u32);
 
         // TODO: refactor to a function that accepts size and seed and returns digest of this size
         let rho_vec = (0..M2).map(|i|{
             let msklen_hash_vec = (0..msklen).map(|j|{
                 compute_digest(
-                    iter::once(&self.N)
+                    iter::once(&self.n)
                         .chain(iter::once(&BigInt::from(i.clone() as u32)))
                         .chain(iter::once(&BigInt::from(j.clone() as u32)))
                         .chain(iter::once(&salt_bn))
@@ -90,13 +88,13 @@ impl CorrectKeyProof{
             }).collect::<Vec<BigInt>>();
             let rho = msklen_hash_vec.iter().zip(0..msklen).fold(BigInt::zero(),|acc, x|{
                 acc + x.0.shl(x.1 * DIGEST_SIZE) });
-            rho % &self.N
+            rho % &self.n
         }).collect::<Vec<BigInt>>();
         let alpha_primorial: BigInt = str::parse(&P).unwrap();
-        let gcd_test = alpha_primorial.gcd(&self.N);
+        let gcd_test = alpha_primorial.gcd(&self.n);
 
-        let derived_rho_vec = (0..M2).map(|i|{
-            BigInt::modpow(&self.sigma_vec[i], &self.N, &self.N)
+        let derived_rho_vec = (0..M2).into_par_iter().map(|i|{
+            BigInt::modpow(&self.sigma_vec[i], &self.n, &self.n)
         }).collect::<Vec<BigInt>>();
 
         if rho_vec == derived_rho_vec && gcd_test == BigInt::one(){
@@ -114,24 +112,13 @@ mod tests {
     use ::Keypair;
     use Paillier;
     use traits::KeyGeneration;
-    //use paillier::*;
 
-
-    fn test_keypair() -> Keypair {
-        let p = str::parse("148677972634832330983979593310074301486537017973460461278300587514468301043894574906886127642530475786889672304776052879927627556769456140664043088700743909632312483413393134504352834240399191134336344285483935856491230340093391784574980688823380828143810804684752914935441384845195613674104960646037368551517").unwrap();
-        let q = str::parse("158741574437007245654463598139927898730476924736461654463975966787719309357536545869203069369466212089132653564188443272208127277664424448947476335413293018778018615899291704693105620242763173357203898195318179150836424196645745308205164116144020613415407736216097185962171301808761138424668335445923774195463").unwrap();
-        Keypair {
-            p: p,
-            q: q,
-        }
-    }
 
     #[test]
     fn test_correct_zk_proof() {
-        //let (ek, dk) = test_keypair().keys();
         let (ek, dk) = Paillier::keypair().keys();
-        let test = CorrectKeyProof::proof(&dk);
-        assert!(test.verify().is_ok());
+        let proof = NICorrectKeyProof::proof(&dk);
+        assert!(proof.verify().is_ok());
 
     }
 }
