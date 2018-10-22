@@ -7,7 +7,7 @@ use arithimpl::traits::*;
 use core::extract_nroot;
 use proof::correct_key::compute_digest;
 use proof::CorrectKeyProofError;
-use {BigInt, DecryptionKey};
+use {BigInt, DecryptionKey, EncryptionKey};
 // This protocol is based on the NIZK protocol in https://eprint.iacr.org/2018/057.pdf
 // for parameters = e = N, m2 = 11, alpha = 6379 see https://eprint.iacr.org/2018/987.pdf
 // for full details.
@@ -19,7 +19,6 @@ const SALT_STRING: &[u8] = &[75, 90, 101, 110];
 const M2: usize = 11;
 const DIGEST_SIZE: usize = 256;
 pub struct NICorrectKeyProof {
-    pub n: BigInt,
     pub sigma_vec: Vec<BigInt>,
 }
 
@@ -46,31 +45,28 @@ impl NICorrectKeyProof {
                 let sigma_i = extract_nroot(dk, i);
                 sigma_i
             }).collect::<Vec<BigInt>>();
-        NICorrectKeyProof {
-            n: dk.n.clone(),
-            sigma_vec,
-        }
+        NICorrectKeyProof { sigma_vec }
     }
 
-    pub fn verify(&self) -> Result<(), CorrectKeyProofError> {
-        let key_length = self.n.bit_length() as usize;
+    pub fn verify(&self, ek: &EncryptionKey) -> Result<(), CorrectKeyProofError> {
+        let key_length = ek.n.bit_length() as usize;
         let salt_bn = BigInt::from(SALT_STRING);
 
         let rho_vec = (0..M2)
             .map(|i| {
                 let seed = compute_digest(
-                    iter::once(&self.n)
+                    iter::once(&ek.n)
                         .chain(iter::once(&salt_bn))
                         .chain(iter::once(&BigInt::from(i.clone() as u32))),
                 );
-                mask_generation(&key_length, &seed) % &self.n
+                mask_generation(&key_length, &seed) % &ek.n
             }).collect::<Vec<BigInt>>();
         let alpha_primorial: BigInt = str::parse(&P).unwrap();
-        let gcd_test = alpha_primorial.gcd(&self.n);
+        let gcd_test = alpha_primorial.gcd(&ek.n);
 
         let derived_rho_vec = (0..M2)
             .into_par_iter()
-            .map(|i| BigInt::modpow(&self.sigma_vec[i], &self.n, &self.n))
+            .map(|i| BigInt::modpow(&self.sigma_vec[i], &ek.n, &ek.n))
             .collect::<Vec<BigInt>>();
 
         if rho_vec == derived_rho_vec && gcd_test == BigInt::one() {
@@ -104,8 +100,8 @@ mod tests {
 
     #[test]
     fn test_correct_zk_proof() {
-        let (_ek, dk) = Paillier::keypair().keys();
+        let (ek, dk) = Paillier::keypair().keys();
         let proof = NICorrectKeyProof::proof(&dk);
-        assert!(proof.verify().is_ok());
+        assert!(proof.verify(&ek).is_ok());
     }
 }
