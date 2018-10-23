@@ -6,25 +6,22 @@ pub trait NumberTests {
     fn is_negative(me: &Self) -> bool;
 }
 
-pub trait ModPow
-{
+pub trait ModPow {
     fn modpow(base: &Self, exponent: &Self, modulus: &Self) -> Self;
 }
 
-pub trait ModMul
-{
+pub trait ModMul {
     fn modmul(a: &Self, b: &Self, modulus: &Self) -> Self;
 }
 
 pub trait EGCD
 where
-    Self: Sized
+    Self: Sized,
 {
     fn egcd(a: &Self, b: &Self) -> (Self, Self, Self);
 }
 
-pub trait ModInv
-{
+pub trait ModInv {
     fn modinv(a: &Self, prime: &Self) -> Self;
 }
 
@@ -43,23 +40,24 @@ pub trait ConvertFrom<T> {
     fn _from(&T) -> Self;
 }
 
-use std::ops::{Add, Sub, Mul, Div, Rem, Shr, Neg};
-use num_traits::{Zero, One};
+use num_traits::{One, Zero};
+use std::ops::{Add, Div, Mul, Neg, Rem, Shr, Sub};
 
 impl<I> ModPow for I
-where // TODO clean up
+where
+    // TODO clean up
     I: Clone + Sized,
-    I: Zero + One + Neg<Output=I> + NumberTests,
-    for<'a>    &'a I: Mul<I, Output=I>,
-    for<'a,'b> &'a I: Mul<&'b I, Output=I>,
-    for<'a,'b> &'a I: Div<&'b I, Output=I>,
-    for<'a>        I: Rem<&'a I, Output=I>,
-    for<'a,'b> &'a I: Rem<&'b I, Output=I>,
-    for<'a,'b> &'a I: Add<&'b I, Output=I>,
-                   I: Sub<I, Output=I>,
-    for<'b>        I: Sub<&'b I, Output=I>,
-    for<'a,'b> &'a I: Sub<&'b I, Output=I>,
-    I: Shr<usize, Output=I>,
+    I: Zero + One + Neg<Output = I> + NumberTests,
+    for<'a> &'a I: Mul<I, Output = I>,
+    for<'a, 'b> &'a I: Mul<&'b I, Output = I>,
+    for<'a, 'b> &'a I: Div<&'b I, Output = I>,
+    for<'a> I: Rem<&'a I, Output = I>,
+    for<'a, 'b> &'a I: Rem<&'b I, Output = I>,
+    for<'a, 'b> &'a I: Add<&'b I, Output = I>,
+    I: Sub<I, Output = I>,
+    for<'b> I: Sub<&'b I, Output = I>,
+    for<'a, 'b> &'a I: Sub<&'b I, Output = I>,
+    I: Shr<usize, Output = I>,
 {
     default fn modpow(base: &Self, exponent: &Self, modulus: &Self) -> Self {
         let mut base = base.clone();
@@ -70,7 +68,7 @@ where // TODO clean up
             if !NumberTests::is_even(&exponent) {
                 result = (&result * &base) % modulus;
             }
-            base = (&base * &base) % modulus;  // waste one of these by having it here but code is simpler (tiny bit)
+            base = (&base * &base) % modulus; // waste one of these by having it here but code is simpler (tiny bit)
             exponent = exponent >> 1;
         }
         result
@@ -78,22 +76,23 @@ where // TODO clean up
 }
 
 impl<I> EGCD for I
-where // TODO clean up
+where
+    // TODO clean up
     I: Clone,
     I: Sized,
     I: Zero + One,
-    I: Neg<Output=I>,
+    I: Neg<Output = I>,
     I: NumberTests,
-    for<'a>    &'a I: Mul<I, Output=I>,
-    for<'a,'b> &'a I: Mul<&'b I, Output=I>,
-    for<'a,'b> &'a I: Div<&'b I, Output=I>,
-    for<'a>        I: Rem<&'a I, Output=I>,
-    for<'a,'b> &'a I: Rem<&'b I, Output=I>,
-    for<'a,'b> &'a I: Add<&'b I, Output=I>,
-                   I: Sub<I, Output=I>,
-    for<'b>        I: Sub<&'b I, Output=I>,
-    for<'a,'b> &'a I: Sub<&'b I, Output=I>,
-    I: Shr<usize, Output=I>,
+    for<'a> &'a I: Mul<I, Output = I>,
+    for<'a, 'b> &'a I: Mul<&'b I, Output = I>,
+    for<'a, 'b> &'a I: Div<&'b I, Output = I>,
+    for<'a> I: Rem<&'a I, Output = I>,
+    for<'a, 'b> &'a I: Rem<&'b I, Output = I>,
+    for<'a, 'b> &'a I: Add<&'b I, Output = I>,
+    I: Sub<I, Output = I>,
+    for<'b> I: Sub<&'b I, Output = I>,
+    for<'a, 'b> &'a I: Sub<&'b I, Output = I>,
+    I: Shr<usize, Output = I>,
 {
     default fn egcd(a: &Self, b: &Self) -> (Self, Self, Self) {
         if NumberTests::is_zero(b) {
@@ -112,17 +111,17 @@ impl<I> ModInv for I
 where
     I: EGCD,
     I: Clone + Sized,
-    I: Zero + One + Neg<Output=I> + NumberTests,
-    for<'a>    &'a I: Mul<I, Output=I>,
-    for<'a,'b> &'a I: Mul<&'b I, Output=I>,
-    for<'a,'b> &'a I: Div<&'b I, Output=I>,
-    for<'a>        I: Rem<&'a I, Output=I>,
-    for<'a,'b> &'a I: Rem<&'b I, Output=I>,
-    for<'a,'b> &'a I: Add<&'b I, Output=I>,
-                   I: Sub<I, Output=I>,
-    for<'b>        I: Sub<&'b I, Output=I>,
-    for<'a,'b> &'a I: Sub<&'b I, Output=I>,
-    I: Shr<usize, Output=I>,
+    I: Zero + One + Neg<Output = I> + NumberTests,
+    for<'a> &'a I: Mul<I, Output = I>,
+    for<'a, 'b> &'a I: Mul<&'b I, Output = I>,
+    for<'a, 'b> &'a I: Div<&'b I, Output = I>,
+    for<'a> I: Rem<&'a I, Output = I>,
+    for<'a, 'b> &'a I: Rem<&'b I, Output = I>,
+    for<'a, 'b> &'a I: Add<&'b I, Output = I>,
+    I: Sub<I, Output = I>,
+    for<'b> I: Sub<&'b I, Output = I>,
+    for<'a, 'b> &'a I: Sub<&'b I, Output = I>,
+    I: Shr<usize, Output = I>,
 {
     default fn modinv(a: &Self, prime: &Self) -> Self {
         let r = a % prime;

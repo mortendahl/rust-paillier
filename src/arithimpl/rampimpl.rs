@@ -2,9 +2,9 @@
 
 extern crate ramp;
 
-use rand::prelude::*;
 use self::ramp::RandomInt;
 use super::traits::*;
+use rand::prelude::*;
 
 impl Samplable for ramp::Int {
     fn sample_below(upper: &Self) -> Self {
@@ -12,21 +12,27 @@ impl Samplable for ramp::Int {
         rng.gen_uint_below(upper)
     }
 
-     fn sample(bitsize: usize) -> Self {
+    fn sample(bitsize: usize) -> Self {
         let mut rng = thread_rng();
         rng.gen_uint(bitsize)
     }
 
-     fn sample_range(lower: &Self, upper: &Self) -> Self {
+    fn sample_range(lower: &Self, upper: &Self) -> Self {
         let mut rng = thread_rng();
         rng.gen_int_range(lower, upper)
     }
 }
 
 impl NumberTests for ramp::Int {
-    fn is_zero(me: &Self) -> bool { me == &0 }
-    fn is_even(me: &Self) -> bool { me.is_even() }
-    fn is_negative(me: &Self) -> bool { me < &0 }
+    fn is_zero(me: &Self) -> bool {
+        me == &0
+    }
+    fn is_even(me: &Self) -> bool {
+        me.is_even()
+    }
+    fn is_negative(me: &Self) -> bool {
+        me < &0
+    }
 }
 
 impl ModPow for ramp::Int {}

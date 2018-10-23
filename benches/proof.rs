@@ -4,12 +4,12 @@ extern crate paillier;
 
 mod helpers;
 
-#[cfg(feature="proofs")]
+#[cfg(feature = "proofs")]
 mod bench {
 
     use bencher::*;
-    use paillier::*;
     use paillier::proof::CorrectKey;
+    use paillier::*;
 
     use helpers::*;
 
@@ -49,14 +49,16 @@ mod bench {
         });
     }
 
-    benchmark_group!(zk_2048,
+    benchmark_group!(
+        zk_2048,
         self::bench_zk_proof_challenge<KeySize2048>,
         self::bench_zk_proof_prove<KeySize2048>,
         self::bench_zk_proof_prove_and_verify<KeySize2048>,
         self::bench_zk_proof_prove_all<KeySize2048>
     );
 
-    benchmark_group!(zk_4096,
+    benchmark_group!(
+        zk_4096,
         self::bench_zk_proof_challenge<KeySize4096>,
         self::bench_zk_proof_prove<KeySize4096>,
         self::bench_zk_proof_prove_and_verify<KeySize4096>,
@@ -65,8 +67,8 @@ mod bench {
 
 }
 
-#[cfg(feature="proofs")]
+#[cfg(feature = "proofs")]
 benchmark_main!(bench::zk_2048, bench::zk_4096);
 
-#[cfg(not(feature="proofs"))]
+#[cfg(not(feature = "proofs"))]
 fn main() {}

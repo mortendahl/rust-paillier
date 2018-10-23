@@ -7,7 +7,10 @@ use serde::*;
 
 use arithimpl::traits::*;
 use traits::*;
-use {BigInt, DecryptionKey, EncryptionKey, MinimalEncryptionKey, MinimalDecryptionKey, Keypair, Paillier, RawCiphertext, RawPlaintext};
+use {
+    BigInt, DecryptionKey, EncryptionKey, Keypair, MinimalDecryptionKey, MinimalEncryptionKey,
+    Paillier, RawCiphertext, RawPlaintext,
+};
 
 impl Keypair {
     /// Generate default encryption and decryption keys.
@@ -227,7 +230,10 @@ impl<'m, 'd> Encrypt<EncryptionKey, RawPlaintext<'m>, RawCiphertext<'d>> for Pai
     }
 }
 
-impl<'m, 'r, 'd> EncryptWithChosenRandomness<EncryptionKey, RawPlaintext<'m>, &'r Randomness, RawCiphertext<'d>> for Paillier {
+impl<'m, 'r, 'd>
+    EncryptWithChosenRandomness<EncryptionKey, RawPlaintext<'m>, &'r Randomness, RawCiphertext<'d>>
+    for Paillier
+{
     fn encrypt_with_chosen_randomness(
         ek: &EncryptionKey,
         m: RawPlaintext<'m>,
@@ -240,7 +246,14 @@ impl<'m, 'r, 'd> EncryptWithChosenRandomness<EncryptionKey, RawPlaintext<'m>, &'
     }
 }
 
-impl<'m, 'r, 'd> EncryptWithChosenRandomness<EncryptionKey, RawPlaintext<'m>, &'r PrecomputedRandomness, RawCiphertext<'d>> for Paillier {
+impl<'m, 'r, 'd>
+    EncryptWithChosenRandomness<
+        EncryptionKey,
+        RawPlaintext<'m>,
+        &'r PrecomputedRandomness,
+        RawCiphertext<'d>,
+    > for Paillier
+{
     fn encrypt_with_chosen_randomness(
         ek: &EncryptionKey,
         m: RawPlaintext<'m>,
