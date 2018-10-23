@@ -2,14 +2,13 @@ extern crate paillier;
 
 use paillier::*;
 
-#[cfg(not(feature="keygen"))]
+#[cfg(not(feature = "keygen"))]
 fn main() {
     println!("*** please run with 'keygen' feature ***")
 }
 
-#[cfg(feature="keygen")]
+#[cfg(feature = "keygen")]
 fn main() {
-
     // first generate a fresh keypair, where
     // the encryption key can be made public
     // while the decryption key should remain private
@@ -28,10 +27,7 @@ fn main() {
     let d3 = Paillier::mul(&ek, c3, 2);
     let d4 = Paillier::mul(&ek, c4, 1);
     // ... or addition with encrypted values
-    let d = Paillier::add(&ek,
-        Paillier::add(&ek, d1, d2),
-        Paillier::add(&ek, d3, d4)
-    );
+    let d = Paillier::add(&ek, Paillier::add(&ek, d1, d2), Paillier::add(&ek, d3, d4));
 
     // after all homomorphic operations are done the result
     // should be re-randomized to hide all traces of the inputs
@@ -41,5 +37,4 @@ fn main() {
     // can retrieve the result
     let m = Paillier::decrypt(&dk, &d);
     println!("Decrypted value is {}", m);
-
 }

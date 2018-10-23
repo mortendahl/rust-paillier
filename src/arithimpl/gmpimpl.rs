@@ -3,27 +3,26 @@
 extern crate gmp;
 
 use self::gmp::mpz::Mpz;
-use rand::prelude::*;
 use super::traits::*;
+use rand::prelude::*;
 
 impl Samplable for Mpz {
-
     fn sample_below(upper: &Self) -> Self {
         let bits = upper.bit_length();
         loop {
-            let n =  Self::sample(bits);
+            let n = Self::sample(bits);
             if n < *upper {
-                return n
+                return n;
             }
         }
     }
 
     fn sample(bitsize: usize) -> Self {
         let mut rng = thread_rng();
-        let bytes = (bitsize -1) / 8 + 1;
+        let bytes = (bitsize - 1) / 8 + 1;
         let mut buf: Vec<u8> = vec![0; bytes];
         rng.fill_bytes(&mut buf);
-        Self::from(&*buf) >> (bytes*8-bitsize)
+        Self::from(&*buf) >> (bytes * 8 - bitsize)
     }
 
     fn sample_range(lower: &Self, upper: &Self) -> Self {
@@ -32,21 +31,27 @@ impl Samplable for Mpz {
 }
 
 impl NumberTests for Mpz {
-    fn is_zero(me: &Self) -> bool { me.is_zero() }
-    fn is_even(me: &Self) -> bool { me.is_multiple_of(&Mpz::from(2)) }
-    fn is_negative(me: &Self) -> bool { me < &Mpz::from(0) }
+    fn is_zero(me: &Self) -> bool {
+        me.is_zero()
+    }
+    fn is_even(me: &Self) -> bool {
+        me.is_multiple_of(&Mpz::from(2))
+    }
+    fn is_negative(me: &Self) -> bool {
+        me < &Mpz::from(0)
+    }
 }
 
-pub use num_traits::{Zero, One};
+pub use num_traits::{One, Zero};
 
-#[cfg(feature="gmp_nonsec")]
+#[cfg(feature = "gmp_nonsec")]
 impl ModPow for Mpz {
     fn modpow(base: &Self, exponent: &Self, modulus: &Self) -> Self {
         base.powm(exponent, modulus)
     }
 }
 
-#[cfg(not(feature="gmp_nonsec"))]
+#[cfg(not(feature = "gmp_nonsec"))]
 impl ModPow for Mpz {
     fn modpow(base: &Self, exponent: &Self, modulus: &Self) -> Self {
         base.powm_sec(exponent, modulus)
