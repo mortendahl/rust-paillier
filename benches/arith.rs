@@ -1,11 +1,10 @@
-
 #[macro_use]
 extern crate bencher;
 extern crate paillier;
 
 use bencher::Bencher;
-use paillier::*;
 use paillier::arithimpl::traits::*;
+use paillier::*;
 
 mod helpers;
 use helpers::*;
@@ -39,7 +38,8 @@ pub fn bench_modarith(b: &mut Bencher) {
     });
 }
 
-benchmark_group!(group,
+benchmark_group!(
+    group,
     self::bench_mul,
     self::bench_mulrem,
     self::bench_modarith

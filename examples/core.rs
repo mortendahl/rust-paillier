@@ -1,14 +1,12 @@
-
 extern crate paillier;
 
-#[cfg(not(feature="keygen"))]
+#[cfg(not(feature = "keygen"))]
 fn main() {
     println!("*** please run with 'keygen' feature ***")
 }
 
-#[cfg(feature="keygen")]
+#[cfg(feature = "keygen")]
 fn main() {
-
     use paillier::*;
 
     // generate a fresh keypair
@@ -27,5 +25,4 @@ fn main() {
     // decrypt final result
     let m: BigInt = Paillier::decrypt(&dk, d).into();
     println!("decrypted total sum is {}", m);
-
 }
