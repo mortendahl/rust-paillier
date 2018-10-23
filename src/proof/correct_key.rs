@@ -144,7 +144,8 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier {
                 let zn = BigInt::modpow(zi, &dk.n, &dk.n);
                 let snphi = BigInt::modpow(sni, &phimine, &dk.n);
                 (zn * snphi) % &dk.n
-            }).collect();
+            })
+            .collect();
 
         // check rn co-prime with n
         fail = rn

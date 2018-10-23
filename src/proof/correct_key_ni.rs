@@ -37,14 +37,16 @@ impl NICorrectKeyProof {
                         .chain(iter::once(&BigInt::from(i.clone() as u32))),
                 );
                 mask_generation(&key_length, &seed) % &dk.n
-            }).collect::<Vec<BigInt>>();
+            })
+            .collect::<Vec<BigInt>>();
 
         let sigma_vec = rho_vec
             .iter()
             .map(|i| {
                 let sigma_i = extract_nroot(dk, i);
                 sigma_i
-            }).collect::<Vec<BigInt>>();
+            })
+            .collect::<Vec<BigInt>>();
         NICorrectKeyProof { sigma_vec }
     }
 
@@ -60,7 +62,8 @@ impl NICorrectKeyProof {
                         .chain(iter::once(&BigInt::from(i.clone() as u32))),
                 );
                 mask_generation(&key_length, &seed) % &ek.n
-            }).collect::<Vec<BigInt>>();
+            })
+            .collect::<Vec<BigInt>>();
         let alpha_primorial: BigInt = str::parse(&P).unwrap();
         let gcd_test = alpha_primorial.gcd(&ek.n);
 
@@ -85,7 +88,8 @@ pub fn mask_generation(out_length: &usize, seed: &BigInt) -> BigInt {
         .map(|j| {
             compute_digest(iter::once(seed).chain(iter::once(&BigInt::from(j.clone() as u32))))
             // concat elements of  msklen_hash_vec to one long element
-        }).collect::<Vec<BigInt>>();
+        })
+        .collect::<Vec<BigInt>>();
     msklen_hash_vec
         .iter()
         .zip(0..msklen)

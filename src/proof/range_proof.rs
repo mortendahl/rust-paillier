@@ -187,9 +187,11 @@ impl RangeProof for Paillier {
                     ek,
                     RawPlaintext::from(wi),
                     &Randomness::from(ri),
-                ).0
+                )
+                .0
                 .into_owned()
-            }).collect();
+            })
+            .collect();
 
         let c2: Vec<_> = w2
             .par_iter()
@@ -199,9 +201,11 @@ impl RangeProof for Paillier {
                     ek,
                     RawPlaintext::from(wi),
                     &Randomness::from(ri),
-                ).0
+                )
+                .0
                 .into_owned()
-            }).collect();
+            })
+            .collect();
 
         (
             EncryptedPairs { c1, c2 },
@@ -263,7 +267,8 @@ impl RangeProof for Paillier {
                         }
                     }
                 }
-            }).collect();
+            })
+            .collect();
 
         Proof(reponses)
     }
@@ -296,12 +301,14 @@ impl RangeProof for Paillier {
                             ek,
                             RawPlaintext::from(w1),
                             &Randomness::from(r1),
-                        ).into();
+                        )
+                        .into();
                         let expected_c2i: BigInt = Paillier::encrypt_with_chosen_randomness(
                             ek,
                             RawPlaintext::from(w2),
                             &Randomness::from(r2),
-                        ).into();
+                        )
+                        .into();
 
                         if &expected_c1i != &encrypted_pairs.c1[i] {
                             res = false;
@@ -361,7 +368,8 @@ impl RangeProof for Paillier {
 
                     _ => false,
                 }
-            }).collect();
+            })
+            .collect();
 
         if verifications.iter().all(|b| *b) {
             Ok(())
