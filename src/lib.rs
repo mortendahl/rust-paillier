@@ -64,7 +64,7 @@ pub struct Keypair {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MinimalEncryptionKey {
     #[serde(with = "::serialize::bigint")]
-    n: BigInt,
+    pub n: BigInt,
 }
 
 /// Private decryption key with no precomputed values.
@@ -73,26 +73,26 @@ pub struct MinimalEncryptionKey {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MinimalDecryptionKey {
     #[serde(with = "::serialize::bigint")]
-    p: BigInt,
+    pub p: BigInt,
 
     #[serde(with = "::serialize::bigint")]
-    q: BigInt,
+    pub q: BigInt,
 }
 
 /// Public encryption key.
 #[derive(Clone, Debug, PartialEq)]
 pub struct EncryptionKey {
-    n: BigInt,  // the modulus
-    nn: BigInt, // the modulus squared
+    pub n: BigInt,  // the modulus
+    pub nn: BigInt, // the modulus squared
 }
 
 /// Private decryption key.
 #[derive(Clone, Debug, PartialEq)]
 pub struct DecryptionKey {
-    p: BigInt, // first prime
-    q: BigInt, // second prime
-    n: BigInt, // the modulus (also in public key)
-    nn: BigInt,
+    pub p: BigInt, // first prime
+    pub q: BigInt, // second prime
+    pub n: BigInt, // the modulus (also in public key)
+    pub nn: BigInt,
     pp: BigInt,
     pminusone: BigInt,
     qq: BigInt,
