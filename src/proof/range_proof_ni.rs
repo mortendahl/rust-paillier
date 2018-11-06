@@ -1,13 +1,10 @@
 use ring::digest::{Context, SHA256};
 use std::borrow::Borrow;
-
-use arithimpl::traits::*;
-use core::*;
-use proof::correct_key::CorrectKeyProofError;
+use std::fmt;
+use std::error::Error;
 use proof::range_proof::{ChallengeBits, EncryptedPairs, Proof};
 use {BigInt, EncryptionKey, Paillier, RawCiphertext};
-
-const RANGE_BITS: usize = 256; //for elliptic curves with 256bits for example
+use proof::RangeProof;
 
 /// Zero-knowledge range proof that a value x<q/3 lies in interval [0,q].
 ///
@@ -20,40 +17,45 @@ const RANGE_BITS: usize = 256; //for elliptic curves with 256bits for example
 /// - Section 1.2.2 in [Boudot '00](https://www.iacr.org/archive/eurocrypt2000/1807/18070437-new.pdf)
 ///
 /// This is a non-interactive version of the proof, using Fiat Shamir Transform and assuming Random Oracle Model
-pub trait RangeProofNI {
-    fn prover(
-        ek: &EncryptionKey,
-        range: &BigInt,
-        secret_x: &BigInt,
-        secret_r: &BigInt,
-    ) -> (EncryptedPairs, ChallengeBits, Proof);
 
-    fn verifier(
-        ek: &EncryptionKey,
-        e: &ChallengeBits,
-        encrypted_pairs: &EncryptedPairs,
-        z: &Proof,
-        range: &BigInt,
-        cipher_x: RawCiphertext,
-    ) -> Result<(), CorrectKeyProofError>;
+// TODO: use error chain
+#[derive(Debug)]
+pub struct RangeProofError;
+
+impl fmt::Display for RangeProofError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "ProofError")
+    }
 }
 
-impl RangeProofNI for Paillier {
-    fn prover(
-        ek: &EncryptionKey,
-        range: &BigInt,
-        secret_x: &BigInt,
-        secret_r: &BigInt,
-    ) -> (EncryptedPairs, ChallengeBits, Proof) {
+impl Error for RangeProofError {
+    fn description(&self) -> &str {
+        "range proof error"
+    }
+}
+
+
+pub struct RangeProofNi<'a>{
+    ek: EncryptionKey,
+    range: BigInt,
+    ciphertext: RawCiphertext<'a>,
+    encrypted_pairs: EncryptedPairs,
+    proof: Proof,
+
+}
+
+impl <'a> RangeProofNi<'a>{
+
+    pub fn prove(ek: &EncryptionKey, range: &BigInt, ciphertext: &'a RawCiphertext, secret_x: &BigInt, secret_r: &BigInt) -> RangeProofNi<'a>{
         use proof::RangeProof;
         let (encrypted_pairs, data_randomness_pairs) =
             Paillier::generate_encrypted_pairs(ek, range);
         let (c1, c2) = (encrypted_pairs.c1, encrypted_pairs.c2); // TODO[Morten] fix temporary hack
 
-        // TODO[Morten] why only the first element?
         let mut vec: Vec<BigInt> = Vec::new();
-        vec.push(c1[0].clone());
-        vec.push(c2[0].clone());
+        vec.push(ek.n.clone());
+        vec.extend_from_slice(&c1);
+        vec.extend_from_slice(&c2);
         let e = ChallengeBits::from(compute_digest(vec.iter()));
 
         //assuming digest length > STATISTICAL_ERROR_FACTOR
@@ -61,21 +63,48 @@ impl RangeProofNI for Paillier {
         let proof =
             Paillier::generate_proof(ek, secret_x, secret_r, &e, range, &data_randomness_pairs);
 
-        (EncryptedPairs { c1, c2 }, e, proof)
+        RangeProofNi{
+            ek: ek.clone(),
+            range: range.clone(),
+            ciphertext: ciphertext.clone(),
+            encrypted_pairs: EncryptedPairs { c1, c2},
+            proof,
+        }
     }
 
-    fn verifier(
-        ek: &EncryptionKey,
-        e: &ChallengeBits,
-        encrypted_pairs: &EncryptedPairs,
-        proof: &Proof,
-        range: &BigInt,
-        cipher_x: RawCiphertext,
-    ) -> Result<(), CorrectKeyProofError> {
-        use proof::RangeProof;
-        <Paillier as RangeProof>::verifier_output(ek, e, encrypted_pairs, proof, range, cipher_x)
+    pub fn verify(&self, ek: &EncryptionKey, ciphertext: &'a RawCiphertext) -> Result<(), RangeProofError>{
+        // make sure proof was done with the same public key
+        assert_eq!(ek, &self.ek);
+        // make sure proof was done with the same ciphertext
+        assert_eq!(ciphertext, &self.ciphertext);
+        let mut vec: Vec<BigInt> = Vec::new();
+        vec.push(ek.n.clone());
+        vec.extend_from_slice(&self.encrypted_pairs.c1);
+        vec.extend_from_slice(&self.encrypted_pairs.c2);
+        let e = ChallengeBits::from(compute_digest(vec.iter()));
+        let result = Paillier::verifier_output(ek, &e, &self.encrypted_pairs, &self.proof, &self.range, &self.ciphertext);
+        match result.is_ok() {
+            true => Ok(()),
+            false => Err(RangeProofError),
+        }
+
+    }
+
+    pub fn verify_self(&self) -> Result<(), RangeProofError>{
+        let mut vec: Vec<BigInt> = Vec::new();
+        vec.push(self.ek.n.clone());
+        vec.extend_from_slice(&self.encrypted_pairs.c1);
+        vec.extend_from_slice(&self.encrypted_pairs.c2);
+        let e = ChallengeBits::from(compute_digest(vec.iter()));
+        let result = Paillier::verifier_output(&self.ek, &e, &self.encrypted_pairs, &self.proof, &self.range, &self.ciphertext);
+        match result.is_ok() {
+            true => Ok(()),
+            false => Err(RangeProofError),
+        }
+
     }
 }
+
 
 fn compute_digest<IT>(values: IT) -> Vec<u8>
 where
@@ -92,11 +121,15 @@ where
 
 #[cfg(test)]
 mod tests {
+    const RANGE_BITS: usize = 256; //for elliptic curves with 256bits for example
+    use arithimpl::traits::*;
+    use core::*;
 
     use super::*;
     use test::Bencher;
     use traits::*;
     use {Keypair, RawPlaintext};
+    use RangeProofNi;
 
     fn test_keypair() -> Keypair {
         let p = str::parse("148677972634832330983979593310074301486537017973460461278300587514468301043894574906886127642530475786889672304776052879927627556769456140664043088700743909632312483413393134504352834240399191134336344285483935856491230340093391784574980688823380828143810804684752914935441384845195613674104960646037368551517").unwrap();
@@ -110,8 +143,9 @@ mod tests {
         let range = BigInt::sample(RANGE_BITS);
         let secret_r = BigInt::sample_below(&ek.n);
         let secret_x = BigInt::sample_below(&range);
-        let (_encrypted_pairs, _challenge, _proof) =
-            Paillier::prover(&ek, &range, &secret_x, &secret_r);
+        let ciphertext = Paillier::encrypt_with_chosen_randomness(&ek, RawPlaintext::from(&secret_x), &Randomness::from(&secret_r));
+
+        RangeProofNi::prove(&ek, &range, &ciphertext,&secret_x, &secret_r);
     }
 
     #[test]
@@ -125,14 +159,14 @@ mod tests {
             RawPlaintext::from(&secret_x),
             &Randomness(secret_r.clone()),
         );
-        let (encrypted_pairs, challenge, proof) =
-            Paillier::prover(&ek, &range, &secret_x, &secret_r);
-        let result =
-            Paillier::verifier(&ek, &challenge, &encrypted_pairs, &proof, &range, cipher_x);
-        assert!(result.is_ok(), true);
+        let range_proof =
+            RangeProofNi::prove(&ek, &range, &cipher_x, &secret_x, &secret_r);
+            range_proof.verify(&ek, &cipher_x).expect("range proof error");
+
     }
 
     #[test]
+    #[should_panic]
     fn test_verifier_for_incorrect_proof() {
         let (ek, _dk) = test_keypair().keys();
         let range = BigInt::sample(RANGE_BITS);
@@ -146,11 +180,10 @@ mod tests {
             RawPlaintext::from(&secret_x),
             &Randomness(secret_r.clone()),
         );
-        let (encrypted_pairs, challenge, proof) =
-            Paillier::prover(&ek, &range, &secret_x, &secret_r);
-        let result =
-            Paillier::verifier(&ek, &challenge, &encrypted_pairs, &proof, &range, cipher_x);
-        assert!(result.is_err());
+        let range_proof =
+            RangeProofNi::prove(&ek, &range, &cipher_x, &secret_x, &secret_r);
+
+            range_proof.verify(&ek, &cipher_x).expect("range proof error");
     }
 
     #[bench]
@@ -166,11 +199,10 @@ mod tests {
                 RawPlaintext::from(&secret_x),
                 &Randomness(secret_r.clone()),
             );
-            let (encrypted_pairs, challenge, proof) =
-                Paillier::prover(&ek, &range, &secret_x, &secret_r);
-            let result =
-                Paillier::verifier(&ek, &challenge, &encrypted_pairs, &proof, &range, cipher_x);
-            assert_eq!(result.is_ok(), true);
+            let range_proof =
+                RangeProofNi::prove(&ek, &range, &cipher_x, &secret_x, &secret_r);
+
+                range_proof.verify(&ek, &cipher_x).expect("range proof error");
         });
     }
 

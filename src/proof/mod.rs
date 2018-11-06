@@ -15,4 +15,4 @@ pub use self::range_proof::ChallengeBits;
 pub use self::range_proof::EncryptedPairs;
 pub use self::range_proof::Proof;
 mod range_proof_ni;
-pub use self::range_proof_ni::RangeProofNI;
+pub use self::range_proof_ni::RangeProofNi;

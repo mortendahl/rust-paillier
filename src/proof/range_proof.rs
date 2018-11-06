@@ -13,7 +13,6 @@ use traits::*;
 use {BigInt, EncryptionKey, Paillier, RawCiphertext, RawPlaintext};
 
 const STATISTICAL_ERROR_FACTOR: usize = 40;
-const RANGE_BITS: usize = 256; //for elliptic curves with 256bits for example
 
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct EncryptedPairs {
@@ -133,7 +132,7 @@ pub trait RangeProof {
         encrypted_pairs: &EncryptedPairs,
         z: &Proof,
         range: &BigInt,
-        cipher_x: RawCiphertext,
+        cipher_x: &RawCiphertext,
     ) -> Result<(), CorrectKeyProofError>;
 }
 
@@ -280,7 +279,7 @@ impl RangeProof for Paillier {
         encrypted_pairs: &EncryptedPairs,
         proof: &Proof,
         range: &BigInt,
-        cipher_x: RawCiphertext,
+        cipher_x: &RawCiphertext,
     ) -> Result<(), CorrectKeyProofError> {
         let range_scaled_third: BigInt = range.div_floor(&BigInt::from(3i32));
         let range_scaled_two_thirds: BigInt = BigInt::from(2i32) * &range_scaled_third;
@@ -395,6 +394,7 @@ fn compute_digest(bytes: &[u8]) -> BigInt {
 
 #[cfg(test)]
 mod tests {
+    const RANGE_BITS: usize = 256; //for elliptic curves with 256bits for example
 
     use test::Bencher;
 
@@ -489,7 +489,7 @@ mod tests {
         );
         // verifier:
         let result =
-            Paillier::verifier_output(&ek, &e, &encrypted_pairs, &z_vector, &range, cipher_x);
+            Paillier::verifier_output(&ek, &e, &encrypted_pairs, &z_vector, &range, &cipher_x);
         assert!(result.is_ok());
     }
 
@@ -529,7 +529,7 @@ mod tests {
         );
         // verifier:
         let result =
-            Paillier::verifier_output(&ek, &e, &encrypted_pairs, &z_vector, &range, cipher_x);
+            Paillier::verifier_output(&ek, &e, &encrypted_pairs, &z_vector, &range, &cipher_x);
         assert!(result.is_err());
     }
 
@@ -543,7 +543,7 @@ mod tests {
             let (ek, _dk) = test_keypair().keys();
             let (verifier_ek, _verifier_dk) = test_keypair().keys();
             // verifier:
-            let (_com, r, e) = Paillier::verifier_commit(&verifier_ek);
+            let (_com, _r, e) = Paillier::verifier_commit(&verifier_ek);
             // prover:
             let (encrypted_pairs, data_and_randmoness_pairs) =
                 Paillier::generate_encrypted_pairs(&ek, &range);
@@ -569,7 +569,7 @@ mod tests {
             );
             // verifier:
             let _result =
-                Paillier::verifier_output(&ek, &e, &encrypted_pairs, &z_vector, &range, cipher_x);
+                Paillier::verifier_output(&ek, &e, &encrypted_pairs, &z_vector, &range, &cipher_x);
         });
     }
 
