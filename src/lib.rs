@@ -21,8 +21,6 @@ pub mod traits;
 #[cfg(feature = "keygen")]
 pub mod keygen;
 
-#[cfg(feature = "proofs")]
-pub mod proof;
 
 pub use core::*;
 pub use encoding::*;
@@ -31,8 +29,6 @@ pub use traits::*;
 #[cfg(feature = "keygen")]
 pub use keygen::*;
 
-#[cfg(feature = "proofs")]
-pub use proof::*;
 
 use std::borrow::Cow;
 
