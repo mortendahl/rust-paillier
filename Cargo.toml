@@ -24,9 +24,8 @@ categories = ["cryptography"]
 travis-ci = { repository = "mortendahl/rust-paillier" }
 
 [features]
-default = ["usegmp", "keygen", "proofs"]
+default = ["usegmp", "keygen" ]
 keygen = []
-proofs = ["ring"]
 useramp = ["ramp"]
 useframp = ["framp"]
 usegmp = ["rust-gmp"]
