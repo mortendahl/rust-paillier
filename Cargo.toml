@@ -1,35 +1,10 @@
 [package]
 name = "paillier"
 version = "0.2.1-alpha.0"
-authors = [
-  "Mario Cornejo <murdix@gmail.com>",
-  "Morten Dahl <mortendahlcs@gmail.com>",
-  "Mathieu Poumeyrol <mathieu.poumeyrol@snips.ai>"
-]
-description = "A pure-Rust implementation of the Paillier encryption scheme"
-keywords = [
-  "paillier",
-  "cryptography",
-  "homomorphic-encrypt",
-  "secure-computation",
-  "zero-knowledge",
-]
-homepage = "https://github.com/mortendahl/rust-paillier"
-repository = "https://github.com/mortendahl/rust-paillier"
-documentation = "https://docs.rs/paillier"
-license = "MIT/Apache-2.0"
-categories = ["cryptography"]
 
 
 
-#[features]
-#default = ["usegmp", "keygen", "proofs"]
-#keygen = []
-#proofs = ["ring"]
-#useramp = ["ramp"]
-#useframp = ["framp"]
-#usegmp = ["rust-gmp"]
-#gmp_nonsec = []
+
 
 [dependencies]
 num-traits = "0.1"
@@ -45,11 +20,9 @@ bit-vec = "0.5"
 [dependencies.curv]
 git = "https://github.com/KZen-networks/curv"
 branch = "known_issues"
-features =  ["curvesecp256k1"]
 
 [dev-dependencies]
 bencher = "0.1"
-# bencher = { git="https://github.com/snipsco-forks/bencher" }
 serde_json = "1.0"
 
 [[bench]]
