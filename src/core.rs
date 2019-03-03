@@ -101,41 +101,8 @@ impl<'e> From<MinimalDecryptionKey> for DecryptionKey {
     fn from(dk: MinimalDecryptionKey) -> Self {
         let p = dk.p;
         let q = dk.q;
-        let pp = &p * &p;
-        let qq = &q * &q;
-        let n = &p * &q;
-        let nn = &n * &n;
 
-        let pminusone = &p - 1;
-        let qminusone = &q - 1;
-        let phi = &pminusone * &qminusone;
-
-        let dn = BigInt::mod_inv(&n, &phi);
-        let (dp, dq) = crt_decompose(dn, &pminusone, &qminusone);
-
-        let pinv = BigInt::mod_inv(&p, &q);
-        let ppinv = BigInt::mod_inv(&pp, &qq);
-
-        let hp = h(&p, &pp, &n);
-        let hq = h(&q, &qq, &n);
-
-        DecryptionKey {
-            p,
-            pp,
-            pminusone,
-            pinv,
-            ppinv,
-            q,
-            qq,
-            qminusone,
-            n,
-            nn,
-            phi,
-            dp,
-            dq,
-            hp,
-            hq,
-        }
+        DecryptionKey { p, q }
     }
 }
 
@@ -267,24 +234,28 @@ impl<'m, 'r, 'd>
 
 impl<'m, 'd> Encrypt<DecryptionKey, RawPlaintext<'m>, RawCiphertext<'d>> for Paillier {
     fn encrypt(dk: &DecryptionKey, m: RawPlaintext<'m>) -> RawCiphertext<'d> {
-        let (mp, mq) = crt_decompose(m.0.borrow(), &dk.pp, &dk.qq);
+        let dk_pp = &dk.p * &dk.p;
+        let dk_qq = &dk.q * &dk.q;
+        let dk_n = &dk.q * &dk.p;
+        let dk_ppinv = BigInt::mod_inv(&dk_pp, &dk_qq);
+        let (mp, mq) = crt_decompose(m.0.borrow(), &dk_pp, &dk_qq);
         let (cp, cq) = join(
             || {
                 let rp = BigInt::sample_below(&dk.p);
-                let rnp = BigInt::mod_pow(&rp, &dk.n, &dk.pp);
-                let gmp = (1 + mp * &dk.n) % &dk.pp; // TODO[Morten] maybe there's more to get here
-                let cp = (gmp * rnp) % &dk.pp;
+                let rnp = BigInt::mod_pow(&rp, &dk_n, &dk_pp);
+                let gmp = (1 + mp * &dk_n) % &dk_pp; // TODO[Morten] maybe there's more to get here
+                let cp = (gmp * rnp) % &dk_pp;
                 cp
             },
             || {
                 let rq = BigInt::sample_below(&dk.q);
-                let rnq = BigInt::mod_pow(&rq, &dk.n, &dk.qq);
-                let gmq = (1 + mq * &dk.n) % &dk.qq; // TODO[Morten] maybe there's more to get here
-                let cq = (gmq * rnq) % &dk.qq;
+                let rnq = BigInt::mod_pow(&rq, &dk_n, &dk_qq);
+                let gmq = (1 + mq * &dk_n) % &dk_qq; // TODO[Morten] maybe there's more to get here
+                let cq = (gmq * rnq) % &dk_qq;
                 cq
             },
         );
-        let c = crt_recombine(cp, cq, &dk.pp, &dk.qq, &dk.ppinv);
+        let c = crt_recombine(cp, cq, &dk_pp, &dk_qq, &dk_ppinv);
         RawCiphertext(Cow::Owned(c))
     }
 }
@@ -298,23 +269,27 @@ impl<'m, 'r, 'd>
         m: RawPlaintext<'m>,
         r: &'r Randomness,
     ) -> RawCiphertext<'d> {
-        let (mp, mq) = crt_decompose(m.0.borrow(), &dk.pp, &dk.qq);
-        let (rp, rq) = crt_decompose(&r.0, &dk.pp, &dk.qq);
+        let dk_pp = &dk.p * &dk.p;
+        let dk_qq = &dk.q * &dk.q;
+        let dk_n = &dk.q * &dk.p;
+        let dk_ppinv = BigInt::mod_inv(&dk_pp, &dk_qq);
+        let (mp, mq) = crt_decompose(m.0.borrow(), &dk_pp, &dk_qq);
+        let (rp, rq) = crt_decompose(&r.0, &dk_pp, &dk_qq);
         let (cp, cq) = join(
             || {
-                let rnp = BigInt::mod_pow(&rp, &dk.n, &dk.pp);
-                let gmp = (1 + mp * &dk.n) % &dk.pp; // TODO[Morten] maybe there's more to get here
-                let cp = (gmp * rnp) % &dk.pp;
+                let rnp = BigInt::mod_pow(&rp, &dk_n, &dk_pp);
+                let gmp = (1 + mp * &dk_n) % &dk_pp; // TODO[Morten] maybe there's more to get here
+                let cp = (gmp * rnp) % &dk_pp;
                 cp
             },
             || {
-                let rnq = BigInt::mod_pow(&rq, &dk.n, &dk.qq);
-                let gmq = (1 + mq * &dk.n) % &dk.qq; // TODO[Morten] maybe there's more to get here
-                let cq = (gmq * rnq) % &dk.qq;
+                let rnq = BigInt::mod_pow(&rq, &dk_n, &dk_qq);
+                let gmq = (1 + mq * &dk_n) % &dk_qq; // TODO[Morten] maybe there's more to get here
+                let cq = (gmq * rnq) % &dk_qq;
                 cq
             },
         );
-        let c = crt_recombine(cp, cq, &dk.pp, &dk.qq, &dk.ppinv);
+        let c = crt_recombine(cp, cq, &dk_pp, &dk_qq, &dk_ppinv);
         RawCiphertext(Cow::Owned(c))
     }
 }
@@ -332,8 +307,10 @@ impl<'m, 'r, 'd>
         m: RawPlaintext<'m>,
         rn: &'r PrecomputedRandomness,
     ) -> RawCiphertext<'d> {
-        let gm = (1 + m.0.borrow() as &BigInt * &dk.n) % &dk.nn;
-        let c = (gm * &rn.0) % &dk.nn;
+        let dk_n = &dk.q * &dk.p;
+        let dk_nn = &dk_n * &dk_n;
+        let gm = (1 + m.0.borrow() as &BigInt * &dk_n) % &dk_nn;
+        let c = (gm * &rn.0) % &dk_nn;
         RawCiphertext(Cow::Owned(c))
     }
 }
@@ -370,26 +347,34 @@ impl<'c, 'm> Decrypt<DecryptionKey, RawCiphertext<'c>, RawPlaintext<'m>> for Pai
 /// Efficient decryption using CRT based on [Paillier99, section 7](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.112.4035&rep=rep1&type=pdf)
 impl<'c, 'm> Decrypt<DecryptionKey, &'c RawCiphertext<'c>, RawPlaintext<'m>> for Paillier {
     fn decrypt(dk: &DecryptionKey, c: &'c RawCiphertext<'c>) -> RawPlaintext<'m> {
-        let (cp, cq) = crt_decompose(c.0.borrow(), &dk.pp, &dk.qq);
+        let dk_qq = &dk.q * &dk.q;
+        let dk_pp = &dk.p * &dk.p;
+        let dk_n = &dk.p * &dk.q;
+        let dk_pinv = BigInt::mod_inv(&dk.p, &dk.q);
+        let dk_qminusone = &dk.q - BigInt::one();
+        let dk_pminusone = &dk.p - BigInt::one();
+        let dk_hp = h(&dk.p, &dk_pp, &dk_n);
+        let dk_hq = h(&dk.q, &dk_qq, &dk_n);
+        let (cp, cq) = crt_decompose(c.0.borrow(), &dk_pp, &dk_qq);
         // decrypt in parallel with respectively p and q
         let (mp, mq) = join(
             || {
                 // process using p
-                let dp = BigInt::mod_pow(&cp, &dk.pminusone, &dk.pp);
+                let dp = BigInt::mod_pow(&cp, &dk_pminusone, &dk_pp);
                 let lp = l(&dp, &dk.p);
-                let mp = (&lp * &dk.hp) % &dk.p;
+                let mp = (&lp * &dk_hp) % &dk.p;
                 mp
             },
             || {
                 // process using q
-                let dq = BigInt::mod_pow(&cq, &dk.qminusone, &dk.qq);
+                let dq = BigInt::mod_pow(&cq, &dk_qminusone, &dk_qq);
                 let lq = l(&dq, &dk.q);
-                let mq = (&lq * &dk.hq) % &dk.q;
+                let mq = (&lq * &dk_hq) % &dk.q;
                 mq
             },
         );
         // perform CRT
-        let m = crt_recombine(mp, mq, &dk.p, &dk.q, &dk.pinv);
+        let m = crt_recombine(mp, mq, &dk.p, &dk.q, &dk_pinv);
         RawPlaintext(Cow::Owned(m))
     }
 }
@@ -402,9 +387,12 @@ impl<'c, 'm> Open<DecryptionKey, RawCiphertext<'c>, RawPlaintext<'m>, Randomness
 
 impl<'c, 'm> Open<DecryptionKey, &'c RawCiphertext<'c>, RawPlaintext<'m>, Randomness> for Paillier {
     fn open(dk: &DecryptionKey, c: &'c RawCiphertext<'c>) -> (RawPlaintext<'m>, Randomness) {
+        let dk_n = &dk.p * &dk.q;
+        let dk_nn = &dk_n * &dk_n;
+
         let m = Self::decrypt(dk, c);
-        let gminv = (BigInt::one() - (m.0.borrow() as &BigInt) * &dk.n) % &dk.nn;
-        let rn = (c.0.borrow() as &BigInt * gminv) % &dk.nn;
+        let gminv = (BigInt::one() - (m.0.borrow() as &BigInt) * &dk_n) % &dk_nn;
+        let rn = (c.0.borrow() as &BigInt * gminv) % &dk_nn;
         let r = extract_nroot(dk, &rn);
         (m, Randomness(r))
     }
@@ -517,12 +505,21 @@ where
 
 /// Extract randomness component of a zero ciphertext.
 pub fn extract_nroot(dk: &DecryptionKey, z: &BigInt) -> BigInt {
+    let dk_n = &dk.p * &dk.q;
+
+    let dk_pinv = BigInt::mod_inv(&dk.p, &dk.q);
+    let dk_qminusone = &dk.q - BigInt::one();
+    let dk_pminusone = &dk.p - BigInt::one();
+
+    let dk_phi = &dk_pminusone * &dk_qminusone;
+    let dk_dn = BigInt::mod_inv(&dk_n, &dk_phi);
+    let (dk_dp, dk_dq) = crt_decompose(dk_dn, &dk_pminusone, &dk_qminusone);
     let (zp, zq) = crt_decompose(z, &dk.p, &dk.q);
 
-    let rp = BigInt::mod_pow(&zp, &dk.dp, &dk.p);
-    let rq = BigInt::mod_pow(&zq, &dk.dq, &dk.q);
+    let rp = BigInt::mod_pow(&zp, &dk_dp, &dk.p);
+    let rq = BigInt::mod_pow(&zq, &dk_dq, &dk.q);
 
-    let r = crt_recombine(rp, rq, &dk.p, &dk.q, &dk.pinv);
+    let r = crt_recombine(rp, rq, &dk.p, &dk.q, &dk_pinv);
     r
 }
 

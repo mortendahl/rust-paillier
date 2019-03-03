@@ -71,19 +71,6 @@ pub struct EncryptionKey {
 pub struct DecryptionKey {
     pub p: BigInt, // first prime
     pub q: BigInt, // second prime
-    pub n: BigInt, // the modulus (also in public key)
-    pub nn: BigInt,
-    pp: BigInt,
-    pminusone: BigInt,
-    qq: BigInt,
-    qminusone: BigInt,
-    phi: BigInt,
-    dp: BigInt,
-    dq: BigInt,
-    pinv: BigInt,
-    ppinv: BigInt,
-    hp: BigInt,
-    hq: BigInt,
 }
 
 /// Unencrypted message without type information.

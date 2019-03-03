@@ -1,9 +1,10 @@
 #[macro_use]
 extern crate bencher;
+extern crate curv;
 extern crate paillier;
 
 use bencher::Bencher;
-use paillier::arithimpl::traits::*;
+use curv::arithmetic::traits::*;
 use paillier::*;
 
 mod helpers;
@@ -34,7 +35,7 @@ pub fn bench_modarith(b: &mut Bencher) {
     let ref n: BigInt = str::parse(N2048).unwrap();
 
     b.iter(|| {
-        let _ = BigInt::modpow(p, q, n);
+        let _ = BigInt::mod_pow(p, q, n);
     });
 }
 
