@@ -2,10 +2,14 @@
 
 use std::borrow::Borrow;
 use std::marker::PhantomData;
+use traits::Add;
+use traits::Decrypt;
+use traits::Encrypt;
+use traits::Mul;
+use traits::Rerandomize;
 
 use super::{pack, unpack, EncodedCiphertext};
-use arithimpl::traits::ConvertFrom;
-use traits::*;
+use curv::arithmetic::traits::*;
 use {BigInt, Paillier, RawCiphertext, RawPlaintext};
 
 impl<EK> Encrypt<EK, u64, EncodedCiphertext<u64>> for Paillier

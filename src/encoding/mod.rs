@@ -2,11 +2,10 @@
 
 use std::marker::PhantomData;
 
-use arithimpl::traits::ConvertFrom;
+use curv::arithmetic::traits::ConvertFrom;
 use serde::de::Deserialize;
 use serde::ser::Serialize;
 use BigInt;
-
 pub mod integral;
 
 /// Encrypted message with type information.

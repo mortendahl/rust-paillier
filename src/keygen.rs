@@ -1,6 +1,6 @@
 //! Key generation following standard recommendations.
 
-use arithimpl::traits::*;
+use curv::arithmetic::traits::*;
 use traits::*;
 use {BigInt, Keypair, Paillier};
 
@@ -26,7 +26,8 @@ impl PrimeSampable for BigInt {
         loop {
             let mut candidate = Self::sample(bitsize);
             // We flip the LSB to make sure tue candidate is odd.
-            BitManipulation::set_bit(&mut candidate, 0, true);
+            //  BitManipulation::set_bit(&mut candidate, 0, true);
+            BigInt::set_bit(&mut candidate, 0, true);
 
             // To ensure the appropiate size
             // we set the MSB of the candidate.
@@ -78,7 +79,7 @@ fn is_prime(candidate: &BigInt) -> bool {
 /// This might be performed more than once, see Handbook of Applied Cryptography [Algorithm 4.9 p136]
 fn fermat(candidate: &BigInt) -> bool {
     let random = BigInt::sample_below(candidate);
-    let result = BigInt::modpow(&random, &(candidate - &BigInt::one()), candidate);
+    let result = BigInt::mod_pow(&random, &(candidate - &BigInt::one()), candidate);
 
     result == BigInt::one()
 }
@@ -96,14 +97,14 @@ fn miller_rabin(candidate: &BigInt, limit: usize) -> bool {
 
     for _ in 0..limit {
         let basis = BigInt::sample_range(&two, &(candidate - &two));
-        let mut y = BigInt::modpow(&basis, &d, candidate);
+        let mut y = BigInt::mod_pow(&basis, &d, candidate);
 
         if y == one || y == (candidate - &one) {
             continue;
         } else {
             let mut counter = BigInt::one();
             while counter < (&s - &one) {
-                y = BigInt::modpow(&y, &two, candidate);
+                y = BigInt::mod_pow(&y, &two, candidate);
                 if y == one {
                     return false;
                 } else if y == candidate - &one {

@@ -1,52 +1,32 @@
-#![feature(test)]
-#![feature(specialization)]
-
 extern crate bit_vec;
+extern crate curv;
 extern crate num_traits;
 extern crate rand;
 extern crate rayon;
-#[cfg(feature = "proofs")]
-extern crate ring;
 extern crate serde;
-extern crate test;
+//extern crate test;
 #[macro_use]
 extern crate serde_derive;
 
-pub mod arithimpl;
 pub mod core;
 pub mod encoding;
 mod serialize;
 pub mod traits;
 
-#[cfg(feature = "keygen")]
 pub mod keygen;
-
-#[cfg(feature = "proofs")]
-pub mod proof;
 
 pub use core::*;
 pub use encoding::*;
 pub use traits::*;
 
-#[cfg(feature = "keygen")]
 pub use keygen::*;
-
-#[cfg(feature = "proofs")]
-pub use proof::*;
 
 use std::borrow::Cow;
 
 /// Main struct onto which most operations are added.
 pub struct Paillier;
 
-#[cfg(feature = "useramp")]
-pub use arithimpl::rampimpl::BigInt;
-
-#[cfg(feature = "useframp")]
-pub use arithimpl::frampimpl::BigInt;
-
-#[cfg(feature = "usegmp")]
-pub use arithimpl::gmpimpl::BigInt;
+pub use curv::arithmetic::big_gmp::BigInt;
 
 /// Keypair from which encryption and decryption keys can be derived.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
