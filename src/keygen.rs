@@ -51,7 +51,7 @@ impl PrimeSampable for BigInt {
 // 1. Divide the candidate by the first 999 small prime numbers.
 // 2. Run Fermat's Little Theorem against the candidate.
 // 3. Run five rounds of the Miller-Rabin test on the candidate.
-fn is_prime(candidate: &BigInt) -> bool {
+pub fn is_prime(candidate: &BigInt) -> bool {
     // First, simple trial divide
     for p in SMALL_PRIMES.into_iter() {
         let prime = BigInt::from(*p);
