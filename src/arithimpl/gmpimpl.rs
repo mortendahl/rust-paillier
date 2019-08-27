@@ -1,4 +1,4 @@
-#![cfg(feature="usegmp")]
+#![cfg(feature = "usegmp")]
 
 extern crate gmp;
 
@@ -38,7 +38,7 @@ impl NumberTests for Mpz {
         me.is_multiple_of(&Mpz::from(2))
     }
     fn is_negative(me: &Self) -> bool {
-        me < &Mpz::from(0)
+        *me < Mpz::from(0)
     }
 }
 
@@ -78,57 +78,57 @@ impl EGCD for Mpz {
 
 impl ConvertFrom<Mpz> for u8 {
     fn _from(x: &Mpz) -> u8 {
-        let foo: Option<u64> = x.into();
-        foo.unwrap() as u8
+        let opt_x: Option<u64> = x.into();
+        opt_x.unwrap() as u8
     }
 }
 
 impl ConvertFrom<Mpz> for u16 {
     fn _from(x: &Mpz) -> u16 {
-        let foo: Option<u64> = x.into();
-        foo.unwrap() as u16
+        let opt_x: Option<u64> = x.into();
+        opt_x.unwrap() as u16
     }
 }
 
 impl ConvertFrom<Mpz> for u32 {
     fn _from(x: &Mpz) -> u32 {
-        let foo: Option<u64> = x.into();
-        foo.unwrap() as u32
+        let opt_x: Option<u64> = x.into();
+        opt_x.unwrap() as u32
     }
 }
 
 impl ConvertFrom<Mpz> for u64 {
     fn _from(x: &Mpz) -> u64 {
-        let foo: Option<u64> = x.into();
-        foo.unwrap()
+        let opt_x: Option<u64> = x.into();
+        opt_x.unwrap()
     }
 }
 
 impl ConvertFrom<Mpz> for i8 {
     fn _from(x: &Mpz) -> i8 {
-        let foo: Option<u64> = x.into();
-        foo.unwrap() as i8
+        let opt_x: Option<u64> = x.into();
+        opt_x.unwrap() as i8
     }
 }
 
 impl ConvertFrom<Mpz> for i16 {
     fn _from(x: &Mpz) -> i16 {
-        let foo: Option<u64> = x.into();
-        foo.unwrap() as i16
+        let opt_x: Option<u64> = x.into();
+        opt_x.unwrap() as i16
     }
 }
 
 impl ConvertFrom<Mpz> for i32 {
     fn _from(x: &Mpz) -> i32 {
-        let foo: Option<u64> = x.into();
-        foo.unwrap() as i32
+        let opt_x: Option<u64> = x.into();
+        opt_x.unwrap() as i32
     }
 }
 
 impl ConvertFrom<Mpz> for i64 {
     fn _from(x: &Mpz) -> i64 {
-        let foo: Option<u64> = x.into();
-        foo.unwrap() as i64
+        let opt_x: Option<u64> = x.into();
+        opt_x.unwrap() as i64
     }
 }
 

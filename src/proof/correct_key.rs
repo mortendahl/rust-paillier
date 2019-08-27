@@ -1,14 +1,13 @@
-use std::borrow::Borrow;
 use std::error::Error;
 use std::fmt;
 use std::iter;
 
-use rayon::prelude::*;
-use ring::digest::{Context, SHA256};
-
 use arithimpl::traits::*;
 use core::extract_nroot;
+use rayon::prelude::*;
 use {BigInt, DecryptionKey, EncryptionKey, Paillier};
+
+use super::compute_digest;
 
 const STATISTICAL_ERROR_FACTOR: usize = 40;
 
@@ -162,10 +161,7 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier {
         }
 
         // compute proof in the form of a hash of the recovered roots
-        let s_digest = compute_digest(challenge.sn.iter().map(|sni| {
-            let si = extract_nroot(dk, sni);
-            si
-        }));
+        let s_digest = compute_digest(challenge.sn.iter().map(|sni| extract_nroot(dk, sni)));
 
         Ok(CorrectKeyProof { s_digest })
     }
@@ -178,20 +174,6 @@ impl CorrectKey<EncryptionKey, DecryptionKey> for Paillier {
             Err(CorrectKeyProofError)
         }
     }
-}
-
-// TODO[Morten] generalise and move to super
-fn compute_digest<IT>(values: IT) -> BigInt
-where
-    IT: Iterator,
-    IT::Item: Borrow<BigInt>,
-{
-    let mut digest = Context::new(&SHA256);
-    for value in values {
-        let bytes: Vec<u8> = value.borrow().into();
-        digest.update(&bytes);
-    }
-    BigInt::from(digest.finish().as_ref())
 }
 
 #[cfg(test)]
@@ -242,5 +224,4 @@ mod tests {
         let result = Paillier::verify(&proof_results.unwrap(), &verification_aid);
         assert!(result.is_err()); // ERROR expected because of manipulated aid
     }
-
 }

@@ -4,7 +4,6 @@ use std::mem;
 use bit_vec::BitVec;
 use rand::prelude::*;
 use rayon::prelude::*;
-use ring::digest::{Context, SHA256};
 
 use arithimpl::traits::*;
 use core::*;
@@ -251,21 +250,19 @@ impl RangeProof for Paillier {
                         w2: data.w2[i].clone(),
                         r2: data.r2[i].clone(),
                     }
+                } else if secret_x + &data.w1[i] > range_scaled_third
+                    && secret_x + &data.w1[i] < range_scaled_two_thirds
+                {
+                    Response::Mask {
+                        j: 1,
+                        masked_x: secret_x + &data.w1[i],
+                        masked_r: secret_r * &data.r1[i] % &ek.n,
+                    }
                 } else {
-                    if secret_x + &data.w1[i] > range_scaled_third
-                        && secret_x + &data.w1[i] < range_scaled_two_thirds
-                    {
-                        Response::Mask {
-                            j: 1,
-                            masked_x: secret_x + &data.w1[i],
-                            masked_r: secret_r * &data.r1[i] % &ek.n,
-                        }
-                    } else {
-                        Response::Mask {
-                            j: 2,
-                            masked_x: secret_x + &data.w2[i],
-                            masked_r: secret_r * &data.r2[i] % &ek.n,
-                        }
+                    Response::Mask {
+                        j: 2,
+                        masked_x: secret_x + &data.w2[i],
+                        masked_r: secret_r * &data.r2[i] % &ek.n,
                     }
                 }
             })
@@ -311,24 +308,20 @@ impl RangeProof for Paillier {
                         )
                         .into();
 
-                        if &expected_c1i != &encrypted_pairs.c1[i] {
+                        if expected_c1i != encrypted_pairs.c1[i] {
                             res = false;
                         }
-                        if &expected_c2i != &encrypted_pairs.c2[i] {
+                        if expected_c2i != encrypted_pairs.c2[i] {
                             res = false;
                         }
 
-                        let mut flag = false;
-                        if w1 < &range_scaled_third {
-                            if w2 > &range_scaled_third && w2 < &range_scaled_two_thirds {
-                                flag = true;
-                            }
-                        }
-                        if w2 < &range_scaled_third {
-                            if w1 > &range_scaled_third && w1 < &range_scaled_two_thirds {
-                                flag = true;
-                            }
-                        }
+                        let flag = (*w2 < range_scaled_third
+                            && *w1 > range_scaled_third
+                            && *w1 < range_scaled_two_thirds)
+                            || (*w1 < range_scaled_third
+                                && *w2 > range_scaled_third
+                                && *w2 < range_scaled_two_thirds);
+
                         if !flag {
                             res = false;
                         }
@@ -360,7 +353,7 @@ impl RangeProof for Paillier {
                         if &c != enc_zi.0.borrow() {
                             res = false;
                         }
-                        if masked_x < &range_scaled_third || masked_x > &range_scaled_two_thirds {
+                        if *masked_x < range_scaled_third || *masked_x > range_scaled_two_thirds {
                             res = false;
                         }
 
@@ -387,10 +380,18 @@ fn get_paillier_commitment(ek: &EncryptionKey, x: &BigInt, r: &BigInt) -> BigInt
     com_pi.0.into_owned()
 }
 
+use crypto::digest::Digest;
+use crypto::sha2::Sha256;
+use hex::decode;
+
 fn compute_digest(bytes: &[u8]) -> BigInt {
-    let mut digest = Context::new(&SHA256);
-    digest.update(&bytes);
-    BigInt::from(digest.finish().as_ref())
+    let mut hasher = Sha256::new();
+    hasher.input(bytes);
+
+    let result_string = hasher.result_str();
+    let result_bytes = decode(result_string).unwrap();
+
+    BigInt::from(&result_bytes[..])
 }
 
 #[cfg(test)]
@@ -411,7 +412,7 @@ mod tests {
     #[test]
     fn test_generate_encrypted_pairs() {
         let (ek, _dk) = test_keypair().keys();
-        let range = BigInt::from(0xFFFFFFFFFFFFFi64);
+        let range = BigInt::from(0x000F_FFFF_FFFF_FFFFi64);
         Paillier::generate_encrypted_pairs(&ek, &range);
         //Paillier::verifier_commit();
     }
@@ -436,12 +437,12 @@ mod tests {
     fn test_generate_proof() {
         let (ek, _dk) = test_keypair().keys();
         let (verifier_ek, _verifier_dk) = test_keypair().keys();
-        let range = BigInt::from(0xFFFFFFFFFFFFFi64);
+        let range = BigInt::from(0x000F_FFFF_FFFF_FFFFi64);
         let (_com, _r, e) = Paillier::verifier_commit(&verifier_ek);
         let (_encrypted_pairs, data_and_randmoness_pairs) =
             Paillier::generate_encrypted_pairs(&ek, &range);
         let secret_r = BigInt::sample_below(&ek.n);
-        let secret_x = BigInt::from(0xFFFFFFFi64);
+        let secret_x = BigInt::from(0x0FFF_FFFFi64);
         let _z_vector = Paillier::generate_proof(
             &ek,
             &secret_x,
@@ -572,5 +573,4 @@ mod tests {
                 Paillier::verifier_output(&ek, &e, &encrypted_pairs, &z_vector, &range, cipher_x);
         });
     }
-
 }
