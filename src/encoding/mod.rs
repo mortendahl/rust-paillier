@@ -27,8 +27,8 @@ where
 {
     let mut packed = BigInt::from(components[0]);
     for component in &components[1..] {
-        packed = packed << component_bitsize;
-        packed = packed + BigInt::from(*component);
+        packed <<= component_bitsize;
+        packed += BigInt::from(*component);
     }
     packed
 }
@@ -62,9 +62,9 @@ fn test_pack() {
     let packed = pack(&*v, component_bitsize);
     assert_eq!(
         packed,
-        BigInt::from(1) * (BigInt::from(1) << 2 * component_bitsize)
-            + BigInt::from(2) * (BigInt::from(1) << 1 * component_bitsize)
-            + BigInt::from(3) * (BigInt::from(1) << 0 * component_bitsize)
+        BigInt::from(1) * (BigInt::from(1) << (2 * component_bitsize))
+            + BigInt::from(2) * (BigInt::from(1) << component_bitsize)
+            + BigInt::from(3) * (BigInt::from(1))
     );
 
     let unpacked: Vec<u64> = unpack(packed, component_bitsize, 3);

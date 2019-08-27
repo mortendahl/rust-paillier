@@ -4,14 +4,13 @@ extern crate num_traits;
 extern crate paillier;
 
 use bencher::Bencher;
-use paillier::encoding::*;
 use paillier::*;
 
 mod helpers;
 use helpers::*;
 
 pub fn bench_encryption_ek<KS: KeySize>(b: &mut Bencher) {
-    let ref keypair = KS::keypair();
+    let keypair = &KS::keypair();
     let ek = EncryptionKey::from(keypair);
 
     b.iter(|| {
@@ -20,7 +19,7 @@ pub fn bench_encryption_ek<KS: KeySize>(b: &mut Bencher) {
 }
 
 pub fn bench_encryption_dk<KS: KeySize>(b: &mut Bencher) {
-    let ref keypair = KS::keypair();
+    let keypair = &KS::keypair();
     let dk = DecryptionKey::from(keypair);
 
     b.iter(|| {
@@ -29,7 +28,7 @@ pub fn bench_encryption_dk<KS: KeySize>(b: &mut Bencher) {
 }
 
 pub fn bench_decryption<KS: KeySize>(b: &mut Bencher) {
-    let ref keypair = KS::keypair();
+    let keypair = &KS::keypair();
     let (ek, dk) = keypair.keys();
 
     let c = Paillier::encrypt(&ek, 10);
@@ -40,7 +39,7 @@ pub fn bench_decryption<KS: KeySize>(b: &mut Bencher) {
 }
 
 pub fn bench_rerandomisation<KS: KeySize>(b: &mut Bencher) {
-    let ref keypair = KS::keypair();
+    let keypair = &KS::keypair();
     let ek = EncryptionKey::from(keypair);
 
     let c = Paillier::encrypt(&ek, 10);
@@ -51,7 +50,7 @@ pub fn bench_rerandomisation<KS: KeySize>(b: &mut Bencher) {
 }
 
 pub fn bench_addition<KS: KeySize>(b: &mut Bencher) {
-    let ref keypair = KS::keypair();
+    let keypair = &KS::keypair();
     let ek = EncryptionKey::from(keypair);
 
     let c1 = Paillier::encrypt(&ek, 10);
@@ -63,7 +62,7 @@ pub fn bench_addition<KS: KeySize>(b: &mut Bencher) {
 }
 
 pub fn bench_multiplication<KS: KeySize>(b: &mut Bencher) {
-    let ref keypair = KS::keypair();
+    let keypair = &KS::keypair();
     let ek = EncryptionKey::from(keypair);
 
     let c = Paillier::encrypt(&ek, 10);

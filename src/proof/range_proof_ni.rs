@@ -1,6 +1,3 @@
-use ring::digest::{Context, SHA256};
-use std::borrow::Borrow;
-
 use arithimpl::traits::*;
 use core::*;
 use proof::correct_key::CorrectKeyProofError;
@@ -77,17 +74,26 @@ impl RangeProofNI for Paillier {
     }
 }
 
-fn compute_digest<IT>(values: IT) -> Vec<u8>
+use std::borrow::Borrow;
+
+use crypto::digest::Digest;
+use crypto::sha2::Sha256;
+use hex::decode;
+
+fn compute_digest<IT>(it: IT) -> Vec<u8>
 where
     IT: Iterator,
     IT::Item: Borrow<BigInt>,
 {
-    let mut digest = Context::new(&SHA256);
-    for value in values {
+    let mut hasher = Sha256::new();
+    for value in it {
         let bytes: Vec<u8> = value.borrow().into();
-        digest.update(&bytes);
+        hasher.input(&bytes);
     }
-    digest.finish().as_ref().into()
+
+    let result_string = hasher.result_str();
+
+    decode(result_string).unwrap()
 }
 
 #[cfg(test)]
@@ -173,5 +179,4 @@ mod tests {
             assert_eq!(result.is_ok(), true);
         });
     }
-
 }

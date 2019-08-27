@@ -1,12 +1,14 @@
 #![feature(test)]
 #![feature(specialization)]
 
+extern crate crypto;
+extern crate hex;
+
 extern crate bit_vec;
 extern crate num_traits;
 extern crate rand;
 extern crate rayon;
 #[cfg(feature = "proofs")]
-extern crate ring;
 extern crate serde;
 extern crate test;
 #[macro_use]

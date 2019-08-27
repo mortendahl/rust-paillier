@@ -38,7 +38,7 @@ impl PrimeSampable for BigInt {
                 if is_prime(&candidate) {
                     return candidate;
                 }
-                candidate = candidate + &two;
+                candidate += &two;
             }
         }
     }
@@ -52,7 +52,7 @@ impl PrimeSampable for BigInt {
 // 3. Run five rounds of the Miller-Rabin test on the candidate.
 fn is_prime(candidate: &BigInt) -> bool {
     // First, simple trial divide
-    for p in SMALL_PRIMES.into_iter() {
+    for p in SMALL_PRIMES.iter() {
         let prime = BigInt::from(*p);
         let r = candidate % &prime;
         if !NumberTests::is_zero(&r) {
@@ -109,7 +109,7 @@ fn miller_rabin(candidate: &BigInt, limit: usize) -> bool {
                 } else if y == candidate - &one {
                     break;
                 }
-                counter = counter + BigInt::one();
+                counter += BigInt::one();
             }
             return false;
         }
@@ -125,7 +125,7 @@ fn rewrite(n: &BigInt) -> (BigInt, BigInt) {
     let one = BigInt::one();
 
     while BigInt::is_even(&d) {
-        d = d >> 1_usize;
+        d >>= 1_usize;
         s = &s + &one;
     }
 
@@ -134,7 +134,7 @@ fn rewrite(n: &BigInt) -> (BigInt, BigInt) {
 
 // BoringSSL's table.
 // https://boringssl.googlesource.com/boringssl/+/master/crypto/bn/prime.c
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 static SMALL_PRIMES: [u32; 2048] = [
     2,     3,     5,     7,     11,    13,    17,    19,    23,    29,    31,
     37,    41,    43,    47,    53,    59,    61,    67,    71,    73,    79,
