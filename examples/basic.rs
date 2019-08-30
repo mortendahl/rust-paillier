@@ -1,13 +1,5 @@
-extern crate paillier;
-
 use paillier::*;
 
-#[cfg(not(feature = "keygen"))]
-fn main() {
-    println!("*** please run with 'keygen' feature ***")
-}
-
-#[cfg(feature = "keygen")]
 fn main() {
     // first generate a fresh keypair, where
     // the encryption key can be made public

@@ -3,14 +3,14 @@
 use std::borrow::{Borrow, Cow};
 
 use rayon::join;
-use serde::*;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use curv::arithmetic::traits::*;
-use traits::*;
-use {
+use crate::traits::*;
+use crate::{
     BigInt, DecryptionKey, EncryptionKey, Keypair, MinimalDecryptionKey, MinimalEncryptionKey,
     Paillier, RawCiphertext, RawPlaintext,
 };
+use curv::arithmetic::traits::*;
 
 impl Keypair {
     /// Generate default encryption and decryption keys.
@@ -244,15 +244,13 @@ impl<'m, 'd> Encrypt<DecryptionKey, RawPlaintext<'m>, RawCiphertext<'d>> for Pai
                 let rp = BigInt::sample_below(&dk.p);
                 let rnp = BigInt::mod_pow(&rp, &dk_n, &dk_pp);
                 let gmp = (1 + mp * &dk_n) % &dk_pp; // TODO[Morten] maybe there's more to get here
-                let cp = (gmp * rnp) % &dk_pp;
-                cp
+                (gmp * rnp) % &dk_pp
             },
             || {
                 let rq = BigInt::sample_below(&dk.q);
                 let rnq = BigInt::mod_pow(&rq, &dk_n, &dk_qq);
                 let gmq = (1 + mq * &dk_n) % &dk_qq; // TODO[Morten] maybe there's more to get here
-                let cq = (gmq * rnq) % &dk_qq;
-                cq
+                (gmq * rnq) % &dk_qq
             },
         );
         let c = crt_recombine(cp, cq, &dk_pp, &dk_qq, &dk_ppinv);
@@ -279,14 +277,12 @@ impl<'m, 'r, 'd>
             || {
                 let rnp = BigInt::mod_pow(&rp, &dk_n, &dk_pp);
                 let gmp = (1 + mp * &dk_n) % &dk_pp; // TODO[Morten] maybe there's more to get here
-                let cp = (gmp * rnp) % &dk_pp;
-                cp
+                (gmp * rnp) % &dk_pp
             },
             || {
                 let rnq = BigInt::mod_pow(&rq, &dk_n, &dk_qq);
                 let gmq = (1 + mq * &dk_n) % &dk_qq; // TODO[Morten] maybe there's more to get here
-                let cq = (gmq * rnq) % &dk_qq;
-                cq
+                (gmq * rnq) % &dk_qq
             },
         );
         let c = crt_recombine(cp, cq, &dk_pp, &dk_qq, &dk_ppinv);
@@ -362,15 +358,13 @@ impl<'c, 'm> Decrypt<DecryptionKey, &'c RawCiphertext<'c>, RawPlaintext<'m>> for
                 // process using p
                 let dp = BigInt::mod_pow(&cp, &dk_pminusone, &dk_pp);
                 let lp = l(&dp, &dk.p);
-                let mp = (&lp * &dk_hp) % &dk.p;
-                mp
+                (&lp * &dk_hp) % &dk.p
             },
             || {
                 // process using q
                 let dq = BigInt::mod_pow(&cq, &dk_qminusone, &dk_qq);
                 let lq = l(&dq, &dk.q);
-                let mq = (&lq * &dk_hq) % &dk.q;
-                mq
+                (&lq * &dk_hq) % &dk.q
             },
         );
         // perform CRT
@@ -468,8 +462,7 @@ fn h(p: &BigInt, pp: &BigInt, n: &BigInt) -> BigInt {
     // compute L_p(.)
     let lp = l(&gp, p);
     // compute L_p(.)^{-1}
-    let hp = BigInt::mod_inv(&lp, p);
-    hp
+    BigInt::mod_inv(&lp, p)
 }
 
 fn l(u: &BigInt, n: &BigInt) -> BigInt {
@@ -499,8 +492,7 @@ where
     //      diff += m2.borrow();
     //  }
     let u = (diff * m1inv.borrow()) % m2.borrow();
-    let x = x1.borrow() + (u * m1.borrow());
-    x
+    x1.borrow() + (u * m1.borrow())
 }
 
 /// Extract randomness component of a zero ciphertext.
@@ -519,8 +511,7 @@ pub fn extract_nroot(dk: &DecryptionKey, z: &BigInt) -> BigInt {
     let rp = BigInt::mod_pow(&zp, &dk_dp, &dk.p);
     let rq = BigInt::mod_pow(&zq, &dk_dq, &dk.q);
 
-    let r = crt_recombine(rp, rq, &dk.p, &dk.q, &dk_pinv);
-    r
+    crt_recombine(rp, rq, &dk.p, &dk.q, &dk_pinv)
 }
 
 #[cfg(test)]
@@ -616,5 +607,4 @@ mod tests {
         let result: Result<EncryptionKey, _> = serde_json::from_str(&illformatted);
         assert!(result.is_err())
     }
-
 }

@@ -3,19 +3,18 @@
 use std::marker::PhantomData;
 
 use curv::arithmetic::traits::ConvertFrom;
-use serde::de::Deserialize;
-use serde::ser::Serialize;
-use BigInt;
+use serde::{Deserialize, Serialize};
+
 pub mod integral;
+
+use crate::BigInt;
 
 /// Encrypted message with type information.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct EncodedCiphertext<T> {
-    #[serde(with = "::serialize::bigint")]
+    #[serde(with = "crate::serialize::bigint")]
     raw: BigInt,
-
     components: usize,
-
     _phantom: PhantomData<T>,
 }
 
@@ -26,8 +25,8 @@ where
 {
     let mut packed = BigInt::from(components[0]);
     for component in &components[1..] {
-        packed = packed << component_bitsize;
-        packed = packed + BigInt::from(*component);
+        packed <<= component_bitsize;
+        packed += BigInt::from(*component);
     }
     packed
 }
@@ -61,9 +60,9 @@ fn test_pack() {
     let packed = pack(&*v, component_bitsize);
     assert_eq!(
         packed,
-        BigInt::from(1) * (BigInt::from(1) << 2 * component_bitsize)
-            + BigInt::from(2) * (BigInt::from(1) << 1 * component_bitsize)
-            + BigInt::from(3) * (BigInt::from(1) << 0 * component_bitsize)
+        BigInt::from(1) * (BigInt::from(1) << (2 * component_bitsize))
+            + BigInt::from(2) * (BigInt::from(1) << component_bitsize)
+            + BigInt::from(3) * (BigInt::from(1))
     );
 
     let unpacked: Vec<u64> = unpack(packed, component_bitsize, 3);

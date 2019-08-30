@@ -2,15 +2,12 @@
 
 use std::borrow::Borrow;
 use std::marker::PhantomData;
-use traits::Add;
-use traits::Decrypt;
-use traits::Encrypt;
-use traits::Mul;
-use traits::Rerandomize;
+
+use curv::arithmetic::traits::*;
 
 use super::{pack, unpack, EncodedCiphertext};
-use curv::arithmetic::traits::*;
-use {BigInt, Paillier, RawCiphertext, RawPlaintext};
+use crate::traits::{Add, Decrypt, Encrypt, Mul, Rerandomize};
+use crate::{BigInt, Paillier, RawCiphertext, RawPlaintext};
 
 impl<EK> Encrypt<EK, u64, EncodedCiphertext<u64>> for Paillier
 where
@@ -323,7 +320,7 @@ where
 mod tests {
 
     use super::*;
-    use Keypair;
+    use crate::Keypair;
 
     fn test_keypair() -> Keypair {
         let p = str::parse("148677972634832330983979593310074301486537017973460461278300587514468301043894574906886127642530475786889672304776052879927627556769456140664043088700743909632312483413393134504352834240399191134336344285483935856491230340093391784574980688823380828143810804684752914935441384845195613674104960646037368551517").unwrap();
@@ -441,5 +438,4 @@ mod tests {
         let m: Vec<_> = Paillier::decrypt(&dk, &c);
         assert_eq!(m, vec![4, 8, 12]);
     }
-
 }

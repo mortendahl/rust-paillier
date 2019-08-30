@@ -1,16 +1,8 @@
-extern crate paillier;
+use paillier::{
+    Add, Decrypt, DecryptionKey, EncodedCiphertext, Encrypt, EncryptionKey, KeyGeneration,
+    Paillier, Rerandomize,
+};
 
-extern crate rand;
-extern crate serde_json;
-
-use paillier::*;
-
-#[cfg(not(feature = "keygen"))]
-fn main() {
-    println!("*** please run with 'keygen' feature ***")
-}
-
-#[cfg(feature = "keygen")]
 fn main() {
     // first we initialize the clerk by asking it to generate a fresh keypair
     let clerk = Clerk::new();

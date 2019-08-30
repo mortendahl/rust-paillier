@@ -1,29 +1,19 @@
 [package]
 name = "paillier"
-version = "0.2.1-alpha.0"
-
-
-
-
+version = "0.2.1-alpha.1"
+edition = "2018"
 
 [dependencies]
-num-traits = "0.1"
-rand = "0.5"
-rayon = "1.0"
-serde = "1.0"
-serde_derive = "1.0"
-rust-gmp = { version="0.5", optional=true }
-ring = { version="0.13", optional=true }
-
-bit-vec = "0.5"
+rayon = "1.1"
+serde = { version = "1.0", features = ["derive"] }
 
 [dependencies.curv]
 git = "https://github.com/KZen-networks/curv"
-branch = "known_issues"
 
 [dev-dependencies]
 bencher = "0.1"
 serde_json = "1.0"
+rand = "0.6"
 
 [[bench]]
 name = "arith"
@@ -40,3 +30,15 @@ harness = false
 [[bench]]
 name = "proof"
 harness = false
+
+[[example]]
+name = "basic"
+
+[[example]]
+name = "core"
+
+[[example]]
+name = "packed"
+
+[[example]]
+name = "simple-voting"

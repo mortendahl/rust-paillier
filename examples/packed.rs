@@ -1,14 +1,6 @@
-extern crate paillier;
+use paillier::*;
 
-#[cfg(not(feature = "keygen"))]
 fn main() {
-    println!("*** please run with 'keygen' feature ***")
-}
-
-#[cfg(feature = "keygen")]
-fn main() {
-    use paillier::*;
-
     let (ek, dk) = Paillier::keypair().keys();
 
     //
