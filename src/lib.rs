@@ -1,5 +1,3 @@
-#![feature(custom_attribute)]
-
 use std::borrow::Cow;
 
 use serde::{Deserialize, Serialize};
