@@ -11,10 +11,17 @@ impl KeyGeneration<Keypair> for Paillier {
         let q = BigInt::sample_prime(bit_length / 2);
         Keypair { p, q }
     }
+
+    fn keypair_safe_primes_with_modulus_size(bit_length: usize) -> Keypair {
+        let p = BigInt::sample_safe_prime(bit_length / 2);
+        let q = BigInt::sample_safe_prime(bit_length / 2);
+        Keypair { p, q }
+    }
 }
 
 pub trait PrimeSampable {
     fn sample_prime(bitsize: usize) -> Self;
+    fn sample_safe_prime(bitsize: usize) -> Self;
 }
 
 impl PrimeSampable for BigInt {
@@ -43,6 +50,17 @@ impl PrimeSampable for BigInt {
                 candidate += &two;
             }
         }
+    }
+
+    fn sample_safe_prime(bitsize: usize) -> Self{
+        // q = 2p + 1;
+        let two = BigInt::from(2);
+        loop{
+            let q = PrimeSampable::sample_prime(bitsize);
+            let p = (&q - BigInt::one()).div_floor(&two) ;
+            if is_prime(&p) {return q};
+        }
+
     }
 }
 
