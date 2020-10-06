@@ -52,15 +52,16 @@ impl PrimeSampable for BigInt {
         }
     }
 
-    fn sample_safe_prime(bitsize: usize) -> Self{
+    fn sample_safe_prime(bitsize: usize) -> Self {
         // q = 2p + 1;
         let two = BigInt::from(2);
-        loop{
+        loop {
             let q = PrimeSampable::sample_prime(bitsize);
-            let p = (&q - BigInt::one()).div_floor(&two) ;
-            if is_prime(&p) {return q};
+            let p = (&q - BigInt::one()).div_floor(&two);
+            if is_prime(&p) {
+                return q;
+            };
         }
-
     }
 }
 

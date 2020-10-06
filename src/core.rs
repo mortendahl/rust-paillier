@@ -563,6 +563,18 @@ mod tests {
     }
 
     #[test]
+    fn test_correct_addition_from_plaintext() {
+        let (ek, dk) = test_keypair().keys();
+
+        let m1 = RawPlaintext::from(BigInt::from(2).pow(120));
+        let c1 = Paillier::encrypt(&ek, m1);
+        let m2 = RawPlaintext::from(BigInt::from(2).pow(120));
+        let c = Paillier::add(&ek, c1, m2);
+        let m = Paillier::decrypt(&dk, c);
+        assert_eq!(m, BigInt::from(2).pow(121).into());
+    }
+
+    #[test]
     fn correct_multiplication() {
         let (ek, dk) = test_keypair().keys();
 

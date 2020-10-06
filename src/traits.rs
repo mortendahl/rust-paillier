@@ -6,13 +6,14 @@ pub trait KeyGeneration<KP> {
     fn keypair() -> KP {
         Self::keypair_with_modulus_size(2048)
     }
-    fn keypair_safe_primes() -> KP {Self::keypair_safe_primes_with_modulus_size(2048)}
+    fn keypair_safe_primes() -> KP {
+        Self::keypair_safe_primes_with_modulus_size(2048)
+    }
     /// Generate fresh key pair with security level specified as the `bit_length` of the modulus.
     ///
     /// Currently recommended security level is a minimum of 2048 bits.
     fn keypair_with_modulus_size(big_length: usize) -> KP;
     fn keypair_safe_primes_with_modulus_size(big_length: usize) -> KP;
-
 }
 
 pub trait PrecomputeRandomness<EK, R, PR> {
