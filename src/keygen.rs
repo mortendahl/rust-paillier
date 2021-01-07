@@ -122,8 +122,8 @@ fn miller_rabin(candidate: &BigInt, limit: usize) -> bool {
         if y == one || y == (candidate - &one) {
             continue;
         } else {
-            let mut counter = BigInt::one();
-            while counter < (&s - &one) {
+            let mut counter = BigInt::zero();
+            while counter < (&s - BigInt::one()) {
                 y = BigInt::mod_pow(&y, &two, candidate);
                 if y == one {
                     return false;
@@ -132,7 +132,9 @@ fn miller_rabin(candidate: &BigInt, limit: usize) -> bool {
                 }
                 counter += BigInt::one();
             }
-            return false;
+            if counter == (&s - BigInt::one()) {
+                return false;
+            }
         }
     }
     true
