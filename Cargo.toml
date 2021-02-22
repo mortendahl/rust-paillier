@@ -1,6 +1,6 @@
 [package]
 name = "paillier"
-version = "0.3.7"
+version = "0.3.8"
 edition = "2018"
 
 [dependencies]
@@ -9,12 +9,16 @@ serde = { version = "1.0", features = ["derive"] }
 
 [dependencies.curv]
 git = "https://github.com/KZen-networks/curv"
-tag = "v0.5.9"
+tag = "v0.6.1"
+default-features = false
 
 [dev-dependencies]
 bencher = "0.1"
 serde_json = "1.0"
 rand = "0.6"
+
+[features]
+default = ["curv/rust-gmp-kzen"]
 
 [[bench]]
 name = "arith"

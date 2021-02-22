@@ -13,7 +13,7 @@ pub use encoding::*;
 pub use keygen::*;
 pub use traits::*;
 
-pub use curv::arithmetic::big_gmp::BigInt;
+pub use curv::arithmetic::BigInt;
 
 /// Main struct onto which most operations are added.
 pub struct Paillier;

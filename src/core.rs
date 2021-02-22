@@ -237,7 +237,7 @@ impl<'m, 'd> Encrypt<DecryptionKey, RawPlaintext<'m>, RawCiphertext<'d>> for Pai
         let dk_pp = &dk.p * &dk.p;
         let dk_qq = &dk.q * &dk.q;
         let dk_n = &dk.q * &dk.p;
-        let dk_ppinv = BigInt::mod_inv(&dk_pp, &dk_qq);
+        let dk_ppinv = BigInt::mod_inv(&dk_pp, &dk_qq).unwrap();
         let (mp, mq) = crt_decompose(m.0.borrow(), &dk_pp, &dk_qq);
         let (cp, cq) = join(
             || {
@@ -270,7 +270,7 @@ impl<'m, 'r, 'd>
         let dk_pp = &dk.p * &dk.p;
         let dk_qq = &dk.q * &dk.q;
         let dk_n = &dk.q * &dk.p;
-        let dk_ppinv = BigInt::mod_inv(&dk_pp, &dk_qq);
+        let dk_ppinv = BigInt::mod_inv(&dk_pp, &dk_qq).unwrap();
         let (mp, mq) = crt_decompose(m.0.borrow(), &dk_pp, &dk_qq);
         let (rp, rq) = crt_decompose(&r.0, &dk_pp, &dk_qq);
         let (cp, cq) = join(
@@ -346,7 +346,7 @@ impl<'c, 'm> Decrypt<DecryptionKey, &'c RawCiphertext<'c>, RawPlaintext<'m>> for
         let dk_qq = &dk.q * &dk.q;
         let dk_pp = &dk.p * &dk.p;
         let dk_n = &dk.p * &dk.q;
-        let dk_pinv = BigInt::mod_inv(&dk.p, &dk.q);
+        let dk_pinv = BigInt::mod_inv(&dk.p, &dk.q).unwrap();
         let dk_qminusone = &dk.q - BigInt::one();
         let dk_pminusone = &dk.p - BigInt::one();
         let dk_hp = h(&dk.p, &dk_pp, &dk_n);
@@ -462,7 +462,7 @@ fn h(p: &BigInt, pp: &BigInt, n: &BigInt) -> BigInt {
     // compute L_p(.)
     let lp = l(&gp, p);
     // compute L_p(.)^{-1}
-    BigInt::mod_inv(&lp, p)
+    BigInt::mod_inv(&lp, p).unwrap()
 }
 
 fn l(u: &BigInt, n: &BigInt) -> BigInt {
@@ -499,12 +499,12 @@ where
 pub fn extract_nroot(dk: &DecryptionKey, z: &BigInt) -> BigInt {
     let dk_n = &dk.p * &dk.q;
 
-    let dk_pinv = BigInt::mod_inv(&dk.p, &dk.q);
+    let dk_pinv = BigInt::mod_inv(&dk.p, &dk.q).unwrap();
     let dk_qminusone = &dk.q - BigInt::one();
     let dk_pminusone = &dk.p - BigInt::one();
 
     let dk_phi = &dk_pminusone * &dk_qminusone;
-    let dk_dn = BigInt::mod_inv(&dk_n, &dk_phi);
+    let dk_dn = BigInt::mod_inv(&dk_n, &dk_phi).unwrap();
     let (dk_dp, dk_dq) = crt_decompose(dk_dn, &dk_pminusone, &dk_qminusone);
     let (zp, zq) = crt_decompose(z, &dk.p, &dk.q);
 
@@ -522,8 +522,8 @@ mod tests {
     extern crate serde_json;
 
     fn test_keypair() -> Keypair {
-        let p = str::parse("148677972634832330983979593310074301486537017973460461278300587514468301043894574906886127642530475786889672304776052879927627556769456140664043088700743909632312483413393134504352834240399191134336344285483935856491230340093391784574980688823380828143810804684752914935441384845195613674104960646037368551517").unwrap();
-        let q = str::parse("158741574437007245654463598139927898730476924736461654463975966787719309357536545869203069369466212089132653564188443272208127277664424448947476335413293018778018615899291704693105620242763173357203898195318179150836424196645745308205164116144020613415407736216097185962171301808761138424668335445923774195463").unwrap();
+        let p = BigInt::from_str_radix("148677972634832330983979593310074301486537017973460461278300587514468301043894574906886127642530475786889672304776052879927627556769456140664043088700743909632312483413393134504352834240399191134336344285483935856491230340093391784574980688823380828143810804684752914935441384845195613674104960646037368551517", 10).unwrap();
+        let q = BigInt::from_str_radix("158741574437007245654463598139927898730476924736461654463975966787719309357536545869203069369466212089132653564188443272208127277664424448947476335413293018778018615899291704693105620242763173357203898195318179150836424196645745308205164116144020613415407736216097185962171301808761138424668335445923774195463", 10).unwrap();
         Keypair { p, q }
     }
 

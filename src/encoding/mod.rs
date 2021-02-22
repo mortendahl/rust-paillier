@@ -1,8 +1,9 @@
 //! Various coding schemes to be used in conjunction with the core Paillier encryption scheme.
 
+use std::convert::TryFrom;
 use std::marker::PhantomData;
 
-use curv::arithmetic::traits::ConvertFrom;
+use curv::arithmetic::traits::*;
 use serde::{Deserialize, Serialize};
 
 pub mod integral;
@@ -37,13 +38,16 @@ fn unpack<T>(
     component_count: usize,
 ) -> Vec<T>
 where
-    T: ConvertFrom<BigInt>,
+    for<'a> T: TryFrom<&'a BigInt>,
 {
     let mask = BigInt::one() << component_bitsize;
     let mut components: Vec<T> = vec![];
     for _ in 0..component_count {
         let raw_component = &packed_components % &mask; // TODO replace with bitwise AND
-        let component = T::_from(&raw_component);
+
+        // TODO: can't use .unwrap() below because of https://github.com/rust-lang/rust/issues/82252
+        let component =
+            T::try_from(&raw_component).unwrap_or_else(|_| panic!("conversion from bigint failed"));
         components.push(component);
         packed_components = &packed_components >> component_bitsize;
     }

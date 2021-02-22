@@ -1,5 +1,8 @@
 #![allow(dead_code)]
 
+use curv::arithmetic::traits::*;
+use curv::BigInt;
+
 use paillier::Keypair;
 
 // 1024 bit primes => 2048 bit modulus
@@ -40,8 +43,8 @@ impl KeySize for KeySize2048 {
     }
     fn keypair() -> Keypair {
         Keypair {
-            p: str::parse(P2048).unwrap(),
-            q: str::parse(Q2048).unwrap(),
+            p: BigInt::from_str_radix(P2048, 10).unwrap(),
+            q: BigInt::from_str_radix(Q2048, 10).unwrap(),
         }
     }
 }
@@ -60,8 +63,8 @@ impl KeySize for KeySize4096 {
     }
     fn keypair() -> Keypair {
         Keypair {
-            p: str::parse(P4096).unwrap(),
-            q: str::parse(Q4096).unwrap(),
+            p: BigInt::from_str_radix(P4096, 10).unwrap(),
+            q: BigInt::from_str_radix(Q4096, 10).unwrap(),
         }
     }
 }
