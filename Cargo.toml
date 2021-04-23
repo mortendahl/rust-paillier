@@ -1,6 +1,6 @@
 [package]
 name = "paillier"
-version = "0.3.8"
+version = "0.3.9"
 edition = "2018"
 
 [dependencies]
@@ -9,7 +9,7 @@ serde = { version = "1.0", features = ["derive"] }
 
 [dependencies.curv]
 git = "https://github.com/KZen-networks/curv"
-tag = "v0.6.1"
+tag = "v0.6.2"
 default-features = false
 
 [dev-dependencies]
