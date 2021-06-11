@@ -1,11 +1,10 @@
 mod helpers;
 
-#[cfg(feature = "keygen")]
 mod bench {
 
     use bencher::Bencher;
     use helpers::*;
-    use paillier::*;
+    use kzen_paillier::*;
 
     pub fn bench_key_generation<KS: KeySize>(b: &mut Bencher) {
         b.iter(|| {
@@ -23,8 +22,4 @@ mod bench {
     );
 }
 
-#[cfg(feature = "keygen")]
 benchmark_main!(bench::group);
-
-#[cfg(not(feature = "keygen"))]
-fn main() {}

@@ -1,4 +1,4 @@
-use paillier::{
+use kzen_paillier::{
     Add, Decrypt, DecryptionKey, EncodedCiphertext, Encrypt, EncryptionKey, KeyGeneration,
     Paillier, Rerandomize,
 };

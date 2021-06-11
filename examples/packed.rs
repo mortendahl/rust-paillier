@@ -1,4 +1,4 @@
-use paillier::*;
+use kzen_paillier::*;
 
 fn main() {
     let (ek, dk) = Paillier::keypair().keys();

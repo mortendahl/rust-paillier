@@ -1,11 +1,10 @@
 mod helpers;
 
-#[cfg(feature = "proofs")]
 mod bench {
 
     use bencher::*;
-    use paillier::proof::CorrectKey;
-    use paillier::*;
+    use kzen_paillier::proof::CorrectKey;
+    use kzen_paillier::*;
 
     use helpers::*;
 
@@ -62,8 +61,4 @@ mod bench {
     );
 }
 
-#[cfg(feature = "proofs")]
 benchmark_main!(bench::zk_2048, bench::zk_4096);
-
-#[cfg(not(feature = "proofs"))]
-fn main() {}

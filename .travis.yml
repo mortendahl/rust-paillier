@@ -1,3 +1,30 @@
 language: rust
+cache: cargo
 rust:
-    - nightly
+  - stable
+  - nightly
+env:
+  - FEATURES=curv/num-bigint
+  - FEATURES=curv/rust-gmp-kzen
+
+jobs:
+  allow_failures:
+  - rust: nightly
+  fast_finish: true
+
+before_install:
+  - rustup component add rustfmt clippy
+
+script:
+  - cargo build --verbose --no-default-features --features $FEATURES
+  - cargo test --verbose --no-default-features --features $FEATURES
+  - cargo fmt --all -- --check
+  - cargo clippy -- -D clippy::all
+
+deploy:
+  provider: cargo
+  token:
+    secure: hP6CeISE3rJ70FJhg9M7sDFAJFSyPwEddj0+7K3aJ0NhNiTlSuK+pZa1daoauv6iN9tccgg0PSozBbesLYIxBIkrL3ZVZr9RQmyzAhEqKcklgGYeKfZUHsHgHI2SgqTnk/JxsVZsN/Nxu/bm90lONjf+vIj573w5JrXa6CRCO5veYj4VU6CPMXbArMo1johnzgIR8U5hMm0fBSp4CIoJ2z7ApuUtwblEDuv4WyKNVCFpwp8ioepOk26S4+8kiJuAAcxF9pHLfz0EKgDxr2whmCkODj//9w4r1CAu01xdAjXvKZXHjNt8XY0eiRddfW2WOZoBYlYZkfAMmr9SdDNcvqSM3ph68jWayKdUW8wkfgvw7r8Q+UG41gKTSEb/a+lVLXtBDSp431mmwA8moLyGR1mbxYCRgXu7fHTuaXHsAeEOZbsxcOC41yzbOHcsmQ05cBvCwhV2Q3ET6EfVc0GMxeGS3JoJ0o5U5dPinG/+gs595Nxj3vr+tHsPov1S68zq0tXOjghuyLQlwNiAB7hzP862Anav9K6458ULcy4gKJf1LVzWRonyJ1jkGH/eO5Mew0k22BUnYglCfLEmWLHY5FUMjEYadi58MobRDx2/34EnsEw7ImQKVqKsR+V8HKdkTffr6RPhn5X/8soPW8sMSQ0UC60wK/YBxOGu1dXPv20=
+  on:
+    tags: true
+    condition: $TRAVIS_TAG =~ ^v[0-9.]+$

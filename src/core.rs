@@ -587,7 +587,6 @@ mod tests {
         assert_eq!(m, BigInt::from(200).into());
     }
 
-    #[cfg(feature = "keygen")]
     #[test]
     fn test_correct_keygen() {
         let (ek, dk): (EncryptionKey, _) = Paillier::keypair_with_modulus_size(2048).keys();
