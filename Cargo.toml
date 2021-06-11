@@ -2,6 +2,11 @@
 name = "kzen-paillier"
 version = "0.4.0"
 edition = "2018"
+description = "Efficient pure-Rust library for the Paillier partially homomorphic encryption scheme"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/ZenGo-X/rust-paillier"
+categories = ["cryptography", "algorithms"]
+keywords = ["paillier", "homomorphic", "encryption", "zero-knowledge", "cryptoagorithms"]
 
 [dependencies]
 rayon = "1.1"
