@@ -47,8 +47,8 @@ fn main() {
 # Installation
 
 ```toml
-[dependencies.kzen-paillier]
-package = "paillier"
+[dependencies.paillier]
+package = "kzen-paillier"
 version = "0.2"
 ```
 
@@ -66,8 +66,8 @@ All functionality remains the same.
 In order to build on `num-bigint` instead, put into Cargo.toml:
 
 ```toml
-[dependencies.kzen-paillier]
-package = "paillier"
+[dependencies.paillier]
+package = "kzen-paillier"
 version = "0.2"
 default-features = false
 features = ["curv/num-bigint"]
