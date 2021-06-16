@@ -6,7 +6,7 @@
 [![License: MIT/Apache2](https://img.shields.io/badge/license-MIT%2fApache2-blue.svg)](LICENSE)
 
 Efficient pure-Rust library for the [Paillier](https://en.wikipedia.org/wiki/Paillier_cryptosystem) partially homomorphic encryption scheme, offering also packed encoding for encrypting several values together as well as several zero-knowledge proofs related to typical use-cases.
-Supports several underlying arbitrary precision libraries, including [RAMP](https://github.com/Aatch/ramp) and [GMP](https://github.com/fizyk20/rust-gmp).
+Supports several underlying arbitrary precision libraries: [GMP](https://github.com/ZenGo-X/rust-gmp) and [num-bigint](https://github.com/rust-num/num-bigint).
 
 Several companies have invested resources in the development of this library, including [Snips](https://snips.ai/) who implemented the [original version](https://github.com/snipsco/rust-paillier) for use in their privacy-preserving analytics system, and [KZen networks](https://github.com/KZen-networks) who contributed with implementations of many zero-knowledge proofs. See [contributions](#contributions) below for more details.
 
@@ -52,7 +52,7 @@ package = "paillier"
 version = "0.2"
 ```
 
-### Underlying arithmetic
+## Underlying arithmetic
 
 The choice of underlying arithmetic library may be changed using features
 `curv/rust-gmp-kzen` (default) and `curv/num-bigint`. GMP generally offers
@@ -63,7 +63,19 @@ require any external dependencies.
 Only performance is affected by choosing one of arithemtic implementation.
 All functionality remains the same.
 
-### Key generation
+In order to build on `num-bigint` instead, put into Cargo.toml:
+
+```toml
+[dependencies.kzen-paillier]
+package = "paillier"
+version = "0.2"
+default-features = false
+features = ["curv/num-bigint"]
+```
+
+# Usage
+
+## Key generation
 
 Key generation feature `keygen` is included by default but if unneeded may safely be excluded to avoid extra dependencies.
 
@@ -80,10 +92,6 @@ fn main() {
 
 }
 ```
-
-### Zero-knowledge proofs
-
-Feature `proofs` includes various zero-knowledge proofs related to the typical use of Paillier encryption.
 
 # Benchmarks
 
