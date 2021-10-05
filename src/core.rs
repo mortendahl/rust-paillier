@@ -189,7 +189,7 @@ impl<'b> From<RawCiphertext<'b>> for BigInt {
 
 impl<'m, 'd> Encrypt<EncryptionKey, RawPlaintext<'m>, RawCiphertext<'d>> for Paillier {
     fn encrypt(ek: &EncryptionKey, m: RawPlaintext<'m>) -> RawCiphertext<'d> {
-        let r = Randomness::sample(&ek);
+        let r = Randomness::sample(ek);
         let rn = BigInt::mod_pow(&r.0, &ek.n, &ek.nn);
         let gm: BigInt = (m.0.borrow() as &BigInt * &ek.n + 1) % &ek.nn;
         let c = (gm * rn) % &ek.nn;
