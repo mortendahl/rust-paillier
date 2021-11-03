@@ -10,7 +10,7 @@ Supports several underlying arbitrary precision libraries: [GMP](https://github.
 
 Several companies have invested resources in the development of this library, including [Snips](https://snips.ai/) who implemented the [original version](https://github.com/snipsco/rust-paillier) for use in their privacy-preserving analytics system, and [KZen networks](https://github.com/KZen-networks) who contributed with implementations of many zero-knowledge proofs. See [contributions](#contributions) below for more details.
 
-**Important**: while we have followed recommendations regarding the scheme itself, some parts of this library have not yet been harden against non-cryptographic attacks such as side-channel attacks.
+**Important**: while we have followed recommendations regarding the scheme itself, some parts of this library have not yet been hardened against non-cryptographic attacks such as side-channel attacks.
 
 
 ```rust
@@ -60,7 +60,7 @@ better performance, but requires GMP shared library to be installed on the
 system. `nim-bigint` is pure Rust implementation of big integer and doesn't
 require any external dependencies.
 
-Only performance is affected by choosing one of arithemtic implementation.
+Only performance is affected by choosing one of arithmetic implementation.
 All functionality remains the same.
 
 In order to build on `num-bigint` instead, put into Cargo.toml:

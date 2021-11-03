@@ -37,7 +37,7 @@ impl PrimeSampable for BigInt {
             //  BitManipulation::set_bit(&mut candidate, 0, true);
             BigInt::set_bit(&mut candidate, 0, true);
 
-            // To ensure the appropiate size
+            // To ensure the appropriate size
             // we set the MSB of the candidate.
             BitManipulation::set_bit(&mut candidate, bitsize - 1, true);
             // If no prime number is found in 500 iterations,
@@ -67,7 +67,7 @@ impl PrimeSampable for BigInt {
             // (q - 1) / 2 must also be an odd prime.
             q.set_bit(1, true);
 
-            // To ensure the appropiate size
+            // To ensure the appropriate size
             // we set the MSB of the candidate.
             q.set_bit(bitsize - 1, true);
 
