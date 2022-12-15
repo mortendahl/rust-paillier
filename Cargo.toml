@@ -1,54 +1,25 @@
 [package]
-name = "paillier"
-version = "0.2.1-alpha.0"
-authors = [
-  "Mario Cornejo <murdix@gmail.com>",
-  "Morten Dahl <mortendahlcs@gmail.com>",
-  "Mathieu Poumeyrol <mathieu.poumeyrol@snips.ai>"
-]
-description = "A pure-Rust implementation of the Paillier encryption scheme"
-keywords = [
-  "paillier",
-  "cryptography",
-  "homomorphic-encrypt",
-  "secure-computation",
-  "zero-knowledge",
-]
-homepage = "https://github.com/mortendahl/rust-paillier"
-repository = "https://github.com/mortendahl/rust-paillier"
-documentation = "https://docs.rs/paillier"
-license = "MIT/Apache-2.0"
-categories = ["cryptography"]
-
-[badges]
-travis-ci = { repository = "mortendahl/rust-paillier" }
-
-[features]
-default = ["usegmp", "keygen", "proofs"]
-keygen = []
-proofs = ["ring"]
-useramp = ["ramp"]
-useframp = ["framp"]
-usegmp = ["rust-gmp"]
-gmp_nonsec = []
+name = "kzen-paillier"
+version = "0.4.2"
+edition = "2018"
+description = "Efficient pure-Rust library for the Paillier partially homomorphic encryption scheme"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/ZenGo-X/rust-paillier"
+categories = ["cryptography", "algorithms"]
+keywords = ["paillier", "homomorphic", "encryption", "zero-knowledge", "cryptoagorithms"]
 
 [dependencies]
-num-traits = "0.1"
-rand = "0.5"
-rayon = "1.0"
-serde = "1.0"
-serde_derive = "1.0"
-ramp = { version="0.5", optional=true }
-framp = { version="0.3", optional=true }
-rust-gmp = { version="0.5", optional=true }
-ring = { version="0.13", optional=true }
-
-bit-vec = "0.5"
+rayon = "1.1"
+serde = { version = "1.0", features = ["derive"] }
+curv-kzen = { version = "0.10", default-features = false }
 
 [dev-dependencies]
 bencher = "0.1"
-# bencher = { git="https://github.com/snipsco-forks/bencher" }
 serde_json = "1.0"
+rand = "0.6"
+
+[features]
+default = ["curv-kzen/rust-gmp-kzen"]
 
 [[bench]]
 name = "arith"
@@ -65,3 +36,15 @@ harness = false
 [[bench]]
 name = "proof"
 harness = false
+
+[[example]]
+name = "basic"
+
+[[example]]
+name = "core"
+
+[[example]]
+name = "packed"
+
+[[example]]
+name = "simple-voting"

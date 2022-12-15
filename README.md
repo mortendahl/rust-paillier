@@ -1,15 +1,16 @@
 # Paillier
 
-[![Build Status](https://travis-ci.org/mortendahl/rust-paillier.svg)](https://travis-ci.org/mortendahl/rust-paillier)
-[![Latest version](https://img.shields.io/crates/v/paillier.svg)](https://img.shields.io/crates/v/paillier.svg)
-[![License: MIT/Apache2](https://img.shields.io/badge/license-MIT%2fApache2-blue.svg)](https://img.shields.io/badge/license-MIT%2fApache2-blue.svg)
+[![Build Status](https://www.travis-ci.com/ZenGo-X/rust-paillier.svg?branch=master)](https://www.travis-ci.com/ZenGo-X/rust-paillier)
+[![Latest version](https://img.shields.io/crates/v/kzen-paillier.svg)](https://crates.io/crates/kzen-paillier)
+[![Docs](https://docs.rs/kzen-paillier/badge.svg)](https://docs.rs/kzen-paillier)
+[![License: MIT/Apache2](https://img.shields.io/badge/license-MIT%2fApache2-blue.svg)](LICENSE)
 
 Efficient pure-Rust library for the [Paillier](https://en.wikipedia.org/wiki/Paillier_cryptosystem) partially homomorphic encryption scheme, offering also packed encoding for encrypting several values together as well as several zero-knowledge proofs related to typical use-cases.
-Supports several underlying arbitrary precision libraries, including [RAMP](https://github.com/Aatch/ramp) and [GMP](https://github.com/fizyk20/rust-gmp).
+Supports several underlying arbitrary precision libraries: [GMP](https://github.com/ZenGo-X/rust-gmp) and [num-bigint](https://github.com/rust-num/num-bigint).
 
 Several companies have invested resources in the development of this library, including [Snips](https://snips.ai/) who implemented the [original version](https://github.com/snipsco/rust-paillier) for use in their privacy-preserving analytics system, and [KZen networks](https://github.com/KZen-networks) who contributed with implementations of many zero-knowledge proofs. See [contributions](#contributions) below for more details.
 
-**Important**: while we have followed recommendations regarding the scheme itself, some parts of this library have not yet been harden against non-cryptographic attacks such as side-channel attacks.
+**Important**: while we have followed recommendations regarding the scheme itself, some parts of this library have not yet been hardened against non-cryptographic attacks such as side-channel attacks.
 
 
 ```rust
@@ -45,34 +46,36 @@ fn main() {
 
 # Installation
 
-Some features are optional yet currently included by default. See [Features](#features) below for more details. Note that the nightly toolchain is currently needed to build the library.
-
-## Using cargo
 ```toml
-[dependencies]
-paillier = { version="0.2" }
+[dependencies.paillier]
+package = "kzen-paillier"
+version = "0.2"
 ```
 
-## From source
-```bash
-git clone https://github.com/mortendahl/rust-paillier
-cd rust-paillier
-cargo build --release
+## Underlying arithmetic
+
+The choice of underlying arithmetic library may be changed using features
+`curv/rust-gmp-kzen` (default) and `curv/num-bigint`. GMP generally offers
+better performance, but requires GMP shared library to be installed on the
+system. `nim-bigint` is pure Rust implementation of big integer and doesn't
+require any external dependencies.
+
+Only performance is affected by choosing one of arithmetic implementation.
+All functionality remains the same.
+
+In order to build on `num-bigint` instead, put into Cargo.toml:
+
+```toml
+[dependencies.paillier]
+package = "kzen-paillier"
+version = "0.2"
+default-features = false
+features = ["curv/num-bigint"]
 ```
 
-## Features
+# Usage
 
-The library supports the following features. The default compilation is equivalent to
-```
-cargo build --release --no-default-features --features "usegmp keygen proofs"
-```
-using GMP and including both key generation and zero-knowledge proofs.
-
-### Underlying arithmetic
-
-The choice of underlying arithmetic library may be changed using features `usegmp` (default) and `useramp`. GMP generally offers [slightly better performance](https://medium.com/snips-ai/benchmarking-paillier-encryption-15631a0b5ad8) but may be unavailable on some platforms or for some applications. Note that `useramp` does currently *not* support proofs, i.e. features `useramp` and `proofs` cannot be used together.
-
-### Key generation
+## Key generation
 
 Key generation feature `keygen` is included by default but if unneeded may safely be excluded to avoid extra dependencies.
 
@@ -89,10 +92,6 @@ fn main() {
 
 }
 ```
-
-### Zero-knowledge proofs
-
-Feature `proofs` includes various zero-knowledge proofs related to the typical use of Paillier encryption. Turned on by default but may safely be excluded if unneeded.
 
 # Benchmarks
 

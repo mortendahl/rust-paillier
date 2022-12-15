@@ -1,8 +1,10 @@
 pub mod bigint {
+    use std::fmt;
+
+    use curv::arithmetic::traits::*;
+    use curv::arithmetic::BigInt;
 
     use serde::{de, ser};
-    use std::fmt;
-    use BigInt;
 
     pub fn serialize<S: ser::Serializer>(x: &BigInt, serializer: S) -> Result<S::Ok, S::Error> {
         serializer.serialize_str(&x.to_str_radix(10))
@@ -19,7 +21,7 @@ pub mod bigint {
             }
 
             fn visit_str<E: de::Error>(self, s: &str) -> Result<BigInt, E> {
-                let v: BigInt = str::parse(s).map_err(de::Error::custom)?;
+                let v: BigInt = BigInt::from_str_radix(s, 10).map_err(de::Error::custom)?;
                 Ok(v)
             }
         }
@@ -29,17 +31,16 @@ pub mod bigint {
 }
 
 pub mod vecbigint {
+    use std::fmt;
+
+    use curv::arithmetic::traits::*;
+    use curv::arithmetic::BigInt;
 
     use serde::de::SeqAccess;
     use serde::ser::SerializeSeq;
     use serde::{de, ser};
-    use std::fmt;
-    use BigInt;
 
-    pub fn serialize<S: ser::Serializer>(
-        x: &Vec<BigInt>,
-        serializer: S,
-    ) -> Result<S::Ok, S::Error> {
+    pub fn serialize<S: ser::Serializer>(x: &[BigInt], serializer: S) -> Result<S::Ok, S::Error> {
         let mut seq = serializer.serialize_seq(Some(x.len()))?;
         for e in x {
             seq.serialize_element(&e.to_str_radix(10))?;
