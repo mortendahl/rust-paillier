@@ -1,6 +1,6 @@
 [package]
 name = "kzen-paillier"
-version = "0.4.2"
+version = "0.4.3"
 edition = "2018"
 description = "Efficient pure-Rust library for the Paillier partially homomorphic encryption scheme"
 license = "MIT OR Apache-2.0"
