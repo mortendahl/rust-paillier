@@ -1,60 +1,30 @@
-#![feature(test)]
-#![feature(specialization)]
+use std::borrow::Cow;
 
-extern crate bit_vec;
-extern crate num_traits;
-extern crate rand;
-extern crate rayon;
-#[cfg(feature = "proofs")]
-extern crate ring;
-extern crate serde;
-extern crate test;
-#[macro_use]
-extern crate serde_derive;
+use serde::{Deserialize, Serialize};
 
-pub mod arithimpl;
 pub mod core;
 pub mod encoding;
-mod serialize;
+pub mod keygen;
+pub mod serialize;
 pub mod traits;
 
-#[cfg(feature = "keygen")]
-pub mod keygen;
-
-#[cfg(feature = "proofs")]
-pub mod proof;
-
-pub use core::*;
+pub use crate::core::*;
 pub use encoding::*;
+pub use keygen::*;
 pub use traits::*;
 
-#[cfg(feature = "keygen")]
-pub use keygen::*;
-
-#[cfg(feature = "proofs")]
-pub use proof::*;
-
-use std::borrow::Cow;
+pub use curv::arithmetic::BigInt;
 
 /// Main struct onto which most operations are added.
 pub struct Paillier;
 
-#[cfg(feature = "useramp")]
-pub use arithimpl::rampimpl::BigInt;
-
-#[cfg(feature = "useframp")]
-pub use arithimpl::frampimpl::BigInt;
-
-#[cfg(feature = "usegmp")]
-pub use arithimpl::gmpimpl::BigInt;
-
 /// Keypair from which encryption and decryption keys can be derived.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Keypair {
-    #[serde(with = "::serialize::bigint")]
+    #[serde(with = "crate::serialize::bigint")]
     pub p: BigInt, // TODO[Morten] okay to make non-public?
 
-    #[serde(with = "::serialize::bigint")]
+    #[serde(with = "crate::serialize::bigint")]
     pub q: BigInt, // TODO[Morten] okay to make non-public?
 }
 
@@ -63,7 +33,7 @@ pub struct Keypair {
 /// Used e.g. for serialization of `EncryptionKey`.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MinimalEncryptionKey {
-    #[serde(with = "::serialize::bigint")]
+    #[serde(with = "crate::serialize::bigint")]
     pub n: BigInt,
 }
 
@@ -72,10 +42,10 @@ pub struct MinimalEncryptionKey {
 /// Used e.g. for serialization of `DecryptionKey`.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct MinimalDecryptionKey {
-    #[serde(with = "::serialize::bigint")]
+    #[serde(with = "crate::serialize::bigint")]
     pub p: BigInt,
 
-    #[serde(with = "::serialize::bigint")]
+    #[serde(with = "crate::serialize::bigint")]
     pub q: BigInt,
 }
 
@@ -91,19 +61,6 @@ pub struct EncryptionKey {
 pub struct DecryptionKey {
     pub p: BigInt, // first prime
     pub q: BigInt, // second prime
-    pub n: BigInt, // the modulus (also in public key)
-    pub nn: BigInt,
-    pp: BigInt,
-    pminusone: BigInt,
-    qq: BigInt,
-    qminusone: BigInt,
-    phi: BigInt,
-    dp: BigInt,
-    dq: BigInt,
-    pinv: BigInt,
-    ppinv: BigInt,
-    hp: BigInt,
-    hq: BigInt,
 }
 
 /// Unencrypted message without type information.

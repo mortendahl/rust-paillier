@@ -1,15 +1,10 @@
-#[macro_use]
-extern crate bencher;
-extern crate paillier;
-
 mod helpers;
 
-#[cfg(feature = "proofs")]
 mod bench {
 
     use bencher::*;
-    use paillier::proof::CorrectKey;
-    use paillier::*;
+    use kzen_paillier::proof::CorrectKey;
+    use kzen_paillier::*;
 
     use helpers::*;
 
@@ -64,11 +59,6 @@ mod bench {
         self::bench_zk_proof_prove_and_verify<KeySize4096>,
         self::bench_zk_proof_prove_all<KeySize4096>
     );
-
 }
 
-#[cfg(feature = "proofs")]
 benchmark_main!(bench::zk_2048, bench::zk_4096);
-
-#[cfg(not(feature = "proofs"))]
-fn main() {}
