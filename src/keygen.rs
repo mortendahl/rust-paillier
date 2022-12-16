@@ -1,8 +1,9 @@
 //! Key generation following standard recommendations.
 
-use arithimpl::traits::*;
-use traits::*;
-use {BigInt, Keypair, Paillier};
+use curv::arithmetic::traits::*;
+
+use crate::traits::*;
+use crate::{BigInt, Keypair, Paillier};
 
 impl KeyGeneration<Keypair> for Paillier {
     fn keypair_with_modulus_size(bit_length: usize) -> Keypair {
@@ -10,10 +11,17 @@ impl KeyGeneration<Keypair> for Paillier {
         let q = BigInt::sample_prime(bit_length / 2);
         Keypair { p, q }
     }
+
+    fn keypair_safe_primes_with_modulus_size(bit_length: usize) -> Keypair {
+        let p = BigInt::sample_safe_prime(bit_length / 2);
+        let q = BigInt::sample_safe_prime(bit_length / 2);
+        Keypair { p, q }
+    }
 }
 
 pub trait PrimeSampable {
     fn sample_prime(bitsize: usize) -> Self;
+    fn sample_safe_prime(bitsize: usize) -> Self;
 }
 
 impl PrimeSampable for BigInt {
@@ -26,9 +34,10 @@ impl PrimeSampable for BigInt {
         loop {
             let mut candidate = Self::sample(bitsize);
             // We flip the LSB to make sure tue candidate is odd.
-            BitManipulation::set_bit(&mut candidate, 0, true);
+            //  BitManipulation::set_bit(&mut candidate, 0, true);
+            BigInt::set_bit(&mut candidate, 0, true);
 
-            // To ensure the appropiate size
+            // To ensure the appropriate size
             // we set the MSB of the candidate.
             BitManipulation::set_bit(&mut candidate, bitsize - 1, true);
             // If no prime number is found in 500 iterations,
@@ -38,47 +47,86 @@ impl PrimeSampable for BigInt {
                 if is_prime(&candidate) {
                     return candidate;
                 }
-                candidate = candidate + &two;
+                candidate += &two;
+            }
+        }
+    }
+
+    fn sample_safe_prime(bitsize: usize) -> Self {
+        let two = BigInt::from(2);
+        let four = BigInt::from(4);
+        loop {
+            // q = 2p + 1;
+            // We want to ensure p,q are both prime.
+            let mut q = Self::sample(bitsize);
+
+            // We flip the LSB to make sure the candidate is odd.
+            q.set_bit(0, true);
+
+            // We flip the 2nd LSB to make sure the candidate is 3 mod 4 because
+            // (q - 1) / 2 must also be an odd prime.
+            q.set_bit(1, true);
+
+            // To ensure the appropriate size
+            // we set the MSB of the candidate.
+            q.set_bit(bitsize - 1, true);
+
+            let mut p = (&q - BigInt::one()).div_floor(&two);
+            for _ in 0..500 {
+                if are_all_primes(&[&p, &q]) {
+                    return q;
+                };
+                p += &two;
+                q += &four;
             }
         }
     }
 }
 
-// Runs the following three tests on a given `candidate` to determine
+// Runs the following three tests on each given `candidate` to determine
 // primality:
 //
 // 1. Divide the candidate by the first 999 small prime numbers.
 // 2. Run Fermat's Little Theorem against the candidate.
 // 3. Run five rounds of the Miller-Rabin test on the candidate.
-fn is_prime(candidate: &BigInt) -> bool {
+pub fn are_all_primes(candidates: &[&BigInt]) -> bool {
     // First, simple trial divide
-    for p in SMALL_PRIMES.into_iter() {
-        let prime = BigInt::from(*p);
-        let r = candidate % &prime;
-        if !NumberTests::is_zero(&r) {
-            continue;
-        } else {
-            return false;
+    for &candidate in candidates {
+        for &p in SMALL_PRIMES.iter() {
+            let prime = BigInt::from(p);
+            let r = candidate % &prime;
+            if !NumberTests::is_zero(&r) {
+                continue;
+            } else {
+                return false;
+            }
         }
     }
     // Second, do a little Fermat test on the candidate
-    if !fermat(candidate) {
-        return false;
+    for &candidate in candidates {
+        if !fermat(candidate) {
+            return false;
+        }
     }
 
     // Finally, do a Miller-Rabin test
     // NIST recommendation is 5 rounds for 512 and 1024 bits. For 1536 bits, the recommendation is 4 rounds.
-    if !miller_rabin(candidate, 5) {
-        return false;
+    for &candidate in candidates {
+        if !miller_rabin(candidate, 5) {
+            return false;
+        }
     }
     true
+}
+pub fn is_prime(candidate: &BigInt) -> bool {
+    are_all_primes(&[candidate])
 }
 
 /// Perform test based on Fermat's little theorem
 /// This might be performed more than once, see Handbook of Applied Cryptography [Algorithm 4.9 p136]
 fn fermat(candidate: &BigInt) -> bool {
     let random = BigInt::sample_below(candidate);
-    let result = BigInt::modpow(&random, &(candidate - &BigInt::one()), candidate);
+    let result = BigInt::mod_pow(&random, &(candidate - &BigInt::one()), candidate);
 
     result == BigInt::one()
 }
@@ -96,22 +144,24 @@ fn miller_rabin(candidate: &BigInt, limit: usize) -> bool {
 
     for _ in 0..limit {
         let basis = BigInt::sample_range(&two, &(candidate - &two));
-        let mut y = BigInt::modpow(&basis, &d, candidate);
+        let mut y = BigInt::mod_pow(&basis, &d, candidate);
 
         if y == one || y == (candidate - &one) {
             continue;
         } else {
-            let mut counter = BigInt::one();
-            while counter < (&s - &one) {
-                y = BigInt::modpow(&y, &two, candidate);
+            let mut counter = BigInt::zero();
+            while counter < (&s - BigInt::one()) {
+                y = BigInt::mod_pow(&y, &two, candidate);
                 if y == one {
                     return false;
                 } else if y == candidate - &one {
                     break;
                 }
-                counter = counter + BigInt::one();
+                counter += BigInt::one();
             }
-            return false;
+            if counter == (&s - BigInt::one()) {
+                return false;
+            }
         }
     }
     true
@@ -125,7 +175,7 @@ fn rewrite(n: &BigInt) -> (BigInt, BigInt) {
     let one = BigInt::one();
 
     while BigInt::is_even(&d) {
-        d = d >> 1_usize;
+        d >>= 1_usize;
         s = &s + &one;
     }
 
@@ -134,7 +184,7 @@ fn rewrite(n: &BigInt) -> (BigInt, BigInt) {
 
 // BoringSSL's table.
 // https://boringssl.googlesource.com/boringssl/+/master/crypto/bn/prime.c
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 static SMALL_PRIMES: [u32; 2048] = [
     2,     3,     5,     7,     11,    13,    17,    19,    23,    29,    31,
     37,    41,    43,    47,    53,    59,    61,    67,    71,    73,    79,

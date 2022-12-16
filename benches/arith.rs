@@ -1,17 +1,14 @@
-#[macro_use]
-extern crate bencher;
-extern crate paillier;
+use bencher::{benchmark_group, benchmark_main, Bencher};
+use curv::arithmetic::traits::*;
 
-use bencher::Bencher;
-use paillier::arithimpl::traits::*;
-use paillier::*;
+use kzen_paillier::*;
 
 mod helpers;
 use helpers::*;
 
 pub fn bench_mul(b: &mut Bencher) {
-    let ref p: BigInt = str::parse(P2048).unwrap();
-    let ref q: BigInt = str::parse(Q2048).unwrap();
+    let p: &BigInt = &BigInt::from_str_radix(P2048, 10).unwrap();
+    let q: &BigInt = &BigInt::from_str_radix(Q2048, 10).unwrap();
 
     b.iter(|| {
         let _ = p * q;
@@ -19,9 +16,9 @@ pub fn bench_mul(b: &mut Bencher) {
 }
 
 pub fn bench_mulrem(b: &mut Bencher) {
-    let ref p: BigInt = str::parse(P2048).unwrap();
-    let ref q: BigInt = str::parse(Q2048).unwrap();
-    let ref n: BigInt = str::parse(N2048).unwrap();
+    let p: &BigInt = &BigInt::from_str_radix(P2048, 10).unwrap();
+    let q: &BigInt = &BigInt::from_str_radix(Q2048, 10).unwrap();
+    let n: &BigInt = &BigInt::from_str_radix(N2048, 10).unwrap();
 
     b.iter(|| {
         let _ = (p * q) % n;
@@ -29,12 +26,12 @@ pub fn bench_mulrem(b: &mut Bencher) {
 }
 
 pub fn bench_modarith(b: &mut Bencher) {
-    let ref p: BigInt = str::parse(P2048).unwrap();
-    let ref q: BigInt = str::parse(Q2048).unwrap();
-    let ref n: BigInt = str::parse(N2048).unwrap();
+    let p: &BigInt = &BigInt::from_str_radix(P2048, 10).unwrap();
+    let q: &BigInt = &BigInt::from_str_radix(Q2048, 10).unwrap();
+    let n: &BigInt = &BigInt::from_str_radix(N2048, 10).unwrap();
 
     b.iter(|| {
-        let _ = BigInt::modpow(p, q, n);
+        let _ = BigInt::mod_pow(p, q, n);
     });
 }
 
