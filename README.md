@@ -117,14 +117,10 @@ Unless you explicitly state otherwise, any contribution intentionally submitted 
 # Contributions
 
 Several people have had a significant impact in the development of this library (in alphabetical order):
-- [Gary Benattar](https://github.com/gbenattar) (KZen networks)
 - [Mario Cornejo](https://github.com/mcornejo) (while at Snips)
 - [Mathieu Poumeyrol](https://github.com/kali) (Snips)
-- [Omer Shlomovits](https://github.com/omershlo) (KZen networks)
 
-and several companies have invested resources:
-- [Snips](https://github.com/snipsco) sponsored implementation of the original version
-- [KZen networks](https://github.com/KZen-networks) sponsored extension of many zero-knowledge proofs
+[Snips](https://github.com/snipsco) sponsored implementation of the original version
 
 ## Reported uses
 
