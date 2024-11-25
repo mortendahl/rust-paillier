@@ -24,7 +24,7 @@ categories = ["cryptography"]
 travis-ci = { repository = "mortendahl/rust-paillier" }
 
 [features]
-default = ["usegmp", "keygen" ]
+default = ["usegmp", "keygen"]
 keygen = []
 usegmp = ["rust-gmp"]
 gmp_nonsec = []
@@ -39,7 +39,6 @@ rust-gmp = { version="0.5", optional=true }
 
 [dev-dependencies]
 bencher = "0.1"
-# bencher = { git="https://github.com/snipsco-forks/bencher" }
 serde_json = "1.0"
 
 [[bench]]
