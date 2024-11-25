@@ -11,7 +11,6 @@ Several companies have invested resources in the development of this library, in
 
 **Important**: while we have followed recommendations regarding the scheme itself, some parts of this library have not yet been harden against non-cryptographic attacks such as side-channel attacks.
 
-
 ```rust
 extern crate paillier;
 use paillier::*;
@@ -45,15 +44,17 @@ fn main() {
 
 # Installation
 
-Some features are optional yet currently included by default. See [Features](#features) below for more details. Note that the nightly toolchain is currently needed to build the library.
+Some features are optional yet currently included by default. See [Features](#features) below for more details.
 
 ## Using cargo
+
 ```toml
 [dependencies]
 paillier = { version="0.2" }
 ```
 
 ## From source
+
 ```bash
 git clone https://github.com/mortendahl/rust-paillier
 cd rust-paillier
@@ -113,7 +114,6 @@ at your option.
 
 Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion in the work by you, as defined in the Apache-2.0 license, shall be dual licensed as above, without any additional terms or conditions.
 
-
 # Contributions
 
 Several people have had a significant impact in the development of this library (in alphabetical order):
@@ -126,4 +126,3 @@ Several people have had a significant impact in the development of this library 
 
 - [Snips](https://github.com/snipsco): privacy-preserving analytics
 - [KZen networks](https://github.com/KZen-networks): multi-party signatures
-
