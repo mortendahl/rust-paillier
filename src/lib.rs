@@ -38,9 +38,6 @@ pub struct Paillier;
 #[cfg(feature = "useramp")]
 pub use arithimpl::rampimpl::BigInt;
 
-#[cfg(feature = "useframp")]
-pub use arithimpl::frampimpl::BigInt;
-
 #[cfg(feature = "usegmp")]
 pub use arithimpl::gmpimpl::BigInt;
 
