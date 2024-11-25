@@ -31,12 +31,12 @@ usegmp = ["rust-gmp"]
 gmp_nonsec = []
 
 [dependencies]
-num-traits = "0.1"
+num-traits = "0.2"
 rand = "0.8"
 rayon = "1.0"
 serde = "1.0"
 serde_derive = "1.0"
-ramp = { version="0.5", optional=true }
+ramp = { version="0.7", optional=true }
 rust-gmp = { version="0.5", optional=true }
 
 [dev-dependencies]
