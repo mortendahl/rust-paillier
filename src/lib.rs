@@ -18,14 +18,12 @@ pub mod traits;
 #[cfg(feature = "keygen")]
 pub mod keygen;
 
-
 pub use core::*;
 pub use encoding::*;
 pub use traits::*;
 
 #[cfg(feature = "keygen")]
 pub use keygen::*;
-
 
 use std::borrow::Cow;
 
