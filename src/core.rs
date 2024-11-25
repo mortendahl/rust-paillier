@@ -618,5 +618,4 @@ mod tests {
         let result: Result<EncryptionKey, _> = serde_json::from_str(&illformatted);
         assert!(result.is_err())
     }
-
 }

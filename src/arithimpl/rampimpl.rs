@@ -1,4 +1,4 @@
-#![cfg(feature="useramp")]
+#![cfg(feature = "useramp")]
 
 extern crate ramp;
 
