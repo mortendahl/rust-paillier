@@ -2,5 +2,4 @@
 
 mod defaultimpl;
 pub mod gmpimpl;
-pub mod rampimpl;
 pub mod traits;
