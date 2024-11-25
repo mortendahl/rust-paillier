@@ -437,5 +437,4 @@ mod tests {
         let m: Vec<_> = Paillier::decrypt(&dk, &c);
         assert_eq!(m, vec![4, 8, 12]);
     }
-
 }

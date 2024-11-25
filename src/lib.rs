@@ -1,34 +1,22 @@
-#![feature(test)]
-#![feature(specialization)]
-
-extern crate bit_vec;
 extern crate num_traits;
 extern crate rand;
 extern crate rayon;
-#[cfg(feature = "proofs")]
-extern crate ring;
 extern crate serde;
-extern crate test;
 #[macro_use]
 extern crate serde_derive;
 
 pub mod arithimpl;
 pub mod core;
 pub mod encoding;
-mod serialize;
-pub mod traits;
-
 #[cfg(feature = "keygen")]
 pub mod keygen;
-
-
+mod serialize;
+pub mod traits;
 pub use core::*;
 pub use encoding::*;
-pub use traits::*;
-
 #[cfg(feature = "keygen")]
 pub use keygen::*;
-
+pub use traits::*;
 
 use std::borrow::Cow;
 
@@ -37,9 +25,6 @@ pub struct Paillier;
 
 #[cfg(feature = "useramp")]
 pub use arithimpl::rampimpl::BigInt;
-
-#[cfg(feature = "useframp")]
-pub use arithimpl::frampimpl::BigInt;
 
 #[cfg(feature = "usegmp")]
 pub use arithimpl::gmpimpl::BigInt;

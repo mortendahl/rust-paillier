@@ -25,7 +25,6 @@ mod bench {
         self::bench_key_generation<KeySize3072>,
         self::bench_key_generation<KeySize4096>
     );
-
 }
 
 #[cfg(feature = "keygen")]

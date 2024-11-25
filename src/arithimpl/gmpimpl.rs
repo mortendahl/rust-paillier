@@ -1,4 +1,4 @@
-#![cfg(feature="usegmp")]
+#![cfg(feature = "usegmp")]
 
 extern crate gmp;
 

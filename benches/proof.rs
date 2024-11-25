@@ -64,7 +64,6 @@ mod bench {
         self::bench_zk_proof_prove_and_verify<KeySize4096>,
         self::bench_zk_proof_prove_all<KeySize4096>
     );
-
 }
 
 #[cfg(feature = "proofs")]
