@@ -1,28 +1,22 @@
-#![feature(test)]
-
 extern crate num_traits;
 extern crate rand;
 extern crate rayon;
 extern crate serde;
-extern crate test;
 #[macro_use]
 extern crate serde_derive;
 
 pub mod arithimpl;
 pub mod core;
 pub mod encoding;
-mod serialize;
-pub mod traits;
-
 #[cfg(feature = "keygen")]
 pub mod keygen;
-
+mod serialize;
+pub mod traits;
 pub use core::*;
 pub use encoding::*;
-pub use traits::*;
-
 #[cfg(feature = "keygen")]
 pub use keygen::*;
+pub use traits::*;
 
 use std::borrow::Cow;
 
